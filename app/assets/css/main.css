@@ -1,0 +1,82 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Public Sans', sans-serif;
+
+  --color-green-50: #EFFDF5;
+  --color-green-100: #D9FBE8;
+  --color-green-200: #B3F5D1;
+  --color-green-300: #75EDAE;
+  --color-green-400: #00DC82;
+  --color-green-500: #00C16A;
+  --color-green-600: #00A155;
+  --color-green-700: #007F45;
+  --color-green-800: #016538;
+  --color-green-900: #0A5331;
+  --color-green-950: #052E16;
+}
+
+:root {
+  font-family: var(--font-sans);
+}
+
+body {
+  background: linear-gradient(180deg,#f8fbfc 0%, #ffffff 100%);
+  color: #0f172a;
+}
+
+.gauge {
+  --size: 160px;
+  width: var(--size);
+  height: calc(var(--size) / 2);
+  border-top-left-radius: 160px;
+  border-top-right-radius: 160px;
+  overflow: hidden;
+  position: relative;
+}
+.gauge .inner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -18px;
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+}
+
+.card-quiet {
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  border: 1px solid rgba(15,23,42,0.04);
+}
+
+/* get-started: improve spacing and interactivity for the 3-step UI */
+/* Target the grid wrapper used in get-started.vue and give each step column sensible gap */
+  .mt-8.grid > .flex.flex-col {
+    gap: 0.75rem; /* space between number, button, and details */
+  }
+
+  /* Make the step number feel like a button: pointer and subtle hover */
+  .mt-8.grid > .flex.flex-col > .w-16 {
+    cursor: pointer;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .mt-8.grid > .flex.flex-col > .w-16:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(2,6,23,0.08);
+  }
+
+  /* Give the upload button a little breathing room specifically inside the step columns */
+  .mt-8.grid > .flex.flex-col .cssbuttons-io-button {
+    margin-top: 0.25rem;
+    padding-left: 1rem;
+    padding-right: 1.25rem;
+  }
+
+  /* Slightly reduce the size of the success check icon spacing */
+  .mt-8.grid > .flex.flex-col svg.w-6 { margin-top: 0.5rem; }

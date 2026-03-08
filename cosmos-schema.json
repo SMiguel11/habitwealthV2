@@ -1,0 +1,251 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-cosmos-db-resource-token-broker/main/schema.json",
+  "databaseName": "habitwealth",
+  "throughputMode": "autoscale",
+  "maxThroughput": 4000,
+  "containers": [
+    {
+      "name": "users",
+      "partitionKey": "/userId",
+      "defaultTtl": -1,
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "includedPaths": ["/userId/?", "/email/?", "/digitalTwin/financialPersona/?", "/digitalTwin/habitWealthScore/?"],
+        "excludedPaths": ["/digitalTwin/emotionVector/*"]
+      },
+      "sampleDocument": {
+        "id": "user-{uuid}",
+        "userId": "auth0|abc123",
+        "email": "user@example.com",
+        "displayName": "Jane Doe",
+        "createdAt": "2025-01-01T00:00:00Z",
+        "onboarding": {
+          "completed": true,
+          "goals": ["emergency-fund", "debt-payoff"],
+          "monthlyIncome": 5000,
+          "riskTolerance": "moderate",
+          "surveyAnswers": {
+            "impulseFrequency": "sometimes",
+            "savingsConsistency": "usually",
+            "emotionalSpending": true
+          }
+        },
+        "digitalTwin": {
+          "habitWealthScore": 72,
+          "financialPersona": "Mindful Optimizer",
+          "goalAlignmentScore": 68,
+          "fsiScore": 38,
+          "fsiLevel": "Low",
+          "emotionVector": {
+            "anxiety": 0.3,
+            "impulsivity": 0.2,
+            "discipline": 0.6,
+            "optimism": 0.7
+          },
+          "weekendSpendRatio": 0.35,
+          "lastUpdated": "2025-01-15T10:00:00Z"
+        },
+        "stats": {
+          "totalDocumentsAnalyzed": 3,
+          "totalHabitPoints": 1250,
+          "streakDays": 14,
+          "lastActivityAt": "2025-01-15T10:00:00Z"
+        }
+      }
+    },
+    {
+      "name": "documents",
+      "partitionKey": "/userId",
+      "defaultTtl": -1,
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "includedPaths": ["/userId/?", "/status/?", "/analyzedAt/?", "/filename/?"],
+        "excludedPaths": ["/rawText/?", "/transactions/*"]
+      },
+      "sampleDocument": {
+        "id": "doc-{uuid}",
+        "userId": "auth0|abc123",
+        "filename": "bank-statement-jan-2025.pdf",
+        "blobUrl": "https://{storage}.blob.core.windows.net/docs/{userId}/{uuid}.pdf",
+        "blobContainer": "user-documents",
+        "status": "analyzed",
+        "uploadedAt": "2025-01-10T09:00:00Z",
+        "analyzedAt": "2025-01-10T09:02:15Z",
+        "documentType": "bank_statement",
+        "documentIntelligence": {
+          "confidence": 0.97,
+          "pageCount": 4,
+          "extractedFields": ["date", "merchant", "amount", "category"]
+        },
+        "transactions": [
+          {
+            "id": "txn-{uuid}",
+            "date": "2025-01-05",
+            "merchant": "Whole Foods",
+            "amount": 87.43,
+            "currency": "USD",
+            "category": "Groceries",
+            "subcategory": "Supermarket",
+            "isImpulse": false,
+            "emotionalTag": "neutral",
+            "dayOfWeek": "Sunday",
+            "isWeekend": true
+          }
+        ],
+        "financialSummary": {
+          "totalIncome": 5000.0,
+          "totalExpenses": 3420.75,
+          "netCashFlow": 1579.25,
+          "byCategory": {
+            "Groceries": 320.5,
+            "Dining": 210.0,
+            "Entertainment": 95.0,
+            "Transport": 180.0,
+            "Shopping": 415.25,
+            "Utilities": 200.0
+          },
+          "impulseCount": 8,
+          "impulseAmount": 312.0,
+          "weekendSpend": 450.0
+        },
+        "agentPipeline": {
+          "documentIntelligence": {
+            "status": "success",
+            "processingMs": 120,
+            "transactionCount": 47,
+            "totalExpenses": 3420.75,
+            "totalIncome": 5000.0,
+            "netCashFlow": 1579.25,
+            "byCategory": {}
+          },
+          "emotionalPattern": {
+            "status": "success",
+            "processingMs": 45,
+            "dominantEmotion": "discipline",
+            "weekendSpend": 450.0,
+            "weekendRatio": 0.32,
+            "impulseCount": 8,
+            "impulseRatio": 0.17,
+            "topMerchants": ["Whole Foods", "Amazon", "Netflix"],
+            "emotionVector": {
+              "anxiety": 0.3,
+              "impulsivity": 0.2,
+              "discipline": 0.6,
+              "optimism": 0.7
+            }
+          },
+          "financialStress": {
+            "status": "success",
+            "processingMs": 30,
+            "fsiScore": 38,
+            "fsiLevel": "Low",
+            "cashPressure": 30,
+            "impulseRatioScore": 34,
+            "surveyScore": 50,
+            "recommendation": "Your finances are in good shape. Focus on boosting savings rate."
+          },
+          "goalAlignment": {
+            "status": "success",
+            "processingMs": 25,
+            "goalAlignmentScore": 68,
+            "alignedCategories": ["Utilities", "Groceries"],
+            "misalignedCategories": ["Dining", "Shopping"],
+            "potentialSavings": 187.5,
+            "recommendation": "Reducing discretionary spending by 20% would accelerate goal achievement."
+          },
+          "cbtIntervention": {
+            "status": "success",
+            "processingMs": 20,
+            "dominantPattern": "discipline",
+            "nudges": [
+              "You've been consistent — great work! Try the 24-hour rule before any purchase over $50.",
+              "Meal prep on Sundays can cut dining costs by 30%. Want a starter plan?",
+              "Your grocery spending is efficient. Keep it up — that's mindful wealth building."
+            ],
+            "habitPoints": 150
+          },
+          "digitalTwin": {
+            "status": "success",
+            "processingMs": 15,
+            "habitWealthScore": 72,
+            "financialPersona": "Mindful Optimizer",
+            "goalAlignmentScore": 68,
+            "fsiLevel": "Low",
+            "topNudge": "You've been consistent — great work! Try the 24-hour rule before any purchase over $50.",
+            "emotionVector": {
+              "anxiety": 0.3,
+              "impulsivity": 0.2,
+              "discipline": 0.6,
+              "optimism": 0.7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "goals",
+      "partitionKey": "/userId",
+      "defaultTtl": -1,
+      "sampleDocument": {
+        "id": "goal-{uuid}",
+        "userId": "auth0|abc123",
+        "title": "Emergency Fund",
+        "type": "emergency-fund",
+        "targetAmount": 15000,
+        "currentAmount": 4200,
+        "currency": "USD",
+        "targetDate": "2025-12-31",
+        "status": "in-progress",
+        "progressPercent": 28,
+        "monthlyContribution": 300,
+        "projectedCompletionDate": "2026-08-01",
+        "createdAt": "2025-01-01T00:00:00Z",
+        "updatedAt": "2025-01-15T10:00:00Z"
+      }
+    },
+    {
+      "name": "habitPoints",
+      "partitionKey": "/userId",
+      "defaultTtl": -1,
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "includedPaths": ["/userId/?", "/earnedAt/?", "/type/?"],
+        "excludedPaths": ["/*"]
+      },
+      "sampleDocument": {
+        "id": "hp-{uuid}",
+        "userId": "auth0|abc123",
+        "type": "document_analyzed",
+        "points": 150,
+        "description": "Uploaded and analyzed January bank statement",
+        "metadata": {
+          "documentId": "doc-{uuid}",
+          "habitWealthScore": 72
+        },
+        "earnedAt": "2025-01-10T09:02:15Z"
+      }
+    },
+    {
+      "name": "interventionLogs",
+      "partitionKey": "/userId",
+      "defaultTtl": 7776000,
+      "sampleDocument": {
+        "id": "il-{uuid}",
+        "userId": "auth0|abc123",
+        "documentId": "doc-{uuid}",
+        "nudge": "You've been consistent — great work! Try the 24-hour rule before any purchase over $50.",
+        "nudgeType": "reinforcement",
+        "emotionalContext": "discipline",
+        "fsiLevel": "Low",
+        "habitWealthScore": 72,
+        "userAction": "dismissed",
+        "sentAt": "2025-01-10T09:02:15Z",
+        "respondedAt": "2025-01-10T09:05:00Z"
+      }
+    }
+  ],
+  "localStub": {
+    "description": "local-db.json mirrors the documents container shape for offline dev",
+    "path": "azure/sas-function/local-db.json"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AZURE_STORAGE_ACCOUNT_NAME": "<your-storage-account-name>",
+    "AZURE_STORAGE_ACCOUNT_KEY": "<your-storage-account-key>",
+    "SAS_CONTAINER": "uploads",
+    "SAS_EXPIRES_MINUTES": "15"
+  }
+}

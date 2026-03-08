@@ -1,0 +1,9 @@
+{
+  "name": "doc-intel-function",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@azure/ai-form-recognizer": "^4.0.0",
+    "@azure/cosmos": "^4.22.0"
+  }
+}

@@ -1,0 +1,48 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+
+# Azure Functions — local secrets (never commit)
+azure/sas-function/local.settings.json
+azure/doc-intel-function/local.settings.json
+
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Azurite local emulator data
+AzuriteConfig
+__azurite_db_*.json
+__blobstorage__/
+__queuestorage__/
+e:/azurite/
+
+# Local Cosmos DB stub (contains user data)
+azure/sas-function/local-db.json
+
+# Infrastructure secrets
+infra/*.params.json
+!infra/*.params.json.sample
+!.env.example

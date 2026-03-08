@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "DOCUMENT_INTELLIGENCE_ENDPOINT": "https://<your-resource-name>.cognitiveservices.azure.com/",
+    "DOCUMENT_INTELLIGENCE_KEY": "<your-key>",
+
+    "COSMOS_CONNECTION_STRING": "<optional-cosmos-connection-string>",
+    "COSMOS_DB": "<optional-db-name>",
+    "COSMOS_CONTAINER": "<optional-container-name>"
+  }
+}

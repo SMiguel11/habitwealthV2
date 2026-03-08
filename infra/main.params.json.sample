@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "westeurope"
+    },
+    "baseName": {
+      "value": "habitwealth"
+    },
+    "uniqueSuffix": {
+      "value": "CHANGE_ME",
+      "_comment": "4-8 char lowercase alphanumeric, e.g. 'abc123'. Must be globally unique. Tip: use $(openssl rand -hex 3) or a short random string."
+    },
+    "deployerObjectId": {
+      "value": "CHANGE_ME",
+      "_comment": "Your Azure AD Object ID. Get it with: az ad signed-in-user show --query id -o tsv"
+    },
+    "enableCosmosFreeOffer": {
+      "value": true,
+      "_comment": "Set to false if another Cosmos DB Free Tier account already exists in your subscription."
+    },
+    "swaLocation": {
+      "value": "westeurope",
+      "_comment": "Must be one of: westus2, centralus, eastus2, westeurope, eastasia"
+    }
+  }
+}
