@@ -9,54 +9,63 @@
       <h3 class="mt-6 text-lg font-semibold">Let's get started today!</h3>
 
       <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <!-- Step 1: Upload Bank Statements -->
         <div class="flex flex-col items-center">
-            <div @click="openUpload" role="button" tabindex="0" class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-xl font-bold">1</div>
-            <div class="mt-3 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow">
-
+          <div @click="openUpload" role="button" tabindex="0" :class="['w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold cursor-pointer transition-colors', uploadCompleted ? 'bg-green-200 text-green-800' : 'bg-blue-100 text-blue-800 hover:bg-blue-200']">
+            {{ uploadCompleted ? '✓' : '1' }}
+          </div>
+          <div class="mt-3 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow">
             <div class="w-8 h-8 bg-sky-100 rounded-full flex items-center justify-center">🏦</div>
-            <div class="text-sm">Upload Bank Statements</div>
+            <div class="text-sm font-medium">{{ uploadCompleted ? 'Uploaded ✓' : 'Upload Statements' }}</div>
           </div>
-          <svg class="mt-3 w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="12" fill="#10B981" />
-            <path d="M7 13l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <div v-if="uploadCompleted" class="mt-2 text-xs text-green-600 font-semibold">✓ Done</div>
         </div>
 
+        <!-- Step 2: Survey -->
         <div class="flex flex-col items-center">
-          <div @click="openSurvey" role="button" tabindex="0" class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-xl font-bold">2</div>
-          <div class="mt-3 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow">
-            <div class="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">💡</div>
-            <div class="text-sm">Emotional Spending Insights</div>
+          <div @click="openSurvey" role="button" tabindex="0" :disabled="!uploadCompleted" :class="['w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold', !uploadCompleted ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : surveyCompleted ? 'bg-green-200 text-green-800 cursor-pointer' : 'bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer']">
+            {{ surveyCompleted ? '✓' : '2' }}
           </div>
-          <svg v-if="surveyCompleted" class="mt-3 w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="12" fill="#10B981" />
-            <path d="M7 13l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          <svg v-else class="mt-3 w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="12" fill="#E5E7EB" />
-            <path d="M7 13l3 3 7-7" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <div class="mt-3 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow" :class="!uploadCompleted ? 'opacity-50' : ''">
+            <div :class="['w-8 h-8 rounded-full flex items-center justify-center', !uploadCompleted ? 'bg-gray-200' : 'bg-pink-100']">
+              {{ !uploadCompleted ? '🔒' : '💡' }}
+            </div>
+            <div class="text-sm font-medium">{{ surveyCompleted ? 'Survey Done ✓' : 'Spending Insights' }}</div>
+          </div>
+          <div v-if="surveyCompleted" class="mt-2 text-xs text-green-600 font-semibold">✓ Done</div>
+          <div v-if="!uploadCompleted" class="mt-2 text-xs text-gray-500">Complete Step 1 first</div>
         </div>
 
+        <!-- Step 3: Goals -->
         <div class="flex flex-col items-center">
-          <div @click="openGoals" role="button" tabindex="0" class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-xl font-bold">3</div>
-          <div class="mt-3 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow">
-            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">🎯</div>
-            <div class="text-sm">Personalized Saving Tips</div>
+          <div @click="openGoals" role="button" tabindex="0" :disabled="!surveyCompleted" :class="['w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold', !surveyCompleted ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : goalsCompleted ? 'bg-green-200 text-green-800 cursor-pointer' : 'bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer']">
+            {{ goalsCompleted ? '✓' : '3' }}
           </div>
-          <svg v-if="goalsCompleted" class="mt-3 w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="12" fill="#10B981" />
-            <path d="M7 13l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          <svg v-else class="mt-3 w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="12" fill="#E5E7EB" />
-            <path d="M7 13l3 3 7-7" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <div class="mt-3 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow" :class="!surveyCompleted ? 'opacity-50' : ''">
+            <div :class="['w-8 h-8 rounded-full flex items-center justify-center', !surveyCompleted ? 'bg-gray-200' : 'bg-yellow-100']">
+              {{ !surveyCompleted ? '🔒' : '🎯' }}
+            </div>
+            <div class="text-sm font-medium">{{ goalsCompleted ? 'Goals Set ✓' : 'Saving Goals' }}</div>
+          </div>
+          <div v-if="goalsCompleted" class="mt-2 text-xs text-green-600 font-semibold">✓ Done</div>
+          <div v-if="!surveyCompleted" class="mt-2 text-xs text-gray-500">Complete Step 2 first</div>
         </div>
       </div>
 
+      <!-- Success Message Banner -->
+      <div v-if="successMessage" class="mt-6 bg-green-100 border border-green-400 text-green-800 px-6 py-3 rounded-lg text-sm font-medium animate-pulse">
+        {{ successMessage }}
+      </div>
+
+      <!-- Error Message Banner -->
+      <div v-if="errorMessage" class="mt-6 bg-red-100 border border-red-400 text-red-800 px-6 py-3 rounded-lg text-sm font-medium">
+        {{ errorMessage }}
+      </div>
+
       <div class="mt-10 flex justify-center">
-        <button @click="next" :disabled="!(surveyCompleted && goalsCompleted)" :class="['w-20 h-20 rounded-full text-2xl flex items-center justify-center shadow-lg', (surveyCompleted && goalsCompleted) ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed']">»</button>
+        <button @click="next" :disabled="!(uploadCompleted && surveyCompleted && goalsCompleted)" :class="['px-12 py-3 rounded-full text-lg font-bold transition-all', (uploadCompleted && surveyCompleted && goalsCompleted) ? 'bg-gradient-to-r from-cyan-500 to-sky-500 text-white hover:shadow-lg shadow-cyan-500/30' : 'bg-gray-300 text-gray-600 cursor-not-allowed']">
+          Next: View Your Insights →
+        </button>
       </div>
     </div>
 
@@ -218,17 +227,19 @@
 
 <script setup>
 import AppLogo from '~/components/AppLogo.vue'
-import { useRouter } from '#app'
+import { useRouter, useRoute } from '#app'
 import { ref, computed } from 'vue'
 import { uploadFile as uploadWithSas } from '~/utils/sasUpload.js'
 
 const router = useRouter()
-const route = useRoute(); // Declarar el hook useRoute
-const userName = route.query.name || 'Guest'; // Obtener el parámetro 'name' de la URL
+const route = useRoute()
+const userName = route.query.name || 'Guest'
 const showUploadModal = ref(false)
-const uploadedFiles = ref([]) // array of { name, size, status, url }
+const uploadedFiles = ref([])
 const uploading = ref(false)
-// SAS API endpoint (Azure Function) - update when deployed
+const uploadCompleted = ref(false)
+const successMessage = ref('')
+const errorMessage = ref('')
 const SAS_API = '/api/sas-function'
 const showSurveyModal = ref(false)
 const surveyQuestions = [
@@ -286,35 +297,60 @@ function clearAll() {
 async function uploadAll() {
   if (!uploadedFiles.value.length) return
   uploading.value = true
+  errorMessage.value = ''
+  let allSuccess = true
+  
   for (let i = 0; i < uploadedFiles.value.length; i++) {
     const item = uploadedFiles.value[i]
     if (item.status === 'ready') continue
-    if (item.status === 'failed' && !item._file) {
-      // cannot re-upload if original file removed
-      continue
-    }
+    if (item.status === 'failed' && !item._file) continue
     try {
       item.status = 'uploading'
       const blobUrl = await uploadWithSas(SAS_API, item._file)
       item.url = blobUrl
       item.status = 'ready'
-      // Trigger mock document analysis (replaces Azure Document Intelligence)
+      // Trigger real analysis via Azure Function (mock-analyze or doc-intel)
       fetch('/api/mock-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blobUrl: item.url, filename: item.name })
-      }).catch(() => {}) // fire-and-forget; insights page will poll results
+        body: JSON.stringify({ 
+          blobUrl: item.url, 
+          filename: item.name, 
+          userId: 'local-user',
+          surveyAnswers: answers.value,
+          goals: goalsText.value
+        })
+      }).catch((err) => {
+        console.error('Analysis request failed:', err)
+      })
     } catch (err) {
+      allSuccess = false
       item.status = 'failed'
       item.error = err.message || String(err)
+      errorMessage.value = `Upload failed: ${item.error}`
     }
     delete item._file
     uploadedFiles.value.splice(i, 1, { ...item })
   }
+  
   uploading.value = false
+  
+  if (allSuccess && uploadedFiles.value.every(f => f.status === 'ready')) {
+    uploadCompleted.value = true
+    successMessage.value = '✓ Files uploaded successfully! Proceeding to Step 2...'
+    setTimeout(() => {
+      closeUpload()
+      successMessage.value = ''
+    }, 1500)
+  }
 }
 
 function openSurvey() {
+  if (!uploadCompleted.value) {
+    errorMessage.value = '⚠ Complete Step 1 (Upload Statements) first!'
+    setTimeout(() => { errorMessage.value = '' }, 3000)
+    return
+  }
   showSurveyModal.value = true
 }
 
@@ -329,10 +365,19 @@ function selectAnswer(idx, val) {
 function submitSurvey() {
   if (!isSurveyComplete.value) return
   surveyCompleted.value = true
-  showSurveyModal.value = false
+  successMessage.value = '✓ Survey completed! Moving to Step 3...'
+  setTimeout(() => {
+    showSurveyModal.value = false
+    successMessage.value = ''
+  }, 1000)
 }
 
 function openGoals() {
+  if (!surveyCompleted.value) {
+    errorMessage.value = '⚠ Complete Step 2 (Survey) first!'
+    setTimeout(() => { errorMessage.value = '' }, 3000)
+    return
+  }
   showGoalsModal.value = true
 }
 
@@ -343,7 +388,11 @@ function closeGoals() {
 function saveGoals() {
   if (!goalsText.value.trim().length) return
   goalsCompleted.value = true
-  showGoalsModal.value = false
+  successMessage.value = '✓ Goals saved! All steps complete. Click Next to view your insights.'
+  setTimeout(() => {
+    showGoalsModal.value = false
+    successMessage.value = ''
+  }, 1500)
 }
 </script>
 
