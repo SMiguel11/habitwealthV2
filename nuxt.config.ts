@@ -2,7 +2,8 @@
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
-    '@nuxt/ui'
+    '@nuxt/ui',
+    '@nuxtjs/i18n'
   ],
 
   devtools: {
@@ -15,6 +16,16 @@ export default defineNuxtConfig({
     '/': { prerender: true },
     '/get-started': { prerender: true },
     '/insights': { prerender: true }
+  },
+
+  i18n: {
+    vueI18n: './i18n.config.ts',
+    defaultLocale: 'es',
+    locales: [
+      { code: 'en', name: 'English', file: 'en.json' },
+      { code: 'es', name: 'Español', file: 'es.json' }
+    ],
+    strategy: 'prefix_except_default',
   },
 
   compatibilityDate: '2025-01-15',
