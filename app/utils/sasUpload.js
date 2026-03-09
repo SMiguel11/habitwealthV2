@@ -1,13 +1,16 @@
-// Example helper to request SAS from backend and upload a file
-// Usage: await uploadFile(file)
+// Helper to request SAS from backend and upload a file
+// Usage: const { uploadUrl, blobUrl } = await getSasToken(apiUrl, filename)
+//        await uploadWithSas(uploadUrl, file)
 
 export async function getSasToken(apiUrl, filename) {
-  const res = await fetch(apiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filename })
+  const url = new URL(apiUrl, window.location.origin)
+  url.searchParams.set('filename', filename)
+  
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' }
   })
-  if (!res.ok) throw new Error('Failed to get SAS')
+  if (!res.ok) throw new Error(`SAS token request failed: ${res.statusText}`)
   return res.json()
 }
 
@@ -20,7 +23,10 @@ export async function uploadWithSas(uploadUrl, file) {
     },
     body: file
   })
-  if (!res.ok) throw new Error('Upload failed')
+  if (!res.ok) {
+    const errText = await res.text()
+    throw new Error(`Upload failed (${res.status}): ${errText || res.statusText}`)
+  }
   return true
 }
 

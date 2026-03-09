@@ -229,7 +229,6 @@
 import AppLogo from '~/components/AppLogo.vue'
 import { useRouter, useRoute } from '#app'
 import { ref, computed } from 'vue'
-import { uploadFile as uploadWithSas } from '~/utils/sasUpload.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -306,10 +305,32 @@ async function uploadAll() {
     if (item.status === 'failed' && !item._file) continue
     try {
       item.status = 'uploading'
-      const blobUrl = await uploadWithSas(SAS_API, item._file)
+      console.log(`[Upload] Uploading file: ${item.name} (${item.size} bytes)`)
+      
+      // Create FormData to send file to backend
+      const formData = new FormData()
+      formData.append('file', item._file)
+      formData.append('userId', 'local-user')
+      
+      // Upload to backend function instead of direct to Blob Storage
+      const res = await fetch('/api/sas-function-upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!res.ok) {
+        const error = await res.text()
+        throw new Error(`Upload failed (${res.status}): ${error}`)
+      }
+      
+      const result = await res.json()
+      const blobUrl = result.blobUrl
+      
+      console.log(`[Upload] File uploaded successfully: ${blobUrl}`)
       item.url = blobUrl
       item.status = 'ready'
-      // Trigger real analysis via Azure Function (mock-analyze or doc-intel)
+      
+      // Trigger enrichment analysis via Azure Function
       fetch('/api/mock-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -324,6 +345,7 @@ async function uploadAll() {
         console.error('Analysis request failed:', err)
       })
     } catch (err) {
+      console.error(`[Upload Error] ${item.name}:`, err)
       allSuccess = false
       item.status = 'failed'
       item.error = err.message || String(err)
