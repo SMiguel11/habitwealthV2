@@ -312,8 +312,10 @@ async function uploadAll() {
       formData.append('file', item._file)
       formData.append('userId', 'local-user')
       
-      // Upload to backend function instead of direct to Blob Storage
-      const res = await fetch('/api/sas-function-upload', {
+      // Use direct Function App URL in production, vite proxy in local dev
+      const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+      const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+      const res = await fetch(`${functionBase}/api/sas-function-upload`, {
         method: 'POST',
         body: formData
       })
@@ -331,7 +333,7 @@ async function uploadAll() {
       item.status = 'ready'
       
       // Trigger enrichment analysis via Azure Function
-      fetch('/api/mock-analyze', {
+      fetch(`${functionBase}/api/mock-analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
