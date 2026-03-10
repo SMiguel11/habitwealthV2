@@ -1,37 +1,43 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 relative overflow-hidden">
+  <div class="min-h-screen bg-slate-950 relative overflow-hidden">
 
-    <!-- Ambient background orbs -->
+    <!-- ── Background ── -->
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
-      <div class="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-emerald-500/10 blur-3xl"></div>
-      <div class="absolute top-1/3 -right-40 w-[500px] h-[500px] rounded-full bg-teal-400/8 blur-3xl"></div>
-      <div class="absolute bottom-0 left-1/3 w-[400px] h-[400px] rounded-full bg-cyan-500/6 blur-3xl"></div>
-      <!-- Subtle grid -->
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+      <!-- Primary hero glow (center-right / bottom-right) -->
+      <div class="absolute bottom-0 right-0 w-[900px] h-[700px] bg-[radial-gradient(ellipse_at_bottom_right,rgba(20,184,166,0.22)_0%,rgba(52,211,153,0.10)_35%,transparent_65%)]"></div>
+      <!-- Top subtle glow -->
+      <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[radial-gradient(ellipse_at_top,rgba(52,211,153,0.06)_0%,transparent_60%)]"></div>
+      <!-- Dot grid with radial mask -->
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:36px_36px]"></div>
+      <!-- Horizon line -->
+      <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
     </div>
 
-    <!-- ── Sticky Navbar ── -->
-    <header class="sticky top-0 z-50 w-full border-b border-white/5 bg-slate-950/60 backdrop-blur-xl">
-      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+    <!-- ── Navbar ── -->
+    <header class="sticky top-0 z-50 w-full border-b border-white/[0.05] bg-slate-950/70 backdrop-blur-xl">
+      <div class="max-w-7xl mx-auto px-6 h-[60px] flex items-center justify-between">
+
         <!-- Logo -->
-        <NuxtLink to="/" class="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg" aria-label="Habit Wealth home">
-          <AppLogo class="h-8 w-auto" />
-          <span class="text-sm font-semibold text-white tracking-wide hidden sm:block">Habit<span class="text-emerald-400">Wealth</span></span>
+        <NuxtLink to="/" class="flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="HabitWealth home">
+          <AppLogo class="h-7 w-auto" />
+          <span class="text-sm font-bold text-white tracking-tight hidden sm:block">
+            Habit<span class="text-emerald-400">Wealth</span>
+          </span>
         </NuxtLink>
 
-        <!-- Nav actions -->
+        <!-- Right actions -->
         <div class="flex items-center gap-3">
-          <!-- Language selector -->
-          <div class="flex items-center gap-1 bg-white/5 rounded-lg p-1">
+          <!-- Lang toggle -->
+          <div class="flex items-center gap-0.5 bg-white/[0.05] rounded-lg p-1">
             <button
               v-for="loc in locales"
               :key="loc.code"
               @click="setLocale(loc.code)"
               :aria-label="`Switch to ${loc.name}`"
-              :class="['px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
+              :class="['px-2.5 py-1 rounded-md text-xs font-semibold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
                 locale === loc.code
-                  ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
-                  : 'text-slate-400 hover:text-white hover:bg-white/8']"
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-white']"
             >
               {{ loc.code.toUpperCase() }}
             </button>
@@ -40,139 +46,262 @@
       </div>
     </header>
 
-    <!-- ── Hero Section ── -->
-    <section class="relative flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-6 py-20 text-center">
+    <!-- ── Hero: Split layout ── -->
+    <section class="relative max-w-7xl mx-auto px-6 pt-20 pb-12 lg:pt-28 lg:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-      <!-- Badge -->
-      <div class="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold tracking-wider uppercase">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        {{ t('badge') }}
+      <!-- LEFT: Content -->
+      <div>
+        <!-- Badge -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/8 text-emerald-400 text-xs font-semibold tracking-widest uppercase mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          {{ t('badge') }}
+        </div>
+
+        <!-- Headline -->
+        <h1 class="text-5xl sm:text-6xl xl:text-[4.5rem] font-extrabold tracking-tight leading-[1.04] mb-6">
+          <span class="text-white">{{ t('headline_part1') }} </span><span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent pb-1">{{ t('headline_part2') }}</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="text-lg text-slate-400 leading-relaxed mb-9 max-w-lg">
+          {{ t('subtitle') }}
+          <span class="text-slate-200 font-medium"> {{ t('subtitle_highlight') }}</span>.
+          {{ t('subtitle_end') }}
+        </p>
+
+        <!-- Form -->
+        <form @submit.prevent="start" novalidate class="flex gap-2.5 max-w-md">
+          <label class="sr-only" for="name">{{ t('input_placeholder') }}</label>
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+            </div>
+            <input
+              id="name"
+              v-model="name"
+              type="text"
+              :placeholder="t('input_placeholder')"
+              autocomplete="given-name"
+              class="w-full pl-10 pr-4 py-3.5 rounded-xl bg-white/[0.05] border border-white/10 text-white text-sm placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-400/70 focus:border-transparent hover:border-white/20 transition-all duration-200"
+            />
+          </div>
+          <button
+            type="submit"
+            class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-sm font-bold shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-500 hover:-translate-y-px active:translate-y-0 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+          >
+            {{ t('cta') }}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </button>
+        </form>
+
+        <!-- Trust line -->
+        <p class="mt-5 text-xs text-slate-600">{{ t('trust') }}</p>
+
+        <!-- Scroll indicator -->
+        <div class="mt-10 flex flex-col items-start gap-2">
+          <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/20">{{ t('scroll') }}</span>
+          <div class="w-px h-8 bg-gradient-to-b from-white/20 to-transparent"></div>
+        </div>
       </div>
 
-      <!-- Headline -->
-      <h1 class="max-w-3xl text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.08]">
-        {{ t('headline_part1') }}
-        <span class="relative inline-block">
-          <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">{{ t('headline_part2') }}</span>
-          <!-- Underline accent -->
-          <span aria-hidden="true" class="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-emerald-400/0 via-emerald-400/60 to-emerald-400/0"></span>
-        </span>
-      </h1>
+      <!-- RIGHT: Product mockup -->
+      <div class="relative flex items-center justify-center lg:justify-end">
+        <!-- Glow behind card -->
+        <div aria-hidden="true" class="absolute inset-0 m-auto w-72 h-72 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none"></div>
 
-      <!-- Subtitle -->
-      <p class="mt-6 max-w-xl text-lg sm:text-xl text-slate-400 leading-relaxed">
-        {{ t('subtitle') }} <span class="text-slate-300 font-medium">{{ t('subtitle_highlight') }}</span>. {{ t('subtitle_end') }}
-      </p>
+        <!-- Main card -->
+        <div class="relative w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md p-6 shadow-2xl shadow-black/60">
 
-      <!-- Input + CTA -->
-      <form @submit.prevent="start" class="mt-10 w-full max-w-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-3" novalidate>
-        <label class="sr-only" for="name">Your first name</label>
-        <div class="relative flex-1">
-          <div class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
+          <!-- Card header -->
+          <div class="flex items-center justify-between mb-5">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{{ t('card_score_title') }}</span>
+            <span class="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> {{ t('card_live') }}
+            </span>
           </div>
-          <input
-            id="name"
-            v-model="name"
-            type="text"
-            :placeholder="t('input_placeholder')"
-            autocomplete="given-name"
-            class="w-full pl-10 pr-4 py-3 rounded-xl bg-white/6 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all duration-200 hover:bg-white/8"
-          />
+
+          <!-- Score display -->
+          <div class="flex items-end gap-2 mb-1">
+            <span class="text-[64px] font-black text-white leading-none tracking-tighter">84</span>
+            <span class="text-2xl text-slate-600 font-semibold mb-2">/100</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold mb-6">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+            </svg>
+            {{ t('card_trend') }}
+          </div>
+
+          <!-- Category breakdown -->
+          <div class="space-y-2.5 mb-6">
+            <div v-for="cat in previewCategories" :key="cat.name" class="flex items-center gap-3">
+              <span class="text-xs text-slate-500 w-16 shrink-0">{{ cat.name }}</span>
+              <div class="flex-1 bg-white/[0.05] rounded-full h-1.5">
+                <div class="h-1.5 rounded-full transition-all" :class="cat.color" :style="{ width: cat.pct }"></div>
+              </div>
+              <span class="text-xs text-slate-300 font-medium w-12 text-right">{{ cat.amount }}</span>
+            </div>
+          </div>
+
+          <!-- Goal row -->
+          <div class="rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-white">🎯 {{ t('card_goal_name') }}</span>
+              <span class="text-xs font-bold text-emerald-400">40%</span>
+            </div>
+            <div class="w-full bg-white/[0.06] rounded-full h-1.5 mb-2">
+              <div class="w-2/5 h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+            </div>
+            <p class="text-[11px] text-slate-500">{{ t('card_goal_detail') }}</p>
+          </div>
         </div>
-        <button
-          type="submit"
-          class="flex-shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-400 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
-        >
-          {{ t('cta') }}
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          </svg>
-        </button>
-      </form>
 
-      <!-- Social proof -->
-      <p class="mt-6 text-xs text-slate-600">{{ t('trust') }}</p>
+        <!-- Floating badge: top-right -->
+        <div aria-hidden="true" class="absolute -top-3 -right-3 lg:right-0 bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/30 tracking-wide">
+          {{ t('card_ai_badge') }}
+        </div>
 
-      <!-- Scroll hint -->
-      <div aria-hidden="true" class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-30">
-        <span class="text-xs text-slate-500 uppercase tracking-widest">{{ t('scroll') }}</span>
-        <div class="w-px h-8 bg-gradient-to-b from-slate-500 to-transparent"></div>
+        <!-- Floating notification: bottom-left -->
+        <div aria-hidden="true" class="absolute -bottom-5 -left-3 lg:-left-8 flex items-center gap-3 bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50">
+          <div class="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-base shrink-0">💡</div>
+          <div>
+            <p class="text-[11px] font-bold text-white leading-tight">{{ t('card_notif_title') }}</p>
+            <p class="text-[11px] text-slate-500 leading-tight">{{ t('card_notif_body') }}</p>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- ── Feature Cards ── -->
-    <section class="relative pb-24 px-6">
-      <div class="max-w-5xl mx-auto">
+    <!-- ── Stats strip ── -->
+    <div class="max-w-7xl mx-auto px-6 pb-16 mt-8 lg:mt-16">
+      <div class="grid grid-cols-3 divide-x divide-white/[0.06] border border-white/[0.06] rounded-2xl overflow-hidden bg-white/[0.02]">
+        <div class="px-6 py-7 text-center">
+          <div class="text-3xl font-black text-white tracking-tight">30s</div>
+          <div class="text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat1') }}</div>
+        </div>
+        <div class="px-6 py-7 text-center">
+          <div class="text-3xl font-black text-white tracking-tight">100%</div>
+          <div class="text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat2') }}</div>
+        </div>
+        <div class="px-6 py-7 text-center">
+          <div class="text-3xl font-black text-emerald-400 tracking-tight">AI</div>
+          <div class="text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat3') }}</div>
+        </div>
+      </div>
+    </div>
 
-        <!-- Section label -->
-        <p class="text-center text-xs font-semibold text-slate-600 uppercase tracking-widest mb-10">{{ t('how_it_works') }}</p>
+    <!-- ── How it works ── -->
+    <section class="relative max-w-7xl mx-auto px-6 pb-28">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- Section header -->
+      <div class="text-center mb-14">
+        <p class="text-xs font-bold text-slate-600 uppercase tracking-widest mb-3">{{ t('how_it_works') }}</p>
+        <h2 class="text-3xl font-bold text-white tracking-tight">{{ t('steps_heading') }}</h2>
+      </div>
 
-          <!-- Card 1: Upload -->
-          <div class="group relative rounded-2xl border border-white/6 bg-white/3 backdrop-blur-sm p-7 hover:bg-white/6 hover:border-white/12 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 cursor-default">
-            <!-- Gradient top accent -->
-            <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
-            <!-- Icon -->
-            <div class="w-12 h-12 mb-5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+      <!-- Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 relative">
+
+        <!-- Connector line (desktop only) -->
+        <div aria-hidden="true" class="hidden md:block absolute top-10 left-1/3 right-1/3 h-px bg-gradient-to-r from-blue-400/30 via-pink-400/30 to-emerald-400/30"></div>
+
+        <!-- Card 1 -->
+        <div class="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm p-7 hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300">
+          <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"></div>
+          <div class="flex items-center justify-between mb-6">
+            <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-500/15 transition-all duration-300">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
             </div>
-            <h3 class="text-base font-semibold text-white mb-2">{{ t('card1_title') }}</h3>
-            <p class="text-sm text-slate-500 leading-relaxed">{{ t('card1_desc') }}</p>
-            <!-- Step number -->
-            <div class="absolute top-6 right-6 text-3xl font-bold text-white/4 select-none">01</div>
+            <span class="text-4xl font-black text-white/[0.04] select-none tabular-nums">01</span>
           </div>
+          <h3 class="text-base font-bold text-white mb-2.5">{{ t('card1_title') }}</h3>
+          <p class="text-sm text-slate-500 leading-relaxed">{{ t('card1_desc') }}</p>
+          <div class="mt-5 flex items-center gap-1.5 text-xs text-blue-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span>{{ t('card1_link') }}</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </div>
+        </div>
 
-          <!-- Card 2: Insights -->
-          <div class="group relative rounded-2xl border border-white/6 bg-white/3 backdrop-blur-sm p-7 hover:bg-white/6 hover:border-white/12 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 cursor-default">
-            <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-pink-400/50 to-transparent"></div>
-            <div class="w-12 h-12 mb-5 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+        <!-- Card 2 -->
+        <div class="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm p-7 hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300">
+          <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-pink-400/60 to-transparent"></div>
+          <div class="flex items-center justify-between mb-6">
+            <div class="w-11 h-11 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-pink-500/15 transition-all duration-300">
+              <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
               </svg>
             </div>
-            <h3 class="text-base font-semibold text-white mb-2">{{ t('card2_title') }}</h3>
-            <p class="text-sm text-slate-500 leading-relaxed">{{ t('card2_desc') }}</p>
-            <div class="absolute top-6 right-6 text-3xl font-bold text-white/4 select-none">02</div>
+            <span class="text-4xl font-black text-white/[0.04] select-none tabular-nums">02</span>
           </div>
+          <h3 class="text-base font-bold text-white mb-2.5">{{ t('card2_title') }}</h3>
+          <p class="text-sm text-slate-500 leading-relaxed">{{ t('card2_desc') }}</p>
+          <div class="mt-5 flex items-center gap-1.5 text-xs text-pink-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span>{{ t('card2_link') }}</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </div>
+        </div>
 
-          <!-- Card 3: Tips -->
-          <div class="group relative rounded-2xl border border-white/6 bg-white/3 backdrop-blur-sm p-7 hover:bg-white/6 hover:border-white/12 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 cursor-default">
-            <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent"></div>
-            <div class="w-12 h-12 mb-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+        <!-- Card 3 -->
+        <div class="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm p-7 hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300">
+          <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent"></div>
+          <div class="flex items-center justify-between mb-6">
+            <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-500/15 transition-all duration-300">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
               </svg>
             </div>
-            <h3 class="text-base font-semibold text-white mb-2">{{ t('card3_title') }}</h3>
-            <p class="text-sm text-slate-500 leading-relaxed">{{ t('card3_desc') }}</p>
-            <div class="absolute top-6 right-6 text-3xl font-bold text-white/4 select-none">03</div>
+            <span class="text-4xl font-black text-white/[0.04] select-none tabular-nums">03</span>
           </div>
-
+          <h3 class="text-base font-bold text-white mb-2.5">{{ t('card3_title') }}</h3>
+          <p class="text-sm text-slate-500 leading-relaxed">{{ t('card3_desc') }}</p>
+          <div class="mt-5 flex items-center gap-1.5 text-xs text-emerald-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span>{{ t('card3_link') }}</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </div>
         </div>
 
-        <!-- Bottom tagline -->
-        <p class="text-center mt-12 text-sm text-slate-600">
-          {{ t('tagline') }} &nbsp;·&nbsp;
-          <NuxtLink to="/get-started" class="text-emerald-500 hover:text-emerald-400 underline-offset-2 hover:underline transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 rounded">
-            {{ t('start_analysis') }}
-          </NuxtLink>
-        </p>
+      </div>
+
+      <!-- Bottom CTA -->
+      <div class="mt-16 text-center">
+        <NuxtLink
+          to="/get-started"
+          class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+        >
+          {{ t('start_analysis') }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+        </NuxtLink>
+        <p class="mt-4 text-xs text-slate-600">{{ t('trust') }}</p>
       </div>
     </section>
+
+    <!-- ── Footer ── -->
+    <footer class="border-t border-white/[0.05] py-8">
+      <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-700">
+        <span>© {{ new Date().getFullYear() }} HabitWealth · All rights reserved</span>
+        <div class="flex items-center gap-4">
+          <a href="#" class="hover:text-slate-400 transition-colors">Privacy</a>
+          <a href="#" class="hover:text-slate-400 transition-colors">Terms</a>
+          <a href="#" class="hover:text-slate-400 transition-colors">Security</a>
+        </div>
+      </div>
+    </footer>
 
   </div>
 </template>
 
 <script setup>
 import { useRouter } from '#app'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from '#imports'
 import AppLogo from '~/components/AppLogo.vue'
 
@@ -184,6 +313,13 @@ const locales = [
   { code: 'en', name: 'English' },
   { code: 'es', name: 'Español' }
 ]
+
+const previewCategories = computed(() => [
+  { name: t('cat_food'),      pct: '72%', amount: '€445', color: 'bg-emerald-500' },
+  { name: t('cat_transport'), pct: '35%', amount: '€216', color: 'bg-teal-400' },
+  { name: t('cat_shopping'),  pct: '54%', amount: '€332', color: 'bg-pink-400' },
+  { name: t('cat_savings'),   pct: '28%', amount: '€180', color: 'bg-cyan-400' },
+])
 
 function start() {
   router.push({ path: '/get-started', query: { name: name.value } })
