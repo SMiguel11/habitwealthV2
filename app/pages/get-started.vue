@@ -307,17 +307,22 @@ async function uploadAll() {
       item.status = 'uploading'
       console.log(`[Upload] Uploading file: ${item.name} (${item.size} bytes)`)
       
-      // Create FormData to send file to backend
-      const formData = new FormData()
-      formData.append('file', item._file)
-      formData.append('userId', 'local-user')
-      
       // Use direct Function App URL in production, vite proxy in local dev
       const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
       const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+
+      // Read file as base64 to avoid multipart/busboy issues in Azure Functions
+      const fileBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(item._file)
+      })
+
       const res = await fetch(`${functionBase}/api/sas-function-upload`, {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileBase64, filename: item.name, userId: 'local-user' })
       })
       
       if (!res.ok) {

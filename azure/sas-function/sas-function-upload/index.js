@@ -1,10 +1,9 @@
 /**
  * sas-function-upload/index.js
- * Receives file upload from frontend and uploads to Azure Blob Storage.
- * Uses AzureWebJobsStorage connection string from Function App settings.
+ * Receives base64-encoded file from frontend and uploads to Azure Blob Storage.
+ * Expects JSON body: { fileBase64, filename, userId }
  */
 const { BlobServiceClient } = require('@azure/storage-blob')
-const busboy = require('busboy')
 
 module.exports = async function (context, req) {
   try {
@@ -17,62 +16,30 @@ module.exports = async function (context, req) {
       return
     }
 
+    const { fileBase64, filename, userId = 'local-user' } = req.body || {}
+
+    if (!fileBase64 || !filename) {
+      context.res = { status: 400, body: { error: 'fileBase64 and filename are required' } }
+      return
+    }
+
+    // Decode base64 to buffer
+    const base64Data = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64
+    const fileBuffer = Buffer.from(base64Data, 'base64')
+
     const blobServiceClient = BlobServiceClient.fromConnectionString(connStr)
     const containerName = process.env.SAS_CONTAINER || 'uploads'
     const containerClient = blobServiceClient.getContainerClient(containerName)
 
-    // Ensure container exists
     await containerClient.createIfNotExists({ access: 'blob' })
 
-    // Parse multipart form data
-    // Azure Functions buffers the entire body - must write req.rawBody to busboy manually
-    const bb = busboy({ headers: req.headers })
-    let file = null
-    let userId = 'local-user'
-    const fields = {}
-
-    await new Promise((resolve, reject) => {
-      bb.on('file', (fieldname, stream, info) => {
-        const chunks = []
-        stream.on('data', (chunk) => chunks.push(chunk))
-        stream.on('end', () => {
-          file = { filename: info.filename, buffer: Buffer.concat(chunks) }
-        })
-      })
-
-      bb.on('field', (fieldname, value) => {
-        fields[fieldname] = value
-      })
-
-      bb.on('close', resolve)
-      bb.on('error', reject)
-
-      // Write buffered body to busboy (Azure Functions does not expose a readable stream)
-      if (req.rawBody) {
-        const raw = typeof req.rawBody === 'string'
-          ? Buffer.from(req.rawBody, 'binary')
-          : req.rawBody
-        bb.write(raw)
-        bb.end()
-      } else {
-        reject(new Error('No request body found'))
-      }
-    })
-
-    if (fields.userId) userId = fields.userId
-
-    if (!file) {
-      context.res = { status: 400, body: { error: 'No file provided' } }
-      return
-    }
-
-    const blobName = `${userId}/${Date.now()}-${file.filename}`
-    context.log(`[Upload] Uploading ${file.filename} (${file.buffer.length} bytes) → ${containerName}/${blobName}`)
+    const blobName = `${userId}/${Date.now()}-${filename}`
+    context.log(`[Upload] Uploading ${filename} (${fileBuffer.length} bytes) → ${containerName}/${blobName}`)
 
     const blockBlobClient = containerClient.getBlockBlobClient(blobName)
-    await blockBlobClient.upload(file.buffer, file.buffer.length, {
+    await blockBlobClient.upload(fileBuffer, fileBuffer.length, {
       blobHTTPHeaders: {
-        blobContentType: file.filename.endsWith('.pdf') ? 'application/pdf' : 'text/csv'
+        blobContentType: filename.endsWith('.pdf') ? 'application/pdf' : 'text/csv'
       }
     })
 
@@ -81,7 +48,7 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 200,
-      body: { success: true, blobUrl, filename: file.filename, userId }
+      body: { success: true, blobUrl, filename, userId }
     }
   } catch (err) {
     context.log.error(`[Upload✗] ${err.message}`)
