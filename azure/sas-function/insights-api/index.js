@@ -5,8 +5,9 @@
  */
 const fs   = require('fs')
 const path = require('path')
+const os   = require('os')
 
-const DB_PATH = path.join(__dirname, '..', 'local-db.json')
+const DB_PATH = path.join(os.tmpdir(), 'habitwealth-db.json')
 
 function loadDb() {
   try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')) } catch { return { users: {} } }

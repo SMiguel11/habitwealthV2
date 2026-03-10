@@ -158,7 +158,9 @@ const recentTransactions = ref([])
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/insights-api?userId=local-user')
+    const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+    const res = await fetch(`${functionBase}/api/insights-api?userId=local-user`)
     const data = await res.json()
     if (data.summary) {
       summary.value = data.summary

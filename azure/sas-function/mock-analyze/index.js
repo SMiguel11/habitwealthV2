@@ -6,8 +6,9 @@ const fs   = require('fs')
 const path = require('path')
 const http = require('http')
 const https = require('https')
+const os   = require('os')
 
-const DB_PATH          = path.join(__dirname, '..', 'local-db.json')
+const DB_PATH          = path.join(os.tmpdir(), 'habitwealth-db.json')
 const ENRICHMENT_AGENT = process.env.ENRICHMENT_AGENT_URL || 'http://127.0.0.1:8001'
 
 function loadDb() {
