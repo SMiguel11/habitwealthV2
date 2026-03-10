@@ -403,8 +403,8 @@ function closeGoals() {
 
 function parseGoals(text) {
   return text.split('\n').filter(l => l.trim()).map(line => {
-    // Detect "X al mes" or "X/mes" or "X monthly" pattern — means monthly savings
-    const monthlyMatch = line.match(/([\$€£]?\s?[\d,.]+)\s*(?:\/mes|al mes|\/month|monthly)/i)
+    // Detect "X al mes" or "X/mes" or "X mensual" or "X monthly" pattern — means monthly savings
+    const monthlyMatch = line.match(/([\$€£]?\s?[\d,.]+)\s*(?:\/mes|al mes|mensual(?:es)?|\/month|monthly)/i)
     const amountMatch  = line.match(/[\$€£]?\s?(\d[\d,.]+)/i)
     const monthsMatch  = line.match(/(\d+)\s*mes(?:es)?/i) || line.match(/(\d+)\s*month/i)
 

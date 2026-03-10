@@ -191,16 +191,29 @@ const summary = ref(null)
 const documentCount = ref(0)
 const recentTransactions = ref([])
 
+async function fetchInsights() {
+  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+  const res = await fetch(`${functionBase}/api/insights-api?userId=local-user`)
+  const data = await res.json()
+  if (data.summary) {
+    summary.value = data.summary
+    documentCount.value = data.documentCount || 0
+    recentTransactions.value = data.recentTransactions || []
+  }
+  return data
+}
+
 onMounted(async () => {
   try {
-    const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
-    const res = await fetch(`${functionBase}/api/insights-api?userId=local-user`)
-    const data = await res.json()
-    if (data.summary) {
-      summary.value = data.summary
-      documentCount.value = data.documentCount || 0
-      recentTransactions.value = data.recentTransactions || []
+    let data = await fetchInsights()
+    // If no documents yet (analysis still processing), poll every 5s up to 12 times (~60s)
+    if (!data.documentCount) {
+      for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 5000))
+        data = await fetchInsights()
+        if (data.documentCount) break
+      }
     }
   } catch (e) {
     console.warn('Could not fetch insights:', e)
