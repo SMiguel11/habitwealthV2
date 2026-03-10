@@ -1,4 +1,21 @@
 {
-  "title": "Welcome to my website!",
-  "get started": "Get started"
+  "badge": "AI-Powered Financial Intelligence",
+  "headline_part1": "Habit",
+  "headline_part2": "Wealth",
+  "subtitle": "Boost your financial health through",
+  "subtitle_highlight": "emotional-smart saving",
+  "subtitle_end": "Understand why you spend, not just where.",
+  "input_placeholder": "Your first name",
+  "cta": "Get Started",
+  "trust": "No credit card required · Free to start · Bank-level security",
+  "scroll": "Scroll",
+  "how_it_works": "How it works",
+  "card1_title": "Upload Bank Statements",
+  "card1_desc": "Securely import your PDF statements. Our AI extracts every transaction instantly.",
+  "card2_title": "Emotional Spending Insights",
+  "card2_desc": "Discover the emotions behind your transactions. Break impulse cycles with data.",
+  "card3_title": "Personalized Saving Tips",
+  "card3_desc": "AI-generated nudges tailored to your habits, goals, and behavioral patterns.",
+  "tagline": "Trusted by early users across Europe",
+  "start_analysis": "Start your analysis →"
 }

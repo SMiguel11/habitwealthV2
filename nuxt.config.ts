@@ -19,13 +19,14 @@ export default defineNuxtConfig({
   },
 
   i18n: {
-    vueI18n: './i18n.config.ts',
+    vueI18n: './i18n/i18n.config.ts',
     defaultLocale: 'es',
+    langDir: 'locales',
     locales: [
       { code: 'en', name: 'English', file: 'en.json', iso: 'en-GB' },
       { code: 'es', name: 'Español', file: 'es.json', iso: 'es-ES' }
     ],
-    strategy: 'prefix_except_default',
+    strategy: 'no_prefix',
   },
 
   compatibilityDate: '2025-01-15',

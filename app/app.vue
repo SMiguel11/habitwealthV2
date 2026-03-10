@@ -29,24 +29,6 @@ useSeoMeta({
 
 <template>
   <UApp>
-    <UHeader>
-      <template #left>
-        <NuxtLink to="/">
-          <AppLogo class="h-10 md:h-12 w-auto" />
-        </NuxtLink>
-      </template>
-
-      <template #right>
-        <UColorModeButton />
-      </template>
-    </UHeader>
-
-    <UMain>
-      <NuxtPage />
-    </UMain>
-
-    <UFooter>
-      <div class="w-full text-center py-4 text-sm text-gray-500">© {{ new Date().getFullYear() }} HabitWealth</div>
-    </UFooter>
+    <NuxtPage />
   </UApp>
 </template>

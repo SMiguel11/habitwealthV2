@@ -1,4 +1,21 @@
 {
-  "title": "¡Bienvenido a mi sitio web!",
-  "get started": "Empezar"
+  "badge": "Inteligencia Financiera con IA",
+  "headline_part1": "Habit",
+  "headline_part2": "Wealth",
+  "subtitle": "Mejora tu salud financiera con",
+  "subtitle_highlight": "ahorro emocionalmente inteligente",
+  "subtitle_end": "Entiende por qué gastas, no solo dónde.",
+  "input_placeholder": "Tu nombre",
+  "cta": "Comenzar",
+  "trust": "Sin tarjeta de crédito · Gratis para empezar · Seguridad bancaria",
+  "scroll": "Desliza",
+  "how_it_works": "Cómo funciona",
+  "card1_title": "Sube tus Extractos Bancarios",
+  "card1_desc": "Importa tus PDFs de forma segura. Nuestra IA extrae cada transacción al instante.",
+  "card2_title": "Análisis de Gasto Emocional",
+  "card2_desc": "Descubre las emociones tras tus transacciones. Rompe ciclos de impulso con datos.",
+  "card3_title": "Consejos de Ahorro Personalizados",
+  "card3_desc": "Sugerencias generadas por IA adaptadas a tus hábitos, metas y patrones de comportamiento.",
+  "tagline": "Ya usado por usuarios en toda Europa",
+  "start_analysis": "Empieza tu análisis →"
 }
