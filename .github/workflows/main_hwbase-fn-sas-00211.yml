@@ -38,7 +38,10 @@ jobs:
           popd
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          zip -r ${{ github.workspace }}/release.zip . --exclude "node_modules/*" --exclude "*.zip" --exclude "local.settings.json" --exclude "local-db.json" --exclude "func*.log"
+          popd
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -67,5 +70,6 @@ jobs:
         with:
           app-name: 'hwbase-fn-sas-00211'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: '.'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_30F524FE982243988F4B872681018CA8 }}
+          scm-do-build-during-deployment: true
