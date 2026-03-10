@@ -58,12 +58,6 @@
           <div class="grid grid-cols-12 gap-6">
             <!-- Left Column: Analysis -->
             <div class="col-span-12 lg:col-span-8 space-y-6">
-              <!-- Trend Chart -->
-              <div class="bg-white rounded-lg p-6 shadow">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">HabitWealth Score Trend</h2>
-                <TrendChart :series="trendSeries" type="area" height="280" />
-              </div>
-
               <!-- Top Categories -->
               <div class="bg-white rounded-lg p-6 shadow">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Spending by Category</h2>
@@ -183,7 +177,6 @@ import { useRouter } from '#app'
 import Sidebar from '../components/Sidebar.vue'
 import ScoreGauge from '../components/ScoreGauge.vue'
 import MetricCard from '../components/MetricCard.vue'
-import TrendChart from '../components/TrendChart.vue'
 
 const router = useRouter()
 const loading = ref(true)
@@ -249,11 +242,6 @@ const impulseScore = computed(() => {
 const nudges = computed(() => summary.value?.nudges ?? [])
 const goals = computed(() => summary.value?.goals ?? [])
 const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
-const trendSeries = computed(() => {
-  const scores = summary.value?.trendScores ?? [50, 55, 60, 65, 70, 75, habitScore.value]
-  return [{ name: 'HabitWealth Score', data: scores }]
-})
-
 const topCategories = computed(() => {
   if (!summary.value?.byCategory) return []
   const entries = Object.entries(summary.value.byCategory)

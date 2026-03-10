@@ -29,13 +29,22 @@ module.exports = async function (context, req) {
   const twin      = latestDoc.agentResult?.agents?.digitalTwin
 
   // Aggregate spending by category across all docs
+  // Fallback: compute directly from transactions if agent didn't run
   const byCategory = {}
   for (const doc of docs) {
-    const catMap = doc.agentResult?.agents?.documentIntelligence?.byCategory
-                || doc.insights?.byCategory
-                || {}
-    for (const [cat, amt] of Object.entries(catMap)) {
-      byCategory[cat] = (byCategory[cat] || 0) + amt
+    const catMap = doc.agentResult?.agents?.documentIntelligence?.byCategory || null
+    if (catMap && Object.keys(catMap).length > 0) {
+      for (const [cat, amt] of Object.entries(catMap)) {
+        byCategory[cat] = (byCategory[cat] || 0) + amt
+      }
+    } else {
+      // Compute from raw transactions
+      for (const tx of (doc.transactions || [])) {
+        if (tx.amount < 0) {
+          const cat = tx.category || 'Other'
+          byCategory[cat] = (byCategory[cat] || 0) + Math.abs(tx.amount)
+        }
+      }
     }
   }
 
@@ -64,14 +73,22 @@ module.exports = async function (context, req) {
         fsiLevel:           latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
         goalAlignmentScore: latestDoc.agentResult?.summary?.goalAlignmentScore || 0,
         topNudge:           latestDoc.agentResult?.summary?.topNudge || '',
-        totalExpenses:      latestDoc.agentResult?.agents?.documentIntelligence?.totalExpenses || 0,
+        totalExpenses:      latestDoc.agentResult?.agents?.documentIntelligence?.totalExpenses
+                          || Object.values(byCategory).reduce((s, v) => s + v, 0),
         netCashFlow:        latestDoc.agentResult?.agents?.documentIntelligence?.netCashFlow || 0,
         byCategory,
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,
         trendScores,
-        goals: latestDoc.agentResult?.agents?.goalAlignment?.goals || [],
+        goals: latestDoc.agentResult?.agents?.goalAlignment?.goals
+            || (latestDoc.goals || []).map(g => ({
+                goal: g.description,
+                monthlyNeeded: Math.round(g.targetAmount / Math.max(g.deadlineMonths, 1) * 100) / 100,
+                currentSavings: 0,
+                onTrack: false,
+                projectedMonths: null
+               })),
         goalAlignmentScore: latestDoc.agentResult?.summary?.goalAlignmentScore || 0,
       },
       recentTransactions: (latestDoc.transactions || []).slice(0, 20),

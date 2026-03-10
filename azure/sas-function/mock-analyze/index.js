@@ -193,7 +193,7 @@ function callEnrichmentAgent(payload) {
       })
     })
     req.on('error', reject)
-    req.setTimeout(10000, () => { req.destroy(new Error('Enrichment agent timeout')) })
+    req.setTimeout(60000, () => { req.destroy(new Error('Enrichment agent timeout')) })
     req.write(body)
     req.end()
   })
@@ -244,6 +244,7 @@ module.exports = async function (context, req) {
   await upsertDocument(userId, docFilename, {
     analyzedAt: new Date().toISOString(),
     transactions,
+    goals,
     agentResult: agentResult || null,
     insights: (agentResult && agentResult.summary) ? agentResult.summary : { habitWealthScore: 50, fsiLevel: 'Medium', byCategory: {} }
   })
