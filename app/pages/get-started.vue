@@ -264,6 +264,7 @@ const isSurveyComplete = computed(() => answers.value.every(a => a !== null))
 const showGoalsModal = ref(false)
 const goalsText = ref('')
 const goalsCompleted = ref(false)
+const uploadResults = ref([]) // { blobUrl, filename } guardados en step 1, usados al guardar las metas en step 3
 
 function next() {
   router.push('/insights')
@@ -336,21 +337,7 @@ async function uploadAll() {
       console.log(`[Upload] File uploaded successfully: ${blobUrl}`)
       item.url = blobUrl
       item.status = 'ready'
-      
-      // Trigger enrichment analysis via Azure Function
-      fetch(`${functionBase}/api/mock-analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          blobUrl: item.url, 
-          filename: item.name, 
-          userId: 'local-user',
-          surveyAnswers: answers.value,
-          goals: goalsText.value
-        })
-      }).catch((err) => {
-        console.error('Analysis request failed:', err)
-      })
+      uploadResults.value.push({ blobUrl, filename: item.name })
     } catch (err) {
       console.error(`[Upload Error] ${item.name}:`, err)
       allSuccess = false
@@ -414,9 +401,40 @@ function closeGoals() {
   showGoalsModal.value = false
 }
 
+function parseGoals(text) {
+  return text.split('\n').filter(l => l.trim()).map(line => {
+    const amountMatch = line.match(/[\$€£]?\s?(\d[\d,.]+)/i)
+    const monthsMatch = line.match(/(\d+)\s*mes(?:es)?/i) || line.match(/(\d+)\s*month/i)
+    const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 1000
+    const months = monthsMatch ? parseInt(monthsMatch[1]) : 12
+    const description = (line.split('→')[0]).replace(/[\$€£]\s?\d[\d,.]+.*/, '').trim() || line.trim()
+    return { description, targetAmount: amount, deadlineMonths: months }
+  })
+}
+
 function saveGoals() {
   if (!goalsText.value.trim().length) return
+  const parsedGoals = parseGoals(goalsText.value)
   goalsCompleted.value = true
+
+  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+
+  // Ahora sí tenemos todo: archivos subidos + survey + metas → lanzar análisis
+  for (const uploaded of uploadResults.value) {
+    fetch(`${functionBase}/api/mock-analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        blobUrl: uploaded.blobUrl,
+        filename: uploaded.filename,
+        userId: 'local-user',
+        surveyAnswers: answers.value,
+        goals: parsedGoals
+      })
+    }).catch(err => console.error('Analysis request failed:', err))
+  }
+
   successMessage.value = '✓ Goals saved! All steps complete. Click Next to view your insights.'
   setTimeout(() => {
     showGoalsModal.value = false
