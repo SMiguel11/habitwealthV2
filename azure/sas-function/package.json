@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@azure/cosmos": "^4.9.1",
     "@azure/storage-blob": "^12.14.0"
   }
 }

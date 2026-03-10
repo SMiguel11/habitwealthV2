@@ -11,7 +11,7 @@
         <div v-if="loading" class="flex items-center justify-center h-96">
           <div class="text-center">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
-            <p class="mt-4 text-slate-600">Loading your insights...</p>
+            <p class="mt-4 text-slate-600">{{ loadingMessage }}</p>
           </div>
         </div>
 
@@ -187,6 +187,7 @@ import TrendChart from '../components/TrendChart.vue'
 
 const router = useRouter()
 const loading = ref(true)
+const loadingMessage = ref('Loading your insights...')
 const summary = ref(null)
 const documentCount = ref(0)
 const recentTransactions = ref([])
@@ -207,12 +208,15 @@ async function fetchInsights() {
 onMounted(async () => {
   try {
     let data = await fetchInsights()
-    // If no documents yet (analysis still processing), poll every 5s up to 12 times (~60s)
+    // If no documents yet (analysis still processing), poll every 4s up to 15 times (~60s)
     if (!data.documentCount) {
-      for (let i = 0; i < 12; i++) {
-        await new Promise(r => setTimeout(r, 5000))
+      loadingMessage.value = 'Analyzing your bank statement... This takes about 30 seconds.'
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 4000))
         data = await fetchInsights()
         if (data.documentCount) break
+        if (i === 5) loadingMessage.value = 'Almost there — extracting transactions from your PDF...'
+        if (i === 10) loadingMessage.value = 'Running AI enrichment agents on your data...'
       }
     }
   } catch (e) {

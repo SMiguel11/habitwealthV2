@@ -1,32 +1,30 @@
 /**
  * insights-api/index.js
- * Returns aggregated Digital Twin insights for a userId from local-db.json.
- * In production this queries Cosmos DB (API NoSQL).
+ * Returns aggregated Digital Twin insights for a userId.
+ * Uses Cosmos DB in production, falls back to /tmp JSON locally.
  */
-const fs   = require('fs')
-const path = require('path')
-const os   = require('os')
-
-const DB_PATH = path.join(os.tmpdir(), 'habitwealth-db.json')
-
-function loadDb() {
-  try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')) } catch { return { users: {} } }
-}
+const { getDocuments } = require('../shared/cosmos-db')
 
 module.exports = async function (context, req) {
-  const userId   = req.query.userId || 'local-user'
-  const db       = loadDb()
-  const userData = db.users[userId]
+  const userId = req.query.userId || 'local-user'
+  let docs
+  try {
+    docs = await getDocuments(userId)
+  } catch (err) {
+    context.log.warn('[insights-api] DB read failed: ' + err.message)
+    docs = []
+  }
 
-  if (!userData || !userData.documents.length) {
+  if (!docs || !docs.length) {
     context.res = {
       status: 200,
-      body: { documents: [], summary: null, message: 'No documents analyzed yet.' }
+      body: { documents: [], summary: null, documentCount: 0, message: 'No documents analyzed yet.' }
     }
     return
   }
 
-  const docs      = userData.documents
+  // Sort by analyzedAt ascending for timeline
+  docs.sort((a, b) => (a.analyzedAt || '').localeCompare(b.analyzedAt || ''))
   const latestDoc = docs[docs.length - 1]
   const twin      = latestDoc.agentResult?.agents?.digitalTwin
 

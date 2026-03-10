@@ -3,22 +3,12 @@
  * Extracts transactions from uploaded PDF via Azure Document Intelligence.
  * Falls back to generated mock data if DI credentials are not configured.
  */
-const fs   = require('fs')
-const path = require('path')
 const http = require('http')
 const https = require('https')
-const os   = require('os')
 const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob')
+const { upsertDocument } = require('../shared/cosmos-db')
 
-const DB_PATH          = path.join(os.tmpdir(), 'habitwealth-db.json')
 const ENRICHMENT_AGENT = process.env.ENRICHMENT_AGENT_URL || 'http://127.0.0.1:8001'
-
-function loadDb() {
-  try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')) } catch (e) { return { users: {} } }
-}
-function saveDb(db) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2))
-}
 
 // ── Download blob bytes from Azure Storage ────────────────────────────────────
 async function downloadBlobBuffer(blobUrl) {
@@ -250,24 +240,14 @@ module.exports = async function (context, req) {
     context.log.warn('[mock-analyze] Enrichment Agent unavailable: ' + err.message)
   }
 
-  const db = loadDb()
-  if (!db.users[userId]) db.users[userId] = { documents: [] }
-  const newDoc = {
-    id:         Date.now().toString(),
-    filename:   filename || blobUrl,
+  const docFilename = filename || blobUrl
+  await upsertDocument(userId, docFilename, {
     analyzedAt: new Date().toISOString(),
     transactions,
     agentResult: agentResult || null,
-    insights:   (agentResult && agentResult.summary) ? agentResult.summary : { habitWealthScore: 50, fsiLevel: 'Medium', byCategory: {} }
-  }
-  // Upsert: replace existing document with same filename instead of duplicating
-  const existingIdx = db.users[userId].documents.findIndex(d => d.filename === newDoc.filename)
-  if (existingIdx >= 0) {
-    db.users[userId].documents[existingIdx] = newDoc
-  } else {
-    db.users[userId].documents.push(newDoc)
-  }
-  saveDb(db)
+    insights: (agentResult && agentResult.summary) ? agentResult.summary : { habitWealthScore: 50, fsiLevel: 'Medium', byCategory: {} }
+  })
+  context.log('[mock-analyze] Document saved for ' + docFilename)
 
   context.res = {
     status: 200,
