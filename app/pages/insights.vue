@@ -82,6 +82,41 @@
                 </div>
               </div>
 
+              <!-- Goal Alignment -->
+              <div class="bg-white rounded-lg p-6 shadow">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-lg font-semibold text-slate-900">Your Goals</h2>
+                  <span class="text-sm font-bold px-3 py-1 rounded-full" :class="goalAlignmentScore >= 66 ? 'bg-green-100 text-green-700' : goalAlignmentScore >= 33 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'">
+                    {{ goalAlignmentScore }}% on track
+                  </span>
+                </div>
+                <div v-if="goals.length" class="space-y-4">
+                  <div v-for="(g, idx) in goals" :key="idx" class="border rounded-lg p-4">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="font-medium text-slate-800">🎯 {{ g.goal }}</div>
+                      <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" :class="g.onTrack ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                        {{ g.onTrack ? '✓ On Track' : '✗ Behind' }}
+                      </span>
+                    </div>
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                      <div>Saves monthly: <span class="font-semibold text-slate-800">€{{ g.currentSavings }}</span></div>
+                      <div>Needed monthly: <span class="font-semibold text-slate-800">€{{ g.monthlyNeeded }}</span></div>
+                    </div>
+                    <div v-if="g.projectedMonths" class="mt-1 text-xs text-slate-500">
+                      Projected to reach goal in <span class="font-semibold">{{ g.projectedMonths }} months</span>
+                    </div>
+                    <div v-else class="mt-1 text-xs text-slate-400 italic">No savings detected this period — goal timeline unknown</div>
+                    <!-- Progress bar: current vs needed -->
+                    <div class="mt-2 w-full bg-slate-200 rounded-full h-1.5">
+                      <div class="h-1.5 rounded-full transition-all" :class="g.onTrack ? 'bg-green-500' : 'bg-red-400'" :style="{ width: Math.min(100, g.monthlyNeeded > 0 ? Math.round((g.currentSavings / g.monthlyNeeded) * 100) : 0) + '%' }"></div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-sm text-slate-500">
+                  No goals set yet. Go to <NuxtLink to="/get-started" class="text-cyan-600 underline">Get Started</NuxtLink> to add your saving goals.
+                </div>
+              </div>
+
               <!-- Recent Transactions -->
               <div class="bg-white rounded-lg p-6 shadow">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Recent Transactions</h2>
@@ -195,6 +230,8 @@ const impulseScore = computed(() => {
   return '85'
 })
 const nudges = computed(() => summary.value?.nudges ?? [])
+const goals = computed(() => summary.value?.goals ?? [])
+const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
 const trendSeries = computed(() => {
   const scores = summary.value?.trendScores ?? [50, 55, 60, 65, 70, 75, habitScore.value]
   return [{ name: 'HabitWealth Score', data: scores }]

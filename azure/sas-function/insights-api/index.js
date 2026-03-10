@@ -73,6 +73,8 @@ module.exports = async function (context, req) {
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,
         trendScores,
+        goals: latestDoc.agentResult?.agents?.goalAlignment?.goals || [],
+        goalAlignmentScore: latestDoc.agentResult?.summary?.goalAlignmentScore || 0,
       },
       recentTransactions: (latestDoc.transactions || []).slice(0, 20),
       documents: docs.map(d => ({
