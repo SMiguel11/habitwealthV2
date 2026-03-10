@@ -403,11 +403,23 @@ function closeGoals() {
 
 function parseGoals(text) {
   return text.split('\n').filter(l => l.trim()).map(line => {
-    const amountMatch = line.match(/[\$€£]?\s?(\d[\d,.]+)/i)
-    const monthsMatch = line.match(/(\d+)\s*mes(?:es)?/i) || line.match(/(\d+)\s*month/i)
-    const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 1000
-    const months = monthsMatch ? parseInt(monthsMatch[1]) : 12
-    const description = (line.split('→')[0]).replace(/[\$€£]\s?\d[\d,.]+.*/, '').trim() || line.trim()
+    // Detect "X al mes" or "X/mes" or "X monthly" pattern — means monthly savings
+    const monthlyMatch = line.match(/([\$€£]?\s?[\d,.]+)\s*(?:\/mes|al mes|\/month|monthly)/i)
+    const amountMatch  = line.match(/[\$€£]?\s?(\d[\d,.]+)/i)
+    const monthsMatch  = line.match(/(\d+)\s*mes(?:es)?/i) || line.match(/(\d+)\s*month/i)
+
+    let amount, months, description
+    if (monthlyMatch) {
+      // "ahorrar 100 al mes" → save €100/month for 12 months → target €1200
+      const monthly = parseFloat(monthlyMatch[1].replace(/[\$€£\s]/g, '').replace(/,/g, ''))
+      months = monthsMatch ? parseInt(monthsMatch[1]) : 12
+      amount = monthly * months
+      description = line.replace(/[\$€£]?\s?[\d,.]+.*/, '').trim() || line.trim()
+    } else {
+      amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 1000
+      months = monthsMatch ? parseInt(monthsMatch[1]) : 12
+      description = (line.split('→')[0]).replace(/[\$€£]\s?\d[\d,.]+.*/, '').trim() || line.trim()
+    }
     return { description, targetAmount: amount, deadlineMonths: months }
   })
 }
