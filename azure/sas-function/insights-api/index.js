@@ -7,7 +7,7 @@ const { getDocuments } = require('../shared/cosmos-db')
 
 module.exports = async function (context, req) {
   const userId = req.query.userId || 'local-user'
-  let docs
+  let docs  // let so we can reassign after dedup
   try {
     docs = await getDocuments(userId)
   } catch (err) {
@@ -22,6 +22,17 @@ module.exports = async function (context, req) {
     }
     return
   }
+
+  // Deduplicate by filename — keep latest per filename to handle duplicate uploads
+  const seenFilenames = new Map()
+  for (const doc of docs) {
+    const key = doc.filename || doc.id
+    const existing = seenFilenames.get(key)
+    if (!existing || (doc.analyzedAt || '') > (existing.analyzedAt || '')) {
+      seenFilenames.set(key, doc)
+    }
+  }
+  docs = Array.from(seenFilenames.values())
 
   // Sort by analyzedAt ascending for timeline
   docs.sort((a, b) => (a.analyzedAt || '').localeCompare(b.analyzedAt || ''))
