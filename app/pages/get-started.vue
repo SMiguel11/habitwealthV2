@@ -188,8 +188,8 @@
     </div>
 
     <!-- Goals Modal Overlay -->
-    <div v-if="showGoalsModal" @click.self="closeGoals" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
-      <div class="group relative w-[520px]">
+    <div v-if="showGoalsModal" @click.self="closeGoals" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" role="dialog" aria-modal="true" aria-labelledby="goals-title">
+      <div class="group relative w-[540px] max-h-[90vh] overflow-y-auto">
         <div class="relative overflow-hidden rounded-2xl bg-slate-950 shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-cyan-500/10">
           <div class="absolute -left-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-br from-cyan-500/20 to-sky-500/0 blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-70"></div>
           <div class="absolute -right-16 -bottom-16 h-32 w-32 rounded-full bg-gradient-to-br from-sky-500/20 to-cyan-500/0 blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-70"></div>
@@ -197,26 +197,69 @@
           <div class="relative p-6">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-lg font-semibold text-white">Smart Financial Goals</h3>
+                <h3 id="goals-title" class="text-lg font-semibold text-white">🎯 Smart Financial Goals</h3>
+                <p class="text-sm text-slate-400 mt-1">Define your savings goals to track progress</p>
               </div>
-              <button @click="closeGoals" class="rounded-lg bg-transparent p-2 text-slate-400 hover:text-white">✕</button>
+              <button @click="closeGoals" aria-label="Close goals dialog" class="rounded-lg bg-transparent p-2 text-slate-400 hover:text-white transition-colors">✕</button>
             </div>
 
-            <div class="mt-4">
-              <textarea v-model="goalsText" placeholder="Write your financial goal here (e.g.: Buy a laptop → $1,200 in 6 months)" class="w-full min-h-[100px] rounded-lg p-4 bg-slate-800 text-white placeholder:text-slate-400" />
+            <!-- Goal entries -->
+            <div class="mt-5 space-y-4">
+              <div v-for="(goal, idx) in goalEntries" :key="idx" class="rounded-xl bg-slate-900/80 border border-slate-700/50 p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Goal {{ idx + 1 }}</span>
+                  <button v-if="goalEntries.length > 1" @click="removeGoalEntry(idx)" aria-label="Remove goal" class="text-slate-500 hover:text-red-400 text-sm transition-colors">✕</button>
+                </div>
+
+                <!-- Goal description -->
+                <div>
+                  <label :for="'goal-desc-' + idx" class="block text-xs font-medium text-slate-400 mb-1">What do you want to achieve?</label>
+                  <input :id="'goal-desc-' + idx" v-model="goal.description" type="text" placeholder="e.g. Buy a motorcycle, Emergency fund, Vacation..." class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all" />
+                </div>
+
+                <!-- Amount -->
+                <div>
+                  <label :for="'goal-amt-' + idx" class="block text-xs font-medium text-slate-400 mb-1">Target amount</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
+                    <input :id="'goal-amt-' + idx" v-model.number="goal.targetAmount" type="number" min="1" step="50" placeholder="1200" class="w-full rounded-lg bg-slate-800 border border-slate-700 pl-8 pr-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all" />
+                  </div>
+                </div>
+
+                <!-- Timeline: tabs months / years -->
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Timeline</label>
+                  <div class="flex items-center gap-2">
+                    <!-- Months/Years tab toggle -->
+                    <div class="flex rounded-lg bg-slate-800 border border-slate-700 p-0.5" role="tablist" aria-label="Time unit selector">
+                      <button @click="goal.timeUnit = 'months'" role="tab" :aria-selected="goal.timeUnit === 'months'" :class="['px-3 py-1.5 rounded-md text-xs font-medium transition-all', goal.timeUnit === 'months' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white']">Months</button>
+                      <button @click="goal.timeUnit = 'years'" role="tab" :aria-selected="goal.timeUnit === 'years'" :class="['px-3 py-1.5 rounded-md text-xs font-medium transition-all', goal.timeUnit === 'years' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white']">Years</button>
+                    </div>
+                    <!-- Time value input -->
+                    <input :id="'goal-time-' + idx" v-model.number="goal.timeValue" type="number" min="1" :max="goal.timeUnit === 'months' ? 120 : 10" :placeholder="goal.timeUnit === 'months' ? '12' : '1'" class="w-20 rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white text-center placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all" />
+                    <span class="text-xs text-slate-400">{{ goal.timeUnit }}</span>
+                  </div>
+                </div>
+
+                <!-- Summary preview -->
+                <div v-if="goal.description && goal.targetAmount && goal.timeValue" class="rounded-lg bg-slate-800/50 border border-slate-700/30 px-3 py-2 text-xs text-slate-300">
+                  💡 Save <span class="text-cyan-400 font-semibold">€{{ Math.round(goal.targetAmount / (goal.timeUnit === 'years' ? goal.timeValue * 12 : goal.timeValue)) }}/month</span> to reach <span class="text-white font-semibold">€{{ goal.targetAmount }}</span> in <span class="text-white font-semibold">{{ goal.timeValue }} {{ goal.timeUnit }}</span>
+                </div>
+              </div>
             </div>
 
-            <div class="mt-4 text-sm text-slate-300">
-              <div class="font-semibold text-slate-200">EXAMPLES:</div>
-              <ul class="list-disc ml-5 mt-2 space-y-1">
-                <li>BUY A LAPTOP → $1,200 IN 6 MONTHS</li>
-                <li>BUY A MOTORCYCLE → $4,500 IN 12 MONTHS</li>
-                <li>SAVE $100 MONTHLY.</li>
-              </ul>
-            </div>
+            <!-- Add another goal -->
+            <button @click="addGoalEntry" class="mt-4 flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+              <span class="w-6 h-6 rounded-full border border-cyan-500/50 flex items-center justify-center text-xs">+</span>
+              Add another goal
+            </button>
 
-            <div class="mt-6 flex justify-center">
-              <button @click="saveGoals" :disabled="!goalsText.trim().length" :class="['w-14 h-14 rounded-full text-white flex items-center justify-center', goalsText.trim().length ? 'bg-green-500' : 'bg-gray-600 cursor-not-allowed']">»</button>
+            <!-- Submit -->
+            <div class="mt-6 flex justify-end gap-3">
+              <button @click="closeGoals" class="rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors">Cancel</button>
+              <button @click="saveGoals" :disabled="!isGoalFormValid" :class="['rounded-xl px-5 py-2.5 text-sm font-medium transition-all', isGoalFormValid ? 'bg-gradient-to-r from-cyan-500 to-sky-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40' : 'bg-gray-700 text-gray-400 cursor-not-allowed']">
+                Save Goals
+              </button>
             </div>
           </div>
         </div>
@@ -262,9 +305,18 @@ const answers = ref(Array(surveyQuestions.length).fill(null))
 const surveyCompleted = ref(false)
 const isSurveyComplete = computed(() => answers.value.every(a => a !== null))
 const showGoalsModal = ref(false)
-const goalsText = ref('')
+const goalEntries = ref([{ description: '', targetAmount: null, timeValue: null, timeUnit: 'months' }])
 const goalsCompleted = ref(false)
-const uploadResults = ref([]) // { blobUrl, filename } guardados en step 1, usados al guardar las metas en step 3
+const uploadResults = ref([])
+const isGoalFormValid = computed(() => goalEntries.value.some(g => g.description.trim() && g.targetAmount > 0 && g.timeValue > 0))
+
+function addGoalEntry() {
+  goalEntries.value.push({ description: '', targetAmount: null, timeValue: null, timeUnit: 'months' })
+}
+
+function removeGoalEntry(idx) {
+  goalEntries.value.splice(idx, 1)
+} // { blobUrl, filename } guardados en step 1, usados al guardar las metas en step 3
 
 function next() {
   router.push('/insights')
@@ -401,32 +453,15 @@ function closeGoals() {
   showGoalsModal.value = false
 }
 
-function parseGoals(text) {
-  return text.split('\n').filter(l => l.trim()).map(line => {
-    // Detect "X al mes" or "X/mes" or "X mensual" or "X monthly" pattern — means monthly savings
-    const monthlyMatch = line.match(/([\$€£]?\s?[\d,.]+)\s*(?:\/mes|al mes|mensual(?:es)?|\/month|monthly)/i)
-    const amountMatch  = line.match(/[\$€£]?\s?(\d[\d,.]+)/i)
-    const monthsMatch  = line.match(/(\d+)\s*mes(?:es)?/i) || line.match(/(\d+)\s*month/i)
-
-    let amount, months, description
-    if (monthlyMatch) {
-      // "ahorrar 100 al mes" → save €100/month for 12 months → target €1200
-      const monthly = parseFloat(monthlyMatch[1].replace(/[\$€£\s]/g, '').replace(/,/g, ''))
-      months = monthsMatch ? parseInt(monthsMatch[1]) : 12
-      amount = monthly * months
-      description = line.replace(/[\$€£]?\s?[\d,.]+.*/, '').trim() || line.trim()
-    } else {
-      amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 1000
-      months = monthsMatch ? parseInt(monthsMatch[1]) : 12
-      description = (line.split('→')[0]).replace(/[\$€£]\s?\d[\d,.]+.*/, '').trim() || line.trim()
-    }
-    return { description, targetAmount: amount, deadlineMonths: months }
-  })
-}
-
 function saveGoals() {
-  if (!goalsText.value.trim().length) return
-  const parsedGoals = parseGoals(goalsText.value)
+  const parsedGoals = goalEntries.value
+    .filter(g => g.description.trim() && g.targetAmount > 0 && g.timeValue > 0)
+    .map(g => ({
+      description: g.description.trim(),
+      targetAmount: g.targetAmount,
+      deadlineMonths: g.timeUnit === 'years' ? g.timeValue * 12 : g.timeValue
+    }))
+  if (!parsedGoals.length) return
   goalsCompleted.value = true
 
   const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
