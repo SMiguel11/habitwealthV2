@@ -156,7 +156,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <h3 class="text-lg font-semibold text-white">Tell us about your spending habits</h3>
-                <p class="text-sm text-slate-400">Responde la siguiente encuesta para continuar</p>
+                <p class="text-sm text-slate-400">Answer the following survey to continue</p>
               </div>
               <button @click="closeSurvey" class="rounded-lg bg-transparent p-2 text-slate-400 hover:text-white">✕</button>
             </div>
@@ -179,8 +179,8 @@
             </div>
 
             <div class="mt-6 flex justify-end gap-3">
-              <button @click="closeSurvey" class="rounded-xl bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800">Cancelar</button>
-              <button :disabled="!isSurveyComplete" @click="submitSurvey" :class="['rounded-xl px-4 py-2 font-medium', isSurveyComplete ? 'bg-cyan-500 text-white' : 'bg-gray-600 text-gray-300 cursor-not-allowed']">Enviar</button>
+              <button @click="closeSurvey" class="rounded-xl bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800">Cancel</button>
+              <button :disabled="!isSurveyComplete" @click="submitSurvey" :class="['rounded-xl px-4 py-2 font-medium', isSurveyComplete ? 'bg-cyan-500 text-white' : 'bg-gray-600 text-gray-300 cursor-not-allowed']">Submit</button>
             </div>
           </div>
         </div>
@@ -197,21 +197,21 @@
           <div class="relative p-6">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-lg font-semibold text-white">Metas financieras inteligentes</h3>
+                <h3 class="text-lg font-semibold text-white">Smart Financial Goals</h3>
               </div>
               <button @click="closeGoals" class="rounded-lg bg-transparent p-2 text-slate-400 hover:text-white">✕</button>
             </div>
 
             <div class="mt-4">
-              <textarea v-model="goalsText" placeholder="Escribe aquí tu meta financiera (ej: Comprar computadora → $1,200 en 6 meses)" class="w-full min-h-[100px] rounded-lg p-4 bg-slate-800 text-white placeholder:text-slate-400" />
+              <textarea v-model="goalsText" placeholder="Write your financial goal here (e.g.: Buy a laptop → $1,200 in 6 months)" class="w-full min-h-[100px] rounded-lg p-4 bg-slate-800 text-white placeholder:text-slate-400" />
             </div>
 
             <div class="mt-4 text-sm text-slate-300">
-              <div class="font-semibold text-slate-200">EJEMPLOS:</div>
+              <div class="font-semibold text-slate-200">EXAMPLES:</div>
               <ul class="list-disc ml-5 mt-2 space-y-1">
-                <li>COMPRAR COMPUTADORA → $1,200 EN 6 MESES</li>
-                <li>COMPRAR MOTO → $4,500 EN 12 MESES</li>
-                <li>AHORRO DE $100 MENSUAL.</li>
+                <li>BUY A LAPTOP → $1,200 IN 6 MONTHS</li>
+                <li>BUY A MOTORCYCLE → $4,500 IN 12 MONTHS</li>
+                <li>SAVE $100 MONTHLY.</li>
               </ul>
             </div>
 
@@ -242,20 +242,20 @@ const errorMessage = ref('')
 const SAS_API = '/api/sas-function'
 const showSurveyModal = ref(false)
 const surveyQuestions = [
-  'Cuando estoy estresado, tiendo a comprar cosas que no necesito.',
-  'Suelo gastar más cuando me siento emocionalmente agotado.',
-  'Reviso mi saldo antes de hacer compras importantes.',
-  'Me genera ansiedad ver mis gastos acumulados.',
-  'Prefiero pagar con tarjeta aunque tenga dinero disponible.',
+  'When I\'m stressed, I tend to buy things I don\'t need.',
+  'I usually spend more when I feel emotionally drained.',
+  'I check my balance before making major purchases.',
+  'Seeing my accumulated expenses makes me anxious.',
+  'I prefer paying by card even when I have cash available.',
   {
     type: 'choices',
-    question: '¿Qué emociones suelen acompañar tus compras impulsivas?',
-    options: ['Estrés','Aburrimiento','Recompensa','Presión social','No lo sé']
+    question: 'What emotions usually accompany your impulse purchases?',
+    options: ['Stress','Boredom','Reward','Social pressure','I don\'t know']
   },
   {
     type: 'choices',
-    question: '¿En qué momento del mes sientes más presión financiera?',
-    options: ['Inicio','Mitad','Final']
+    question: 'At what point in the month do you feel the most financial pressure?',
+    options: ['Beginning','Middle','End']
   }
 ]
 const answers = ref(Array(surveyQuestions.length).fill(null))
