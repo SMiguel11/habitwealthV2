@@ -223,10 +223,9 @@ onMounted(async () => {
 const habitScore = computed(() => summary.value?.habitWealthScore ?? 76)
 const fsiLevel = computed(() => {
   const fsi = summary.value?.fsiLevel
-  if (fsi === 'High') return '75-100'
-  if (fsi === 'Medium') return '40-74'
-  if (fsi === 'Low') return '0-39'
-  return '0-39'
+  if (fsi === 'High') return 87
+  if (fsi === 'Medium') return 57
+  return 20
 })
 const totalSpent = computed(() => {
   const total = summary.value?.totalExpenses ?? 0
