@@ -39,7 +39,7 @@ textarea {
 }
 
 .bg-hero-image {
-  background-image: url('/images/bg-hero.webp');
+  background-image: url('/images/ai.webp');
   background-size: cover;
   background-position: center;
   background-attachment: fixed; /* parallax suave */

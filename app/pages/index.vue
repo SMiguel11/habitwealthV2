@@ -4,7 +4,7 @@
     <!-- ── Background image + overlay ── -->
     <div aria-hidden="true" class="pointer-events-none absolute inset-0">
       <!-- Hero image -->
-      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style="background-image:url('/images/bg-hero2.webp')"></div>
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style="background-image:url('/images/ai.webp')"></div>
       <!-- Dark overlay: preserves readability and blends with dark theme -->
       <div class="absolute inset-0 bg-slate-950/75"></div>
     </div>
