@@ -11,7 +11,7 @@
 
     <!-- Logo top-left -->
     <div class="absolute top-6 left-6 flex items-center gap-2.5">
-      <AppLogo class="h-7 w-auto" />
+      <AppLogo class="h-9 w-auto" />
       <span class="text-sm font-bold text-white hidden sm:block">Habit<span class="text-emerald-400">Wealth</span></span>
     </div>
 

@@ -13,7 +13,7 @@
     <header class="sticky top-0 z-50 w-full border-b border-white/[0.05] bg-slate-950/70 backdrop-blur-xl">
       <div class="max-w-5xl mx-auto px-6 h-[60px] flex items-center justify-between">
         <NuxtLink to="/" class="flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-          <AppLogo class="h-7 w-auto" />
+          <AppLogo class="h-9 w-auto" />
           <span class="text-sm font-bold text-white hidden sm:block">Habit<span class="text-emerald-400">Wealth</span></span>
         </NuxtLink>
         <NuxtLink to="/" class="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors">
