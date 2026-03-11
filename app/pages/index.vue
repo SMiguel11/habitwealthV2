@@ -121,65 +121,98 @@
         <!-- Glow behind card -->
         <div aria-hidden="true" class="absolute inset-0 m-auto w-72 h-72 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none"></div>
 
-        <!-- Main card -->
-        <div class="relative w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md p-6 shadow-2xl shadow-black/60">
+        <!-- 3D perspective wrapper -->
+        <div class="[perspective:1500px] relative w-full max-w-sm">
 
-          <!-- Card header -->
-          <div class="flex items-center justify-between mb-5">
-            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{{ t('card_score_title') }}</span>
-            <span class="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> {{ t('card_live') }}
-            </span>
+          <!-- Invisible 3×3 hover zones -->
+          <div aria-hidden="true" class="absolute inset-0 z-30 grid grid-cols-3 grid-rows-3 pointer-events-auto">
+            <div class="peer/tl"></div>
+            <div class="peer/tc"></div>
+            <div class="peer/tr"></div>
+            <div class="peer/ml"></div>
+            <div class="peer/cc"></div>
+            <div class="peer/mr"></div>
+            <div class="peer/bl"></div>
+            <div class="peer/bc"></div>
+            <div class="peer/br"></div>
           </div>
 
-          <!-- Score display -->
-          <div class="flex items-end gap-2 mb-1">
-            <span class="text-[64px] font-black text-white leading-none tracking-tighter">84</span>
-            <span class="text-2xl text-slate-600 font-semibold mb-2">/100</span>
-          </div>
-          <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold mb-6">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-            </svg>
-            {{ t('card_trend') }}
-          </div>
+          <!-- Card with 3D tilt -->
+          <div class="card-tilt transition-all duration-300 ease-out [transform-style:preserve-3d]
+            peer-hover/tl:[transform:rotateX(8deg)_rotateY(-8deg)_scale(1.03)]
+            peer-hover/tc:[transform:rotateX(10deg)_rotateY(0deg)_scale(1.03)]
+            peer-hover/tr:[transform:rotateX(8deg)_rotateY(8deg)_scale(1.03)]
+            peer-hover/ml:[transform:rotateX(0deg)_rotateY(-10deg)_scale(1.03)]
+            peer-hover/cc:[transform:rotateX(0deg)_rotateY(0deg)_scale(1.05)]
+            peer-hover/mr:[transform:rotateX(0deg)_rotateY(10deg)_scale(1.03)]
+            peer-hover/bl:[transform:rotateX(-8deg)_rotateY(-8deg)_scale(1.03)]
+            peer-hover/bc:[transform:rotateX(-10deg)_rotateY(0deg)_scale(1.03)]
+            peer-hover/br:[transform:rotateX(-8deg)_rotateY(8deg)_scale(1.03)]
+          ">
+            <!-- Main card -->
+            <div class="card-inner relative rounded-2xl bg-slate-900/95 backdrop-blur-md p-6 overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_80px_rgba(16,185,129,0.08)]">
+              <!-- Inner shimmer -->
+              <div aria-hidden="true" class="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-white/[0.02] pointer-events-none"></div>
 
-          <!-- Category breakdown -->
-          <div class="space-y-2.5 mb-6">
-            <div v-for="cat in previewCategories" :key="cat.name" class="flex items-center gap-3">
-              <span class="text-xs text-slate-500 w-16 shrink-0">{{ cat.name }}</span>
-              <div class="flex-1 bg-white/[0.05] rounded-full h-1.5">
-                <div class="h-1.5 rounded-full transition-all" :class="cat.color" :style="{ width: cat.pct }"></div>
+              <!-- Card header -->
+              <div class="relative flex items-center justify-between mb-5">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{{ t('card_score_title') }}</span>
+                <span class="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> {{ t('card_live') }}
+                </span>
               </div>
-              <span class="text-xs text-slate-300 font-medium w-12 text-right">{{ cat.amount }}</span>
+
+              <!-- Score display -->
+              <div class="relative flex items-end gap-2 mb-1">
+                <span class="text-[64px] font-black text-white leading-none tracking-tighter">84</span>
+                <span class="text-2xl text-slate-600 font-semibold mb-2">/100</span>
+              </div>
+              <div class="relative flex items-center gap-1.5 text-xs text-emerald-400 font-semibold mb-6">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                </svg>
+                {{ t('card_trend') }}
+              </div>
+
+              <!-- Category breakdown -->
+              <div class="relative space-y-2.5 mb-6">
+                <div v-for="cat in previewCategories" :key="cat.name" class="flex items-center gap-3">
+                  <span class="text-xs text-slate-500 w-16 shrink-0">{{ cat.name }}</span>
+                  <div class="flex-1 bg-white/[0.05] rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full transition-all" :class="cat.color" :style="{ width: cat.pct }"></div>
+                  </div>
+                  <span class="text-xs text-slate-300 font-medium w-12 text-right">{{ cat.amount }}</span>
+                </div>
+              </div>
+
+              <!-- Goal row -->
+              <div class="relative rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold text-white">🎯 {{ t('card_goal_name') }}</span>
+                  <span class="text-xs font-bold text-emerald-400">40%</span>
+                </div>
+                <div class="w-full bg-white/[0.06] rounded-full h-1.5 mb-2">
+                  <div class="w-2/5 h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+                </div>
+                <p class="text-[11px] text-slate-500">{{ t('card_goal_detail') }}</p>
+              </div>
             </div>
           </div>
 
-          <!-- Goal row -->
-          <div class="rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 p-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-white">🎯 {{ t('card_goal_name') }}</span>
-              <span class="text-xs font-bold text-emerald-400">40%</span>
-            </div>
-            <div class="w-full bg-white/[0.06] rounded-full h-1.5 mb-2">
-              <div class="w-2/5 h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"></div>
-            </div>
-            <p class="text-[11px] text-slate-500">{{ t('card_goal_detail') }}</p>
+          <!-- Floating badge: top-right -->
+          <div aria-hidden="true" class="absolute -top-3 -right-3 z-40 bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/30 tracking-wide">
+            {{ t('card_ai_badge') }}
           </div>
-        </div>
 
-        <!-- Floating badge: top-right -->
-        <div aria-hidden="true" class="absolute -top-3 -right-3 lg:right-0 bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/30 tracking-wide">
-          {{ t('card_ai_badge') }}
-        </div>
-
-        <!-- Floating notification: bottom-left -->
-        <div aria-hidden="true" class="absolute -bottom-5 -left-3 lg:-left-8 hidden sm:flex items-center gap-3 bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50">
-          <div class="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-base shrink-0">💡</div>
-          <div>
-            <p class="text-[11px] font-bold text-white leading-tight">{{ t('card_notif_title') }}</p>
-            <p class="text-[11px] text-slate-500 leading-tight">{{ t('card_notif_body') }}</p>
+          <!-- Floating notification: bottom-left -->
+          <div aria-hidden="true" class="absolute -bottom-5 -left-3 lg:-left-8 z-40 hidden sm:flex items-center gap-3 bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50">
+            <div class="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-base shrink-0">💡</div>
+            <div>
+              <p class="text-[11px] font-bold text-white leading-tight">{{ t('card_notif_title') }}</p>
+              <p class="text-[11px] text-slate-500 leading-tight">{{ t('card_notif_body') }}</p>
+            </div>
           </div>
+
         </div>
       </div>
     </section>
@@ -355,5 +388,48 @@ function start() {
   border-radius: 1rem;
   z-index: -1;
   background: linear-gradient(160deg, rgba(96,165,250,.22) -50%, rgba(96,165,250,.04) 100%);
+}
+
+/* ── 3D tilt product card with spinning conic border ── */
+.card-tilt {
+  position: relative;
+}
+
+/* Spinning border layer */
+.card-tilt::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 1.125rem;
+  background: conic-gradient(from 0deg at 50% 50%, #10b981 0%, #06b6d4 25%, #6366f1 50%, #8b5cf6 65%, #10b981 100%);
+  animation: card-border-hue 4s linear infinite;
+  z-index: 0;
+}
+
+/* Glow halo behind the card */
+.card-tilt::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 1.5rem;
+  background: conic-gradient(from 0deg at 50% 50%, #10b981 0%, #06b6d4 25%, #6366f1 50%, #8b5cf6 65%, #10b981 100%);
+  animation: card-border-hue-glow 4s linear infinite;
+  opacity: 0.35;
+  z-index: -1;
+}
+
+/* Card inner content — sits above the conic border */
+.card-inner {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes card-border-hue {
+  to { filter: hue-rotate(360deg); }
+}
+
+@keyframes card-border-hue-glow {
+  from { filter: blur(18px) hue-rotate(0deg); }
+  to   { filter: blur(18px) hue-rotate(360deg); }
 }
 </style>
