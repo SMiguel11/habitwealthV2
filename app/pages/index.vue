@@ -210,7 +210,11 @@
         <div aria-hidden="true" class="hidden md:block absolute top-10 left-1/3 right-1/3 h-px bg-gradient-to-r from-blue-400/30 via-pink-400/30 to-emerald-400/30"></div>
 
         <!-- Card 1 -->
-        <div class="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm p-7 hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300">
+        <div
+          class="group relative rounded-2xl backdrop-blur-sm p-7 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300"
+          style="background-color:#060c1a;background-image:radial-gradient(at 88% 40%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 49% 30%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 14% 26%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 0% 64%,hsla(210,100%,56%,.6) 0px,transparent 85%),radial-gradient(at 41% 94%,hsla(195,100%,80%,.4) 0px,transparent 85%),radial-gradient(at 100% 99%,hsla(224,100%,70%,.5) 0px,transparent 85%);box-shadow:0px -16px 24px 0px rgba(255,255,255,.07) inset;"
+        >
+          <div class="step-border"></div>
           <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"></div>
           <div class="flex items-center justify-between mb-6">
             <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-500/15 transition-all duration-300">
@@ -218,10 +222,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
             </div>
-            <span class="text-4xl font-black text-white/[0.04] select-none tabular-nums">01</span>
+            <span class="text-4xl font-black text-white/[0.04] group-hover:text-white/[0.15] select-none tabular-nums transition-all duration-300">01</span>
           </div>
           <h3 class="text-base font-bold text-white mb-2.5">{{ t('card1_title') }}</h3>
-          <p class="text-sm text-slate-500 leading-relaxed">{{ t('card1_desc') }}</p>
+          <p class="text-sm text-slate-400 leading-relaxed">{{ t('card1_desc') }}</p>
           <div class="mt-5 flex items-center gap-1.5 text-xs text-blue-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <span>{{ t('card1_link') }}</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
@@ -229,39 +233,47 @@
         </div>
 
         <!-- Card 2 -->
-        <div class="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm p-7 hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300">
-          <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-pink-400/60 to-transparent"></div>
+        <div
+          class="group relative rounded-2xl backdrop-blur-sm p-7 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300"
+          style="background-color:#060c1a;background-image:radial-gradient(at 88% 40%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 49% 30%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 14% 26%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 0% 64%,hsla(210,100%,56%,.6) 0px,transparent 85%),radial-gradient(at 41% 94%,hsla(195,100%,80%,.4) 0px,transparent 85%),radial-gradient(at 100% 99%,hsla(224,100%,70%,.5) 0px,transparent 85%);box-shadow:0px -16px 24px 0px rgba(255,255,255,.07) inset;"
+        >
+          <div class="step-border"></div>
+          <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"></div>
           <div class="flex items-center justify-between mb-6">
-            <div class="w-11 h-11 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-pink-500/15 transition-all duration-300">
-              <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+            <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-500/15 transition-all duration-300">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
               </svg>
             </div>
-            <span class="text-4xl font-black text-white/[0.04] select-none tabular-nums">02</span>
+            <span class="text-4xl font-black text-white/[0.04] group-hover:text-white/[0.15] select-none tabular-nums transition-all duration-300">02</span>
           </div>
           <h3 class="text-base font-bold text-white mb-2.5">{{ t('card2_title') }}</h3>
-          <p class="text-sm text-slate-500 leading-relaxed">{{ t('card2_desc') }}</p>
-          <div class="mt-5 flex items-center gap-1.5 text-xs text-pink-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <p class="text-sm text-slate-400 leading-relaxed">{{ t('card2_desc') }}</p>
+          <div class="mt-5 flex items-center gap-1.5 text-xs text-blue-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <span>{{ t('card2_link') }}</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </div>
         </div>
 
         <!-- Card 3 -->
-        <div class="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm p-7 hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300">
-          <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent"></div>
+        <div
+          class="group relative rounded-2xl backdrop-blur-sm p-7 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300"
+          style="background-color:#060c1a;background-image:radial-gradient(at 88% 40%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 49% 30%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 14% 26%,hsla(222,47%,6%,1) 0px,transparent 85%),radial-gradient(at 0% 64%,hsla(210,100%,56%,.6) 0px,transparent 85%),radial-gradient(at 41% 94%,hsla(195,100%,80%,.4) 0px,transparent 85%),radial-gradient(at 100% 99%,hsla(224,100%,70%,.5) 0px,transparent 85%);box-shadow:0px -16px 24px 0px rgba(255,255,255,.07) inset;"
+        >
+          <div class="step-border"></div>
+          <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"></div>
           <div class="flex items-center justify-between mb-6">
-            <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-500/15 transition-all duration-300">
-              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+            <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-500/15 transition-all duration-300">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
               </svg>
             </div>
-            <span class="text-4xl font-black text-white/[0.04] select-none tabular-nums">03</span>
+            <span class="text-4xl font-black text-white/[0.04] group-hover:text-white/[0.15] select-none tabular-nums transition-all duration-300">03</span>
           </div>
           <h3 class="text-base font-bold text-white mb-2.5">{{ t('card3_title') }}</h3>
-          <p class="text-sm text-slate-500 leading-relaxed">{{ t('card3_desc') }}</p>
-          <div class="mt-5 flex items-center gap-1.5 text-xs text-emerald-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <p class="text-sm text-slate-400 leading-relaxed">{{ t('card3_desc') }}</p>
+          <div class="mt-5 flex items-center gap-1.5 text-xs text-blue-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <span>{{ t('card3_link') }}</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </div>
@@ -325,3 +337,15 @@ function start() {
   router.push({ path: '/get-started', query: { name: name.value } })
 }
 </script>
+
+<style scoped>
+/* ── Static gradient border for step cards ── */
+.step-border {
+  pointer-events: none;
+  position: absolute;
+  inset: -1px;
+  border-radius: 1rem;
+  z-index: -1;
+  background: linear-gradient(160deg, rgba(96,165,250,.22) -50%, rgba(96,165,250,.04) 100%);
+}
+</style>
