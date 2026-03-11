@@ -18,7 +18,7 @@
         </NuxtLink>
         <NuxtLink to="/" class="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
-          Back
+          {{ t('gs_back') }}
         </NuxtLink>
       </div>
     </header>
@@ -30,19 +30,19 @@
       <div class="text-center mb-12">
         <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-400 text-xs font-semibold tracking-widest uppercase mb-6">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          3 steps · 2 minutes
+          {{ t('gs_badge') }}
         </div>
         <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-3">
-          <span class="text-white">Welcome, </span><span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent">{{ userName }}</span>
+          <span class="text-white">{{ t('gs_welcome') }} </span><span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent">{{ userName }}</span>
         </h1>
-        <p class="text-slate-500 text-base max-w-sm mx-auto leading-relaxed">Complete these steps to unlock your personalized financial intelligence dashboard.</p>
+        <p class="text-slate-500 text-base max-w-sm mx-auto leading-relaxed">{{ t('gs_subtitle') }}</p>
       </div>
 
       <!-- Progress -->
       <div class="mb-12 max-w-md mx-auto">
         <div class="flex items-center justify-between text-xs mb-2">
-          <span class="text-slate-600">Progress</span>
-          <span class="text-emerald-400 font-semibold">{{ completedCount }}/3 complete</span>
+          <span class="text-slate-600">{{ t('gs_progress') }}</span>
+          <span class="text-emerald-400 font-semibold">{{ completedCount }}{{ t('gs_of_complete') }}</span>
         </div>
         <div class="w-full bg-white/[0.05] rounded-full h-1">
           <div class="h-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700" :style="{ width: progressPct + '%' }"></div>
@@ -70,7 +70,7 @@
               <span v-else>01</span>
             </div>
             <span :class="['text-[10px] font-bold uppercase tracking-widest', uploadCompleted ? 'text-emerald-400' : 'text-slate-700']">
-              {{ uploadCompleted ? 'Done' : 'Required' }}
+              {{ uploadCompleted ? t('gs_done') : t('gs_required') }}
             </span>
           </div>
 
@@ -79,12 +79,12 @@
             <svg class="w-6 h-6" :class="uploadCompleted ? 'text-emerald-400' : 'text-blue-400'" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
           </div>
 
-          <h3 class="text-sm font-bold text-white mb-1.5">Upload Bank Statements</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">Securely import your last 3 months of PDF statements. Encrypted in transit.</p>
+          <h3 class="text-sm font-bold text-white mb-1.5">{{ t('gs_step1_title') }}</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">{{ t('gs_step1_desc') }}</p>
 
           <div class="mt-5 flex items-center gap-1.5 text-xs font-semibold transition-opacity duration-300"
             :class="uploadCompleted ? 'text-emerald-400 opacity-100' : 'text-blue-400 opacity-0 group-hover:opacity-100'">
-            <span>{{ uploadCompleted ? 'View uploads' : 'Upload files' }}</span>
+            <span>{{ uploadCompleted ? t('gs_step1_done_cta') : t('gs_step1_cta') }}</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
           </div>
         </div>
@@ -110,7 +110,7 @@
               <span v-else>02</span>
             </div>
             <span :class="['text-[10px] font-bold uppercase tracking-widest', surveyCompleted ? 'text-emerald-400' : !uploadCompleted ? 'text-slate-800' : 'text-slate-700']">
-              {{ surveyCompleted ? 'Done' : !uploadCompleted ? 'Locked' : 'Required' }}
+              {{ surveyCompleted ? t('gs_done') : !uploadCompleted ? t('gs_locked') : t('gs_required') }}
             </span>
           </div>
 
@@ -119,12 +119,12 @@
             <svg class="w-6 h-6" :class="surveyCompleted ? 'text-emerald-400' : 'text-pink-400'" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
           </div>
 
-          <h3 class="text-sm font-bold text-white mb-1.5">Behavioral Survey</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">7 quick questions to model your emotional spending patterns.</p>
+          <h3 class="text-sm font-bold text-white mb-1.5">{{ t('gs_step2_title') }}</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">{{ t('gs_step2_desc') }}</p>
 
           <div class="mt-5 flex items-center gap-1.5 text-xs font-semibold transition-opacity duration-300"
             :class="surveyCompleted ? 'text-emerald-400 opacity-100' : 'text-pink-400 opacity-0 group-hover:opacity-100'">
-            <span>{{ surveyCompleted ? 'Answers saved' : 'Take survey' }}</span>
+            <span>{{ surveyCompleted ? t('gs_step2_done_cta') : t('gs_step2_cta') }}</span>
             <svg v-if="uploadCompleted" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
           </div>
         </div>
@@ -150,7 +150,7 @@
               <span v-else>03</span>
             </div>
             <span :class="['text-[10px] font-bold uppercase tracking-widest', goalsCompleted ? 'text-emerald-400' : !surveyCompleted ? 'text-slate-800' : 'text-slate-700']">
-              {{ goalsCompleted ? 'Done' : !surveyCompleted ? 'Locked' : 'Required' }}
+              {{ goalsCompleted ? t('gs_done') : !surveyCompleted ? t('gs_locked') : t('gs_required') }}
             </span>
           </div>
 
@@ -162,12 +162,12 @@
             </svg>
           </div>
 
-          <h3 class="text-sm font-bold text-white mb-1.5">Set Saving Goals</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">Define your financial targets and let AI calculate your monthly path.</p>
+          <h3 class="text-sm font-bold text-white mb-1.5">{{ t('gs_step3_title') }}</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">{{ t('gs_step3_desc') }}</p>
 
           <div class="mt-5 flex items-center gap-1.5 text-xs font-semibold transition-opacity duration-300"
             :class="goalsCompleted ? 'text-emerald-400 opacity-100' : 'text-amber-400 opacity-0 group-hover:opacity-100'">
-            <span>{{ goalsCompleted ? 'Goals saved' : 'Set goals' }}</span>
+            <span>{{ goalsCompleted ? t('gs_step3_done_cta') : t('gs_step3_cta') }}</span>
             <svg v-if="surveyCompleted" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
           </div>
         </div>
@@ -184,7 +184,7 @@
               ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/45 hover:from-emerald-400 hover:to-teal-500 hover:-translate-y-px'
               : 'bg-white/[0.04] border border-white/[0.07] text-slate-700 cursor-not-allowed']"
         >
-          <span>View your insights</span>
+          <span>{{ t('gs_view_insights') }}</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
         </button>
       </div>
@@ -227,8 +227,8 @@
         <div class="p-6">
           <div class="flex items-start justify-between mb-6">
             <div>
-              <h3 class="text-base font-bold text-white">Upload bank statements</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Last 3 months · PDF or CSV · Max 10 MB each</p>
+              <h3 class="text-base font-bold text-white">{{ t('gs_upload_title') }}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">{{ t('gs_upload_subtitle') }}</p>
             </div>
             <button @click="closeUpload" aria-label="Close" class="text-slate-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/[0.05]">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -241,8 +241,8 @@
             <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-4 group-hover/dz:bg-blue-500/15 transition-colors">
               <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
             </div>
-            <p class="text-sm font-medium text-white">Drop files here or <span class="text-blue-400">browse</span></p>
-            <p class="text-xs text-slate-600 mt-1">PDF, CSV · up to 10 MB</p>
+            <p class="text-sm font-medium text-white">{{ t('gs_drop_here') }} <span class="text-blue-400">{{ t('gs_browse') }}</span></p>
+            <p class="text-xs text-slate-600 mt-1">{{ t('gs_file_hint') }}</p>
           </div>
 
           <!-- File list -->
@@ -256,7 +256,7 @@
                 <p class="text-[10px] text-slate-600">{{ Math.round(f.size/1024) }} KB</p>
               </div>
               <span :class="['text-xs font-semibold shrink-0', f.status==='ready' ? 'text-emerald-400' : f.status==='uploading' ? 'text-blue-400 animate-pulse' : f.status==='failed' ? 'text-red-400' : 'text-slate-500']">
-                {{ f.status === 'queued' ? 'Pending' : f.status === 'uploading' ? 'Uploading…' : f.status === 'ready' ? 'Done ✓' : 'Failed ✗' }}
+                {{ f.status === 'queued' ? t('gs_file_pending') : f.status === 'uploading' ? t('gs_file_uploading') : f.status === 'ready' ? t('gs_file_done') : t('gs_file_failed') }}
               </span>
               <button @click="removeFile(i)" class="text-slate-700 hover:text-white transition-colors shrink-0" aria-label="Remove file">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -265,10 +265,10 @@
           </div>
 
           <div class="mt-5 grid grid-cols-2 gap-3">
-            <button @click="clearAll" class="rounded-xl bg-white/[0.04] border border-white/[0.07] px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all">Clear all</button>
+            <button @click="clearAll" class="rounded-xl bg-white/[0.04] border border-white/[0.07] px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all">{{ t('gs_clear_all') }}</button>
             <button @click="uploadAll" :disabled="!uploadedFiles.length"
               :class="['rounded-xl px-4 py-2.5 text-sm font-bold transition-all', uploadedFiles.length ? 'bg-gradient-to-br from-blue-500 to-sky-600 text-white shadow-lg shadow-blue-500/20 hover:from-blue-400' : 'bg-white/[0.04] border border-white/[0.06] text-slate-700 cursor-not-allowed']">
-              Upload
+              {{ t('gs_upload_btn') }}
             </button>
           </div>
         </div>
@@ -282,8 +282,8 @@
         <div class="p-6">
           <div class="flex items-start justify-between mb-6">
             <div>
-              <h3 class="text-base font-bold text-white">Behavioral survey</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Helps us detect your emotional spending triggers</p>
+              <h3 class="text-base font-bold text-white">{{ t('gs_survey_title') }}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">{{ t('gs_survey_subtitle') }}</p>
             </div>
             <button @click="closeSurvey" aria-label="Close" class="text-slate-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/[0.05]">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -314,10 +314,10 @@
           </div>
 
           <div class="mt-6 flex justify-end gap-3">
-            <button @click="closeSurvey" class="rounded-xl bg-white/[0.04] border border-white/[0.07] px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all">Cancel</button>
+            <button @click="closeSurvey" class="rounded-xl bg-white/[0.04] border border-white/[0.07] px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all">{{ t('gs_cancel') }}</button>
             <button :disabled="!isSurveyComplete" @click="submitSurvey"
               :class="['rounded-xl px-5 py-2.5 text-sm font-bold transition-all', isSurveyComplete ? 'bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/20 hover:from-pink-400' : 'bg-white/[0.04] border border-white/[0.06] text-slate-700 cursor-not-allowed']">
-              Submit
+              {{ t('gs_submit') }}
             </button>
           </div>
         </div>
@@ -331,8 +331,8 @@
         <div class="p-6">
           <div class="flex items-start justify-between mb-6">
             <div>
-              <h3 id="goals-title" class="text-base font-bold text-white">Smart financial goals</h3>
-              <p class="text-xs text-slate-500 mt-0.5">AI will calculate your optimal monthly savings target</p>
+              <h3 id="goals-title" class="text-base font-bold text-white">{{ t('gs_goals_title') }}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">{{ t('gs_goals_subtitle') }}</p>
             </div>
             <button @click="closeGoals" aria-label="Close" class="text-slate-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/[0.05]">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -342,21 +342,21 @@
           <div class="space-y-4">
             <div v-for="(goal, idx) in goalEntries" :key="idx" class="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5 space-y-4">
               <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Goal {{ idx + 1 }}</span>
+                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">{{ t('gs_goal_label') }} {{ idx + 1 }}</span>
                 <button v-if="goalEntries.length > 1" @click="removeGoalEntry(idx)" aria-label="Remove goal" class="text-slate-700 hover:text-red-400 transition-colors">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
 
               <div>
-                <label :for="'goal-desc-' + idx" class="block text-xs font-medium text-slate-500 mb-1.5">What do you want to achieve?</label>
-                <input :id="'goal-desc-' + idx" v-model="goal.description" type="text" placeholder="e.g. Emergency fund, Vacation, New laptop…"
+                <label :for="'goal-desc-' + idx" class="block text-xs font-medium text-slate-500 mb-1.5">{{ t('gs_goal_desc_label') }}</label>
+                <input :id="'goal-desc-' + idx" v-model="goal.description" type="text" :placeholder="t('gs_goal_placeholder')"
                   class="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white placeholder:text-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all" />
               </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label :for="'goal-amt-' + idx" class="block text-xs font-medium text-slate-500 mb-1.5">Target amount</label>
+                  <label :for="'goal-amt-' + idx" class="block text-xs font-medium text-slate-500 mb-1.5">{{ t('gs_goal_amount_label') }}</label>
                   <div class="relative">
                     <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">€</span>
                     <input :id="'goal-amt-' + idx" v-model.number="goal.targetAmount" type="number" min="1" step="50" placeholder="1200"
@@ -364,7 +364,7 @@
                   </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-slate-500 mb-1.5">Timeline</label>
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">{{ t('gs_goal_timeline_label') }}</label>
                   <div class="flex gap-2">
                     <div class="flex rounded-xl bg-white/[0.04] border border-white/[0.08] p-0.5 shrink-0" role="tablist">
                       <button @click="goal.timeUnit = 'months'" role="tab" :aria-selected="goal.timeUnit === 'months'" :class="['px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all', goal.timeUnit === 'months' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-white']">Mo</button>
@@ -377,21 +377,21 @@
               </div>
 
               <div v-if="goal.description && goal.targetAmount && goal.timeValue" class="rounded-xl bg-amber-500/[0.06] border border-amber-500/20 px-4 py-3 text-xs text-slate-300">
-                💡 Save <span class="text-amber-400 font-bold">€{{ Math.round(goal.targetAmount / (goal.timeUnit === 'years' ? goal.timeValue * 12 : goal.timeValue)) }}/month</span> to reach <span class="text-white font-semibold">€{{ goal.targetAmount }}</span> in <span class="text-white font-semibold">{{ goal.timeValue }} {{ goal.timeUnit }}</span>
+                💡 {{ t('gs_goal_tip_prefix') }} <span class="text-amber-400 font-bold">€{{ Math.round(goal.targetAmount / (goal.timeUnit === 'years' ? goal.timeValue * 12 : goal.timeValue)) }}{{ t('gs_goal_tip_month') }}</span> {{ t('gs_goal_tip_reach') }} <span class="text-white font-semibold">€{{ goal.targetAmount }}</span> {{ t('gs_goal_tip_in') }} <span class="text-white font-semibold">{{ goal.timeValue }} {{ t(goal.timeUnit === 'years' ? 'gs_years' : 'gs_months') }}</span>
               </div>
             </div>
           </div>
 
           <button @click="addGoalEntry" class="mt-4 flex items-center gap-2 text-xs text-amber-400 hover:text-amber-300 transition-colors font-semibold">
             <span class="w-5 h-5 rounded-full border border-amber-500/40 flex items-center justify-center text-xs">+</span>
-            Add another goal
+            {{ t('gs_add_goal') }}
           </button>
 
           <div class="mt-6 flex justify-end gap-3">
-            <button @click="closeGoals" class="rounded-xl bg-white/[0.04] border border-white/[0.07] px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all">Cancel</button>
+            <button @click="closeGoals" class="rounded-xl bg-white/[0.04] border border-white/[0.07] px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all">{{ t('gs_cancel') }}</button>
             <button @click="saveGoals" :disabled="!isGoalFormValid"
               :class="['rounded-xl px-5 py-2.5 text-sm font-bold transition-all', isGoalFormValid ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20 hover:from-amber-400' : 'bg-white/[0.04] border border-white/[0.06] text-slate-700 cursor-not-allowed']">
-              Save goals
+              {{ t('gs_save_goals') }}
             </button>
           </div>
         </div>
@@ -405,7 +405,9 @@
 import AppLogo from '~/components/AppLogo.vue'
 import { useRouter, useRoute } from '#app'
 import { ref, computed } from 'vue'
+import { useI18n } from '#imports'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userName = route.query.name || 'Guest'
@@ -417,24 +419,24 @@ const successMessage = ref('')
 const errorMessage = ref('')
 const SAS_API = '/api/sas-function'
 const showSurveyModal = ref(false)
-const surveyQuestions = [
-  'When I\'m stressed, I tend to buy things I don\'t need.',
-  'I usually spend more when I feel emotionally drained.',
-  'I check my balance before making major purchases.',
-  'Seeing my accumulated expenses makes me anxious.',
-  'I prefer paying by card even when I have cash available.',
+const surveyQuestions = computed(() => [
+  t('gs_q1'),
+  t('gs_q2'),
+  t('gs_q3'),
+  t('gs_q4'),
+  t('gs_q5'),
   {
     type: 'choices',
-    question: 'What emotions usually accompany your impulse purchases?',
-    options: ['Stress','Boredom','Reward','Social pressure','I don\'t know']
+    question: t('gs_q6'),
+    options: [t('gs_q6_opt1'), t('gs_q6_opt2'), t('gs_q6_opt3'), t('gs_q6_opt4'), t('gs_q6_opt5')]
   },
   {
     type: 'choices',
-    question: 'At what point in the month do you feel the most financial pressure?',
-    options: ['Beginning','Middle','End']
+    question: t('gs_q7'),
+    options: [t('gs_q7_opt1'), t('gs_q7_opt2'), t('gs_q7_opt3')]
   }
-]
-const answers = ref(Array(surveyQuestions.length).fill(null))
+])
+const answers = ref(Array(7).fill(null))
 const surveyCompleted = ref(false)
 const isSurveyComplete = computed(() => answers.value.every(a => a !== null))
 const showGoalsModal = ref(false)
