@@ -154,5 +154,15 @@
   "ins_persona_crisis_spender": "Gastador en Crisis",
   "ins_persona_social_planner": "Planificador Social",
   "ins_persona_mindful_saver": "Ahorrador Consciente",
-  "ins_persona_conscious_spender": "Gasto Consciente"
+  "ins_persona_conscious_spender": "Gasto Consciente",
+
+  "an_title": "Analizando tus finanzas",
+  "an_subtitle": "Esto tarda unos 45 segundos. Estamos leyendo tu extracto, extrayendo cada transacción y construyendo tu perfil financiero personalizado.",
+  "an_step1": "Extracto subido y en cola",
+  "an_step2": "Extrayendo transacciones del PDF",
+  "an_step3": "Analizando patrones de gasto",
+  "an_step4": "Generando tus insights",
+  "an_done": "Listo",
+  "an_working": "Procesando…",
+  "an_hint": "Por favor, mantén esta pestaña abierta mientras trabajamos"
 }

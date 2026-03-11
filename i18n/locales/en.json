@@ -154,5 +154,15 @@
   "ins_persona_crisis_spender": "Crisis Spender",
   "ins_persona_social_planner": "Social Planner",
   "ins_persona_mindful_saver": "Mindful Saver",
-  "ins_persona_conscious_spender": "Conscious Spender"
+  "ins_persona_conscious_spender": "Conscious Spender",
+
+  "an_title": "Analyzing your finances",
+  "an_subtitle": "This takes about 45 seconds. We're reading your statement, extracting every transaction, and building your personalized financial profile.",
+  "an_step1": "Statement uploaded & queued",
+  "an_step2": "Extracting transactions from PDF",
+  "an_step3": "Analysing spending patterns",
+  "an_step4": "Generating your insights",
+  "an_done": "Done",
+  "an_working": "Working…",
+  "an_hint": "Please keep this tab open while we work"
 }

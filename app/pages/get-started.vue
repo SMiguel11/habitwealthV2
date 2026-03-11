@@ -456,7 +456,7 @@ function removeGoalEntry(idx) {
 } // { blobUrl, filename } guardados en step 1, usados al guardar las metas en step 3
 
 function next() {
-  router.push('/insights')
+  router.push('/analyzing')
 }
 
 function openUpload() {

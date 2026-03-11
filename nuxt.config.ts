@@ -15,7 +15,8 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: true },
     '/get-started': { prerender: true },
-    '/insights': { prerender: true }
+    '/analyzing': { ssr: false },
+    '/insights': { ssr: false }
   },
 
   i18n: {

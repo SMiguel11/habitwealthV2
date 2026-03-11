@@ -309,18 +309,7 @@ async function fetchInsights() {
 
 onMounted(async () => {
   try {
-    let data = await fetchInsights()
-    // If no documents yet (analysis still processing), poll every 4s up to 15 times (~60s)
-    if (!data.documentCount) {
-      loadingMessage.value = 'Analyzing your bank statement... This takes about 30 seconds.'
-      for (let i = 0; i < 15; i++) {
-        await new Promise(r => setTimeout(r, 4000))
-        data = await fetchInsights()
-        if (data.documentCount) break
-        if (i === 5) loadingMessage.value = 'Almost there — extracting transactions from your PDF...'
-        if (i === 10) loadingMessage.value = 'Running AI enrichment agents on your data...'
-      }
-    }
+    await fetchInsights()
   } catch (e) {
     console.warn('Could not fetch insights:', e)
   } finally {
