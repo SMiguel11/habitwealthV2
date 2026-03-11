@@ -190,5 +190,15 @@
   "ins_nudge_stress_2":  "Track the emotion before swiping your card. Awareness is the first CBT step.",
   "ins_nudge_social_1":  "Suggest free social activities: parks, potlucks, hikes.",
   "ins_nudge_social_2":  "Set a weekend social budget in advance and commit to it publicly.",
-  "ins_nudge_none_1":    "Great spending patterns! Keep building your emergency fund."
+  "ins_nudge_none_1":    "Great spending patterns! Keep building your emergency fund.",
+
+  "ins_ai_badge":           "AI Generated",
+  "ins_ai_powered":         "Powered by GPT-4o-mini",
+  "ins_static_badge":       "Rule-based",
+  "ins_pattern_label":      "Detected Pattern",
+  "ins_weekend_alert":      "Weekend Spending Alert",
+  "ins_weekend_alert_desc": "Higher spending detected on weekends. Setting a weekend budget can help.",
+  "ins_urgency_high":       "High Priority",
+  "ins_urgency_medium":     "Medium Priority",
+  "ins_urgency_low":        "Low Priority"
 }

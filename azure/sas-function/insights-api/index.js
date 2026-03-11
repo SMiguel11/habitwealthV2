@@ -91,6 +91,10 @@ module.exports = async function (context, req) {
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,
+        nudgeSource:        latestDoc.agentResult?.agents?.cbtIntervention?.nudgeSource || 'static',
+        primaryPattern:     latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || '',
+        weekendSpendAlert:  latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
+        interventionUrgency: latestDoc.agentResult?.agents?.cbtIntervention?.interventionUrgency || 'Low',
         trendScores,
         goals: latestDoc.agentResult?.agents?.goalAlignment?.goals
             || (latestDoc.goals || []).map(g => ({

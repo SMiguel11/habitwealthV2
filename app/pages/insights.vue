@@ -226,17 +226,67 @@
             <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-3">{{ t('ins_persona_label') }}</p>
             <div class="text-xl font-extrabold text-emerald-300 mb-2 leading-tight">{{ financialPersona }}</div>
             <p class="text-xs text-slate-600 leading-relaxed">{{ t('ins_persona_desc') }}</p>
+            <!-- Detected emotional pattern -->
+            <div v-if="primaryPattern" class="mt-4 pt-4 border-t border-emerald-500/10">
+              <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1.5">{{ t('ins_pattern_label') }}</p>
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                {{ primaryPattern }}
+              </span>
+            </div>
           </div>
 
-          <!-- Recommendations -->
-          <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
+          <!-- Weekend Spend Alert -->
+          <div v-if="weekendSpendAlert"
+            class="relative rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-4 flex gap-3">
+            <div class="shrink-0 w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-amber-300">{{ t('ins_weekend_alert') }}</p>
+              <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ t('ins_weekend_alert_desc') }}</p>
+            </div>
+          </div>
+
+          <!-- Recommendations (AI-powered) -->
+          <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 overflow-hidden">
             <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-amber-400/40 to-transparent"></div>
-            <h3 class="text-sm font-bold text-white mb-4">{{ t('ins_recs_title') }}</h3>
+
+            <!-- Header row -->
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <h3 class="text-sm font-bold text-white">{{ t('ins_recs_title') }}</h3>
+              <span v-if="nudgeSource === 'gpt-4o'"
+                class="shrink-0 flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-violet-500/15 text-violet-300 border-violet-500/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"></span>
+                {{ t('ins_ai_badge') }}
+              </span>
+              <span v-else
+                class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-500/15 text-slate-400 border-slate-500/25">
+                {{ t('ins_static_badge') }}
+              </span>
+            </div>
+
+            <!-- AI powered sub-label -->
+            <p v-if="nudgeSource === 'gpt-4o'" class="text-[10px] text-violet-700 font-medium mb-4 -mt-2 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              {{ t('ins_ai_powered') }}
+            </p>
+
+            <!-- Nudge list -->
             <div v-if="nudges.length" class="space-y-3">
               <div v-for="(nudge, idx) in nudges.slice(0, 4)" :key="idx"
-                class="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3.5 hover:border-amber-500/25 hover:bg-amber-500/[0.04] transition-all">
-                <p class="text-xs font-semibold text-slate-300 leading-snug">{{ nudge.title || nudge }}</p>
-                <p v-if="nudge.description" class="text-[11px] text-slate-600 mt-1 leading-relaxed">{{ nudge.description }}</p>
+                class="group flex gap-3 rounded-xl p-3.5 border transition-all"
+                :class="nudgeSource === 'gpt-4o'
+                  ? 'bg-violet-500/[0.05] border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-500/[0.09]'
+                  : 'bg-white/[0.03] border-white/[0.06] hover:border-amber-500/25 hover:bg-amber-500/[0.04]'">
+                <!-- Number badge -->
+                <div class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black mt-0.5"
+                  :class="nudgeSource === 'gpt-4o' ? 'bg-violet-500/30 text-violet-300' : 'bg-amber-500/20 text-amber-400'">
+                  {{ idx + 1 }}
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed group-hover:text-white transition-colors">
+                  {{ nudge.title || nudge }}
+                </p>
               </div>
             </div>
             <div v-else class="text-xs text-slate-600 leading-relaxed">{{ t('ins_recs_empty') }}</div>
@@ -390,6 +440,9 @@ const nudges = computed(() =>
     return { ...n, title: titleKey ? t(titleKey) : n.title }
   })
 )
+const nudgeSource = computed(() => summary.value?.nudgeSource ?? 'static')
+const primaryPattern = computed(() => summary.value?.primaryPattern ?? '')
+const weekendSpendAlert = computed(() => summary.value?.weekendSpendAlert ?? false)
 const goals = computed(() => summary.value?.goals ?? [])
 const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
 const topCategories = computed(() => {
