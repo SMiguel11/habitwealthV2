@@ -55,10 +55,10 @@
       </div>
 
       <!-- KPI strip -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         <!-- HabitWealth Score -->
-        <div class="col-span-2 lg:col-span-1 relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 overflow-hidden group hover:border-emerald-500/30 hover:bg-emerald-500/[0.04] transition-all duration-300">
+        <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 overflow-hidden group hover:border-emerald-500/30 hover:bg-emerald-500/[0.04] transition-all duration-300">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
           <div class="flex items-center justify-between mb-3">
             <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_score_label') }}</span>

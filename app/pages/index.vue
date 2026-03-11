@@ -47,7 +47,7 @@
     </header>
 
     <!-- ── Hero: Split layout ── -->
-    <section class="relative max-w-7xl mx-auto px-6 pt-20 pb-12 lg:pt-28 lg:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <section class="relative max-w-7xl mx-auto px-6 pt-20 pb-20 lg:pt-28 lg:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
       <!-- LEFT: Content -->
       <div>
@@ -70,7 +70,7 @@
         </p>
 
         <!-- Form -->
-        <form @submit.prevent="start" novalidate class="flex gap-2.5 max-w-md">
+        <form @submit.prevent="start" novalidate class="flex flex-col sm:flex-row gap-2.5 max-w-md">
           <label class="sr-only" for="name">{{ t('input_placeholder') }}</label>
           <div class="relative flex-1">
             <div class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
@@ -89,7 +89,7 @@
           </div>
           <button
             type="submit"
-            class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-sm font-bold shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-500 hover:-translate-y-px active:translate-y-0 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            class="w-full sm:w-auto flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-sm font-bold shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-500 hover:-translate-y-px active:translate-y-0 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
           >
             {{ t('cta') }}
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
@@ -166,7 +166,7 @@
         </div>
 
         <!-- Floating notification: bottom-left -->
-        <div aria-hidden="true" class="absolute -bottom-5 -left-3 lg:-left-8 flex items-center gap-3 bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50">
+        <div aria-hidden="true" class="absolute -bottom-5 -left-3 lg:-left-8 hidden sm:flex items-center gap-3 bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl shadow-black/50">
           <div class="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-base shrink-0">💡</div>
           <div>
             <p class="text-[11px] font-bold text-white leading-tight">{{ t('card_notif_title') }}</p>
@@ -179,17 +179,17 @@
     <!-- ── Stats strip ── -->
     <div class="max-w-7xl mx-auto px-6 pb-16 mt-8 lg:mt-16">
       <div class="grid grid-cols-3 divide-x divide-white/[0.06] border border-white/[0.06] rounded-2xl overflow-hidden bg-white/[0.02]">
-        <div class="px-6 py-7 text-center">
-          <div class="text-3xl font-black text-white tracking-tight">30s</div>
-          <div class="text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat1') }}</div>
+        <div class="px-3 sm:px-6 py-6 sm:py-7 text-center">
+          <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">30s</div>
+          <div class="text-[10px] sm:text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat1') }}</div>
         </div>
-        <div class="px-6 py-7 text-center">
-          <div class="text-3xl font-black text-white tracking-tight">100%</div>
-          <div class="text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat2') }}</div>
+        <div class="px-3 sm:px-6 py-6 sm:py-7 text-center">
+          <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">100%</div>
+          <div class="text-[10px] sm:text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat2') }}</div>
         </div>
-        <div class="px-6 py-7 text-center">
-          <div class="text-3xl font-black text-emerald-400 tracking-tight">AI</div>
-          <div class="text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat3') }}</div>
+        <div class="px-3 sm:px-6 py-6 sm:py-7 text-center">
+          <div class="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">AI</div>
+          <div class="text-[10px] sm:text-xs text-slate-600 mt-1.5 font-medium">{{ t('stat3') }}</div>
         </div>
       </div>
     </div>

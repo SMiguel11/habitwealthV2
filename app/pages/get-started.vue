@@ -354,7 +354,7 @@
                   class="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white placeholder:text-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all" />
               </div>
 
-              <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label :for="'goal-amt-' + idx" class="block text-xs font-medium text-slate-500 mb-1.5">{{ t('gs_goal_amount_label') }}</label>
                   <div class="relative">
