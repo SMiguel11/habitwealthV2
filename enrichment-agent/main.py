@@ -230,9 +230,11 @@ def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
     }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Agent 5 – CBT Intervention Agent
+# Agent 5 – CBT Intervention Agent  (Azure OpenAI GPT-4o + static fallback)
 # ──────────────────────────────────────────────────────────────────────────────
-CBT_NUDGES = {
+
+# Static fallback nudges — used when Azure OpenAI is not configured or fails
+CBT_NUDGES: dict[str, list[str]] = {
     "impulse": [
         "Before your next online purchase, wait 48 hours. Is it still necessary?",
         "Try the 10-10-10 rule: How will you feel about this purchase in 10 minutes, 10 hours, 10 days?",
@@ -253,15 +255,98 @@ CBT_NUDGES = {
     "none": ["Great spending patterns! Keep building your emergency fund."],
 }
 
-def agent_cbt_intervention(emotional: dict, fsi: dict) -> dict:
+
+def _ai_nudges(
+    dominant: str,
+    fsi_level: str,
+    emotional_scores: dict,
+    doc_summary: dict,
+) -> tuple[list[str], str]:
+    """Generate 3 personalized CBT nudges via Azure OpenAI GPT-4o.
+
+    Returns (nudges, source) where source is 'gpt-4o' or 'static'.
+    Falls back gracefully to the static dict if OpenAI is not configured
+    or if the API call fails (network error, quota, etc.).
+    """
+    api_key  = get_secret("openai-key", "AZURE_OPENAI_KEY")
+    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+
+    if not api_key or not endpoint:
+        logger.info("Azure OpenAI not configured — using static CBT nudges")
+        return CBT_NUDGES.get(dominant, CBT_NUDGES["none"]), "static"
+
+    try:
+        from openai import AzureOpenAI  # imported lazily — not a hard dep at startup
+
+        client = AzureOpenAI(
+            api_key=api_key,
+            azure_endpoint=endpoint,
+            api_version="2024-02-01",
+        )
+
+        top_areas = ", ".join(
+            f"{k} (€{v:.0f})"
+            for k, v in sorted(emotional_scores.items(), key=lambda x: -x[1])
+            if v > 0
+        ) or "general spending"
+
+        prompt = (
+            f"You are a certified financial therapist specializing in Cognitive Behavioral "
+            f"Therapy (CBT) for money-related behaviors.\n\n"
+            f"User profile:\n"
+            f"- Dominant emotional spending pattern: \"{dominant}\"\n"
+            f"- Financial Stress Level: {fsi_level}\n"
+            f"- Top emotional spending areas: {top_areas}\n"
+            f"- Net cash flow this month: €{doc_summary.get('netCashFlow', 0):.2f}\n\n"
+            f"Generate exactly 3 highly personalized, actionable CBT micro-interventions.\n"
+            f"Rules:\n"
+            f"- Each nudge: 1-2 sentences maximum.\n"
+            f"- Compassionate, non-judgmental tone.\n"
+            f"- Specific to the \"{dominant}\" pattern, not generic financial advice.\n"
+            f"- Include at least one concrete technique per nudge "
+            f"(pause timer, emotion journaling, breathing exercise, implementation intention).\n"
+            f"- Return ONLY a valid JSON array of 3 strings, no markdown, no explanation.\n"
+            f"Example: [\"nudge 1\", \"nudge 2\", \"nudge 3\"]"
+        )
+
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=350,
+        )
+
+        raw = response.choices[0].message.content.strip()
+        nudges = json.loads(raw)
+        if isinstance(nudges, list) and len(nudges) >= 1:
+            logger.info(
+                "GPT-4o generated %d CBT nudges for pattern='%s' stress=%s",
+                len(nudges), dominant, fsi_level,
+            )
+            return [str(n) for n in nudges[:3]], "gpt-4o"
+
+    except Exception as exc:
+        logger.warning("Azure OpenAI CBT nudge generation failed (%s) — using static fallback", exc)
+
+    return CBT_NUDGES.get(dominant, CBT_NUDGES["none"]), "static"
+
+
+def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None) -> dict:
     dominant = emotional["dominantPattern"]
-    nudges = CBT_NUDGES.get(dominant, CBT_NUDGES["none"])
+    nudges, source = _ai_nudges(
+        dominant=dominant,
+        fsi_level=fsi["fsiLevel"],
+        emotional_scores=emotional["emotionalSpendScores"],
+        doc_summary=doc or {},
+    )
     level = fsi["fsiLevel"]
     urgency = "immediate" if level == "High" else "suggested" if level == "Medium" else "preventive"
     return {
         "agent": "CBTIntervention",
         "interventionUrgency": urgency,
         "nudges": nudges,
+        "nudgeSource": source,
         "primaryPattern": dominant,
         "weekendSpendAlert": emotional["weekendSpend"] > 200,
     }
@@ -324,7 +409,7 @@ def run_pipeline(request: EnrichRequest) -> dict:
     emotional = agent_emotional_pattern(txs, sv)
     fsi       = agent_financial_stress(doc, emotional)
     goal      = agent_goal_alignment(doc, gs)
-    cbt       = agent_cbt_intervention(emotional, fsi)
+    cbt       = agent_cbt_intervention(emotional, fsi, doc)
     twin      = agent_digital_twin(request.userId, doc, emotional, fsi, goal, cbt)
 
     return {
