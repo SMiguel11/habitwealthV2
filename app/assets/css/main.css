@@ -21,9 +21,21 @@
   font-family: var(--font-sans);
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   background: linear-gradient(180deg,#f8fbfc 0%, #ffffff 100%);
   color: #0f172a;
+}
+
+/* Prevent iOS Safari from auto-zooming on input focus (font-size must be >= 16px) */
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
 }
 
 .gauge {
