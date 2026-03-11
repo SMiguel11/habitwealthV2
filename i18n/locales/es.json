@@ -164,5 +164,31 @@
   "an_step4": "Generando tus insights",
   "an_done": "Listo",
   "an_working": "Procesando…",
-  "an_hint": "Por favor, mantén esta pestaña abierta mientras trabajamos"
+  "an_hint": "Por favor, mantén esta pestaña abierta mientras trabajamos",
+
+  "ins_cat_utilities":     "Servicios",
+  "ins_cat_food":          "Alimentación",
+  "ins_cat_health":        "Salud",
+  "ins_cat_shopping":      "Compras",
+  "ins_cat_savings":       "Ahorros",
+  "ins_cat_transport":     "Transporte",
+  "ins_cat_other":         "Otros",
+  "ins_cat_entertainment": "Entretenimiento",
+  "ins_cat_education":     "Educación",
+  "ins_cat_insurance":     "Seguros",
+  "ins_cat_travel":        "Viajes",
+  "ins_cat_subscriptions": "Suscripciones",
+  "ins_cat_housing":       "Vivienda",
+  "ins_cat_restaurants":   "Restaurantes",
+
+  "ins_nudge_impulse_1": "Antes de tu próxima compra en línea, espera 48 horas. ¿Sigue siendo necesario?",
+  "ins_nudge_impulse_2": "Prueba la regla 10-10-10: ¿Cómo te sentirás con esta compra en 10 minutos, 10 horas, 10 días?",
+  "ins_nudge_impulse_3": "Desuscríbete de correos promocionales — están diseñados para hacerte gastar.",
+  "ins_nudge_comfort_1": "Nota cuándo comes fuera por razones emocionales frente al hambre. Registra la emoción en su lugar.",
+  "ins_nudge_comfort_2": "Reemplaza un pedido a domicilio por semana por cocinar en casa. Ahorra €20+ y gana satisfacción.",
+  "ins_nudge_stress_1":  "Cuando el estrés te lleve a gastar, prueba 5 minutos de respiración consciente primero.",
+  "ins_nudge_stress_2":  "Registra la emoción antes de pasar tu tarjeta. La conciencia es el primer paso del CBT.",
+  "ins_nudge_social_1":  "Propón actividades sociales gratuitas: parques, picnics, excursiones.",
+  "ins_nudge_social_2":  "Establece un presupuesto social de fin de semana con antelación y comprométete públicamente.",
+  "ins_nudge_none_1":    "¡Excelentes hábitos de gasto! Sigue construyendo tu fondo de emergencia."
 }

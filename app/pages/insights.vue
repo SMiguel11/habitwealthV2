@@ -350,7 +350,46 @@ const impulseScore = computed(() => {
   if (fsi === 'Medium') return '55'
   return '85'
 })
-const nudges = computed(() => summary.value?.nudges ?? [])
+const categoryKeyMap = {
+  utilities:      'ins_cat_utilities',
+  food:           'ins_cat_food',
+  health:         'ins_cat_health',
+  shopping:       'ins_cat_shopping',
+  savings:        'ins_cat_savings',
+  transport:      'ins_cat_transport',
+  other:          'ins_cat_other',
+  entertainment:  'ins_cat_entertainment',
+  education:      'ins_cat_education',
+  insurance:      'ins_cat_insurance',
+  travel:         'ins_cat_travel',
+  subscriptions:  'ins_cat_subscriptions',
+  housing:        'ins_cat_housing',
+  restaurants:    'ins_cat_restaurants',
+}
+
+const nudgeKeyMap = {
+  'Before your next online purchase, wait 48 hours. Is it still necessary?': 'ins_nudge_impulse_1',
+  'Try the 10-10-10 rule: How will you feel about this purchase in 10 minutes, 10 hours, 10 days?': 'ins_nudge_impulse_2',
+  'Unsubscribe from promotional emails — they\'re designed to trigger you.': 'ins_nudge_impulse_3',
+  'Notice when you eat out for emotional reasons vs. hunger. Log the emotion instead.': 'ins_nudge_comfort_1',
+  'Replace one delivery order per week with cooking. Save €20+ and gain satisfaction.': 'ins_nudge_comfort_2',
+  'When stress urges spending, try a 5-minute breathing exercise first.': 'ins_nudge_stress_1',
+  'Track the emotion before swiping your card. Awareness is the first CBT step.': 'ins_nudge_stress_2',
+  'Suggest free social activities: parks, potlucks, hikes.': 'ins_nudge_social_1',
+  'Set a weekend social budget in advance and commit to it publicly.': 'ins_nudge_social_2',
+  'Great spending patterns! Keep building your emergency fund.': 'ins_nudge_none_1',
+}
+
+const nudges = computed(() =>
+  (summary.value?.nudges ?? []).map(n => {
+    if (typeof n === 'string') {
+      const key = nudgeKeyMap[n]
+      return key ? t(key) : n
+    }
+    const titleKey = nudgeKeyMap[n.title]
+    return { ...n, title: titleKey ? t(titleKey) : n.title }
+  })
+)
 const goals = computed(() => summary.value?.goals ?? [])
 const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
 const topCategories = computed(() => {
@@ -360,11 +399,14 @@ const topCategories = computed(() => {
   return entries
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([cat, amt]) => ({
-      cat: cat.charAt(0).toUpperCase() + cat.slice(1),
-      amt: Math.round(amt * 100) / 100,
-      pct: Math.round((amt / total) * 100)
-    }))
+    .map(([cat, amt]) => {
+      const key = categoryKeyMap[cat.toLowerCase()]
+      return {
+        cat: key ? t(key) : cat.charAt(0).toUpperCase() + cat.slice(1),
+        amt: Math.round(amt * 100) / 100,
+        pct: Math.round((amt / total) * 100)
+      }
+    })
 })
 </script>
 

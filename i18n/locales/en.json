@@ -164,5 +164,31 @@
   "an_step4": "Generating your insights",
   "an_done": "Done",
   "an_working": "Working…",
-  "an_hint": "Please keep this tab open while we work"
+  "an_hint": "Please keep this tab open while we work",
+
+  "ins_cat_utilities":     "Utilities",
+  "ins_cat_food":          "Food",
+  "ins_cat_health":        "Health",
+  "ins_cat_shopping":      "Shopping",
+  "ins_cat_savings":       "Savings",
+  "ins_cat_transport":     "Transport",
+  "ins_cat_other":         "Other",
+  "ins_cat_entertainment": "Entertainment",
+  "ins_cat_education":     "Education",
+  "ins_cat_insurance":     "Insurance",
+  "ins_cat_travel":        "Travel",
+  "ins_cat_subscriptions": "Subscriptions",
+  "ins_cat_housing":       "Housing",
+  "ins_cat_restaurants":   "Restaurants",
+
+  "ins_nudge_impulse_1": "Before your next online purchase, wait 48 hours. Is it still necessary?",
+  "ins_nudge_impulse_2": "Try the 10-10-10 rule: How will you feel about this purchase in 10 minutes, 10 hours, 10 days?",
+  "ins_nudge_impulse_3": "Unsubscribe from promotional emails — they're designed to trigger you.",
+  "ins_nudge_comfort_1": "Notice when you eat out for emotional reasons vs. hunger. Log the emotion instead.",
+  "ins_nudge_comfort_2": "Replace one delivery order per week with cooking. Save €20+ and gain satisfaction.",
+  "ins_nudge_stress_1":  "When stress urges spending, try a 5-minute breathing exercise first.",
+  "ins_nudge_stress_2":  "Track the emotion before swiping your card. Awareness is the first CBT step.",
+  "ins_nudge_social_1":  "Suggest free social activities: parks, potlucks, hikes.",
+  "ins_nudge_social_2":  "Set a weekend social budget in advance and commit to it publicly.",
+  "ins_nudge_none_1":    "Great spending patterns! Keep building your emergency fund."
 }
