@@ -270,7 +270,7 @@ def _ai_nudges(
     """
     api_key  = get_secret("openai-key", "AZURE_OPENAI_KEY")
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
-    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini")
 
     if not api_key or not endpoint:
         logger.info("Azure OpenAI not configured — using static CBT nudges")
