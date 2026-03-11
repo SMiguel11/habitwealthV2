@@ -1,7 +1,15 @@
 <template>
-  <div class="min-h-screen bg-slate-950 relative overflow-hidden">
+  <div class="min-h-screen relative overflow-hidden bg-slate-950">
 
-    <!-- ── Background ── -->
+    <!-- ── Background image + overlay ── -->
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+      <!-- Hero image -->
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style="background-image:url('/images/bg-hero2.webp')"></div>
+      <!-- Dark overlay: preserves readability and blends with dark theme -->
+      <div class="absolute inset-0 bg-slate-950/75"></div>
+    </div>
+
+    <!-- ── Decorative glows (on top of image) ── -->
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
       <!-- Primary hero glow (center-right / bottom-right) -->
       <div class="absolute bottom-0 right-0 w-[900px] h-[700px] bg-[radial-gradient(ellipse_at_bottom_right,rgba(20,184,166,0.22)_0%,rgba(52,211,153,0.10)_35%,transparent_65%)]"></div>
