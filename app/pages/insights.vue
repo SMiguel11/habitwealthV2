@@ -99,19 +99,58 @@
         </div>
 
         <!-- Stress Index -->
-        <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 overflow-hidden hover:border-red-500/20 hover:bg-red-500/[0.03] transition-all duration-300">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent"></div>
+        <div class="relative rounded-2xl border bg-white/[0.03] p-5 overflow-hidden transition-all duration-300"
+          :class="fsiLevel >= 60
+            ? 'border-red-500/25 hover:border-red-500/40 hover:bg-red-500/[0.03]'
+            : fsiLevel >= 30
+            ? 'border-amber-500/25 hover:border-amber-500/40 hover:bg-amber-500/[0.03]'
+            : 'border-emerald-500/20 hover:border-emerald-500/35 hover:bg-emerald-500/[0.03]'">
+          <!-- Semantic top line -->
+          <div class="absolute inset-x-0 top-0 h-px"
+            :class="fsiLevel >= 60
+              ? 'bg-gradient-to-r from-transparent via-red-500/60 to-transparent'
+              : fsiLevel >= 30
+              ? 'bg-gradient-to-r from-transparent via-amber-400/60 to-transparent'
+              : 'bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent'"></div>
+          <!-- Header -->
           <div class="flex items-center justify-between mb-3">
             <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_stress_label') }}</span>
-            <div class="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-              <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+              :class="fsiLevel >= 60
+                ? 'bg-red-500/15 text-red-400 border-red-500/25'
+                : fsiLevel >= 30
+                ? 'bg-amber-500/15 text-amber-400 border-amber-500/25'
+                : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'">
+              {{ fsiBandLabel }}
+            </span>
           </div>
-          <div class="flex items-end gap-1.5">
-            <span class="text-4xl font-black tracking-tighter leading-none" :class="fsiLevel >= 70 ? 'text-red-400' : fsiLevel >= 40 ? 'text-amber-400' : 'text-emerald-400'">{{ fsiLevel }}</span>
-            <span class="text-lg text-slate-700 font-semibold mb-0.5">/100</span>
+          <!-- Semicircle gauge -->
+          <div class="-mx-1">
+            <svg viewBox="0 0 120 68" class="w-full max-w-[150px] mx-auto" fill="none" aria-hidden="true">
+              <!-- Background track -->
+              <path d="M 10 62 A 50 50 0 0 1 110 62"
+                stroke="rgba(255,255,255,0.05)" stroke-width="10" stroke-linecap="round"/>
+              <!-- Value arc -->
+              <path d="M 10 62 A 50 50 0 0 1 110 62"
+                :stroke="fsiGaugeColor" stroke-width="10" stroke-linecap="round"
+                pathLength="100" :stroke-dasharray="`${fsiLevel} 100`"
+                style="transition: stroke-dasharray 0.7s ease, stroke 0.4s ease;"/>
+              <!-- Score -->
+              <text x="60" y="55" text-anchor="middle"
+                :fill="fsiGaugeColor"
+                style="font-size:20px;font-weight:900;font-family:inherit;">{{ fsiLevel }}</text>
+              <text x="60" y="64" text-anchor="middle"
+                fill="rgba(100,116,139,0.7)"
+                style="font-size:8px;font-weight:600;font-family:inherit;">/ 100</text>
+            </svg>
           </div>
-          <p class="text-[11px] text-slate-600 mt-2">{{ t('ins_stress_desc') }}</p>
+          <!-- Delta -->
+          <p class="text-[10px] font-semibold text-center mt-0.5"
+            :class="fsiLevel >= 60 ? 'text-red-400/80' : fsiLevel >= 30 ? 'text-amber-400/80' : 'text-emerald-400/80'">
+            {{ fsiDelta }}
+          </p>
+          <!-- Insight -->
+          <p class="text-[11px] text-slate-600 mt-1.5 leading-snug text-center">{{ fsiInsightText }}</p>
         </div>
 
         <!-- Total Spent -->
@@ -407,6 +446,29 @@ const fsiLevel = computed(() => {
   if (fsi === 'High') return 87
   if (fsi === 'Medium') return 57
   return 20
+})
+const fsiGaugeColor = computed(() => {
+  if (fsiLevel.value >= 60) return '#ef4444'
+  if (fsiLevel.value >= 30) return '#f59e0b'
+  return '#10b981'
+})
+const fsiBandLabel = computed(() => {
+  const es = locale.value === 'es'
+  if (fsiLevel.value >= 60) return es ? 'Alto' : 'High'
+  if (fsiLevel.value >= 30) return es ? 'Medio' : 'Medium'
+  return es ? 'Bajo' : 'Low'
+})
+const fsiDelta = computed(() => {
+  const es = locale.value === 'es'
+  if (fsiLevel.value >= 60) return es ? '↑ Nivel crítico · Revisa gastos fijos' : '↑ Critical — review fixed costs'
+  if (fsiLevel.value >= 30) return es ? '→ Nivel moderado · Actúa pronto' : '→ Moderate — act soon'
+  return es ? '↓ Sin alertas financieras activas' : '↓ No active financial alerts'
+})
+const fsiInsightText = computed(() => {
+  const es = locale.value === 'es'
+  if (fsiLevel.value >= 60) return es ? 'Tu estrés financiero requiere atención inmediata' : 'Your financial stress requires immediate attention'
+  if (fsiLevel.value >= 30) return es ? 'Monitorea tu ritmo de gasto esta semana' : 'Monitor your spending pace this week'
+  return es ? 'Tus finanzas están bajo control este período' : 'Your finances are under control this period'
 })
 const totalSpent = computed(() => {
   const total = summary.value?.totalExpenses ?? 0
