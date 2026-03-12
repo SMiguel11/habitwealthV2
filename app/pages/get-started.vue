@@ -2,12 +2,7 @@
   <div class="min-h-screen bg-slate-950 relative overflow-hidden">
 
     <!-- Background -->
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
-      <div class="absolute bottom-0 right-0 w-[900px] h-[700px] bg-[radial-gradient(ellipse_at_bottom_right,rgba(20,184,166,0.15)_0%,rgba(52,211,153,0.07)_35%,transparent_65%)]"></div>
-      <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[radial-gradient(ellipse_at_top,rgba(52,211,153,0.05)_0%,transparent_60%)]"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:36px_36px]"></div>
-      <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
-    </div>
+    <ParticlesBg />
 
     <!-- Navbar -->
     <header class="sticky top-0 z-50 w-full border-b border-white/[0.05] bg-slate-950/70 backdrop-blur-xl">
@@ -32,9 +27,15 @@
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
           {{ t('gs_badge') }}
         </div>
-        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-3">
-          <span class="text-white">{{ t('gs_welcome') }} </span><span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent">{{ userName }}</span>
-        </h1>
+        <AnimatedGradientText
+          :text="`${t('gs_welcome')} ${userName}!`"
+          class-name="mb-3"
+          text-class-name="text-3xl sm:text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight"
+          gradient-colors="linear-gradient(90deg, #ffffff, #99f6e4, #67e8f9, #ffffff)"
+          :gradient-animation-duration="1.6"
+          :hover-effect="true"
+          as="h1"
+        />
         <p class="text-slate-500 text-base max-w-sm mx-auto leading-relaxed">{{ t('gs_subtitle') }}</p>
       </div>
 
@@ -403,6 +404,8 @@
 
 <script setup>
 import AppLogo from '~/components/AppLogo.vue'
+import AnimatedGradientText from '~/components/ui/AnimatedGradientText.vue'
+import ParticlesBg from '~/components/ui/ParticlesBg.vue'
 import { useRouter, useRoute } from '#app'
 import { ref, computed } from 'vue'
 import { useI18n } from '#imports'

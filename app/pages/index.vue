@@ -67,7 +67,14 @@
 
         <!-- Headline -->
         <h1 class="text-5xl sm:text-6xl xl:text-[4.5rem] font-extrabold tracking-tight leading-[1.04] mb-6">
-          <span class="text-white">{{ t('headline_part1') }} </span><span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent pb-1">{{ t('headline_part2') }}</span>
+          <AnimatedUnderlineTextOne
+            :text="`${t('headline_part1')}${t('headline_part2')}`"
+            text-class-name="text-5xl sm:text-6xl xl:text-[4.5rem] font-extrabold tracking-tight leading-[1.04] bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent"
+            underline-path="M 0,12 Q 75,4 150,12 Q 225,20 300,12"
+            underline-hover-path="M 0,12 Q 75,20 150,12 Q 225,4 300,12"
+            :underline-duration="1.2"
+            underline-color="#34d399"
+          />
         </h1>
 
         <!-- Subtitle -->
@@ -357,6 +364,7 @@ import { useRouter } from '#app'
 import { ref, computed } from 'vue'
 import { useI18n } from '#imports'
 import AppLogo from '~/components/AppLogo.vue'
+import AnimatedUnderlineTextOne from '~/components/ui/AnimatedUnderlineTextOne.vue'
 
 const router = useRouter()
 const name = ref('')
