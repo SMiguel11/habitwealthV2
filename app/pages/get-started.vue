@@ -298,9 +298,9 @@
               </p>
               <div class="flex flex-wrap gap-2">
                 <template v-if="typeof q === 'string'">
-                  <button v-for="val in [1,2,3,4]" :key="val" @click="selectAnswer(idx, val)"
-                    :class="['w-10 h-10 rounded-xl border text-sm font-bold transition-all', answers[idx]===val ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/[0.04] border-white/[0.08] text-slate-500 hover:border-white/20 hover:text-white']">
-                    {{ val }}
+                  <button v-for="(label, li) in [t('gs_likert_1'), t('gs_likert_2'), t('gs_likert_3'), t('gs_likert_4')]" :key="li" @click="selectAnswer(idx, li + 1)"
+                    :class="['px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all', answers[idx]===(li+1) ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/[0.04] border-white/[0.08] text-slate-500 hover:border-white/20 hover:text-white']">
+                    {{ label }}
                   </button>
                 </template>
                 <template v-else>
