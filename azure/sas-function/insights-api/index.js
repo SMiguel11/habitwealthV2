@@ -7,6 +7,7 @@ const { getDocuments } = require('../shared/cosmos-db')
 
 module.exports = async function (context, req) {
   const userId = req.query.userId || 'local-user'
+  const lang   = req.query.lang   || 'en'
   let docs  // let so we can reassign after dedup
   try {
     docs = await getDocuments(userId)
@@ -65,8 +66,10 @@ module.exports = async function (context, req) {
   )
   const habitScore = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length)
 
-  // Latest nudges from CBT agent
-  const nudges = latestDoc.agentResult?.agents?.cbtIntervention?.nudges || []
+  // Latest nudges from CBT agent — pick Spanish if requested and available
+  const nudges_en = latestDoc.agentResult?.agents?.cbtIntervention?.nudges || []
+  const nudges_es = latestDoc.agentResult?.agents?.cbtIntervention?.nudges_es || []
+  const nudges = lang === 'es' && nudges_es.length > 0 ? nudges_es : nudges_en
 
   // Trend data (last 7 scores)
   const trendScores = docs.slice(-7).map(d =>

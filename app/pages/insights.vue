@@ -327,7 +327,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from '#imports'
 import AppLogo from '../components/AppLogo.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const loading = ref(true)
 
@@ -347,7 +347,7 @@ const recentTransactions = ref([])
 async function fetchInsights() {
   const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
-  const res = await fetch(`${functionBase}/api/insights-api?userId=local-user`)
+  const res = await fetch(`${functionBase}/api/insights-api?userId=local-user&lang=${locale.value}`)
   const data = await res.json()
   if (data.summary) {
     summary.value = data.summary

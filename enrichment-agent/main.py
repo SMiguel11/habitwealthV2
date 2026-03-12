@@ -306,25 +306,29 @@ def _ai_nudges(
             f"- Specific to the \"{dominant}\" pattern, not generic financial advice.\n"
             f"- Include at least one concrete technique per nudge "
             f"(pause timer, emotion journaling, breathing exercise, implementation intention).\n"
-            f"- Return ONLY a valid JSON array of 3 strings, no markdown, no explanation.\n"
-            f"Example: [\"nudge 1\", \"nudge 2\", \"nudge 3\"]"
+            f"- Return ONLY a valid JSON object with two keys: \"en\" (3 nudges in English) "
+            f"and \"es\" (the same 3 nudges translated to natural Spanish). No markdown, no explanation.\n"
+            f"Example: {{\"en\": [\"nudge 1\", \"nudge 2\", \"nudge 3\"], "
+            f"\"es\": [\"consejo 1\", \"consejo 2\", \"consejo 3\"]}}"
         )
 
         response = client.chat.completions.create(
             model=deployment,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=350,
+            max_tokens=600,
         )
 
         raw = response.choices[0].message.content.strip()
-        nudges = json.loads(raw)
-        if isinstance(nudges, list) and len(nudges) >= 1:
+        parsed = json.loads(raw)
+        nudges_en = parsed.get("en", []) if isinstance(parsed, dict) else parsed
+        nudges_es = parsed.get("es", []) if isinstance(parsed, dict) else []
+        if isinstance(nudges_en, list) and len(nudges_en) >= 1:
             logger.info(
-                "GPT-4o generated %d CBT nudges for pattern='%s' stress=%s",
-                len(nudges), dominant, fsi_level,
+                "GPT-4o generated %d CBT nudges (EN+ES) for pattern='%s' stress=%s",
+                len(nudges_en), dominant, fsi_level,
             )
-            return [str(n) for n in nudges[:3]], "gpt-4o"
+            return {"en": [str(n) for n in nudges_en[:3]], "es": [str(n) for n in nudges_es[:3]]}, "gpt-4o"
 
     except Exception as exc:
         logger.warning("Azure OpenAI CBT nudge generation failed (%s) — using static fallback", exc)
@@ -334,18 +338,26 @@ def _ai_nudges(
 
 def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None) -> dict:
     dominant = emotional["dominantPattern"]
-    nudges, source = _ai_nudges(
+    nudges_result, source = _ai_nudges(
         dominant=dominant,
         fsi_level=fsi["fsiLevel"],
         emotional_scores=emotional["emotionalSpendScores"],
         doc_summary=doc or {},
     )
+    # nudges_result is {"en": [...], "es": [...]} for GPT, or a plain list for static fallback
+    if isinstance(nudges_result, dict):
+        nudges_en = nudges_result.get("en", [])
+        nudges_es = nudges_result.get("es", [])
+    else:
+        nudges_en = nudges_result
+        nudges_es = []
     level = fsi["fsiLevel"]
     urgency = "immediate" if level == "High" else "suggested" if level == "Medium" else "preventive"
     return {
         "agent": "CBTIntervention",
         "interventionUrgency": urgency,
-        "nudges": nudges,
+        "nudges": nudges_en,
+        "nudges_es": nudges_es,
         "nudgeSource": source,
         "primaryPattern": dominant,
         "weekendSpendAlert": emotional["weekendSpend"] > 200,
