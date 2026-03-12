@@ -120,6 +120,7 @@
   "ins_stress_desc": "Nivel de estrés financiero",
   "ins_spent_label": "Total Gastado",
   "ins_spent_period": "Últimos 3 meses",
+  "ins_net": "neto",
   "ins_impulse_label": "Control de Impulso",
   "ins_impulse_desc": "Control sobre compras impulsivas",
   "ins_categories_title": "Gasto por Categoría",

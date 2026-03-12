@@ -120,6 +120,7 @@
   "ins_stress_desc": "Financial stress level",
   "ins_spent_label": "Total Spent",
   "ins_spent_period": "Last 3 months",
+  "ins_net": "net",
   "ins_impulse_label": "Impulse Control",
   "ins_impulse_desc": "Control over impulse buys",
   "ins_categories_title": "Spending by Category",

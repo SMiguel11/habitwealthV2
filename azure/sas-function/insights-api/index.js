@@ -76,6 +76,14 @@ module.exports = async function (context, req) {
     d.agentResult?.summary?.habitWealthScore ?? d.insights?.habitWealthScore ?? 50
   )
 
+  // Aggregate financial totals across ALL documents (not just latest)
+  const totalExpensesAll = docs.reduce((sum, d) =>
+    sum + (d.agentResult?.agents?.documentIntelligence?.totalExpenses || 0), 0)
+  const totalIncomeAll = docs.reduce((sum, d) =>
+    sum + (d.agentResult?.agents?.documentIntelligence?.totalIncome || 0), 0)
+  const netCashFlowAll = docs.reduce((sum, d) =>
+    sum + (d.agentResult?.agents?.documentIntelligence?.netCashFlow || 0), 0)
+
   context.res = {
     status: 200,
     body: {
@@ -87,9 +95,9 @@ module.exports = async function (context, req) {
         fsiLevel:           latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
         goalAlignmentScore: latestDoc.agentResult?.summary?.goalAlignmentScore || 0,
         topNudge:           latestDoc.agentResult?.summary?.topNudge || '',
-        totalExpenses:      latestDoc.agentResult?.agents?.documentIntelligence?.totalExpenses
-                          || Object.values(byCategory).reduce((s, v) => s + v, 0),
-        netCashFlow:        latestDoc.agentResult?.agents?.documentIntelligence?.netCashFlow || 0,
+        totalExpenses:      totalExpensesAll || Object.values(byCategory).reduce((s, v) => s + v, 0),
+        totalIncome:        totalIncomeAll,
+        netCashFlow:        netCashFlowAll,
         byCategory,
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,

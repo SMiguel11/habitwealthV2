@@ -103,7 +103,14 @@
           <div class="flex items-end gap-1">
             <span class="text-2xl font-black text-white tracking-tight leading-none">€{{ totalSpent.toLocaleString() }}</span>
           </div>
-          <p class="text-[11px] text-slate-600 mt-2">{{ t('ins_spent_period') }}</p>
+          <div class="mt-2 flex items-center gap-1.5">
+            <span class="text-[10px] text-emerald-400 font-semibold">↑ €{{ totalIncome.toLocaleString() }}</span>
+            <span class="text-[10px] text-slate-700">·</span>
+            <span :class="['text-[10px] font-semibold', netCashFlow >= 0 ? 'text-emerald-400' : 'text-red-400']">
+              {{ netCashFlow >= 0 ? '+' : '' }}€{{ netCashFlow.toLocaleString() }} {{ t('ins_net') }}
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-600 mt-1">{{ t('ins_spent_period') }}</p>
         </div>
 
         <!-- Impulse Control -->
@@ -380,6 +387,14 @@ const fsiLevel = computed(() => {
 const totalSpent = computed(() => {
   const total = summary.value?.totalExpenses ?? 0
   return Math.round(total * 100) / 100
+})
+const totalIncome = computed(() => {
+  const total = summary.value?.totalIncome ?? 0
+  return Math.round(total * 100) / 100
+})
+const netCashFlow = computed(() => {
+  const flow = summary.value?.netCashFlow ?? 0
+  return Math.round(flow * 100) / 100
 })
 const personaKeyMap = {
   'Impulsive Spender':   'ins_persona_impulsive_spender',
