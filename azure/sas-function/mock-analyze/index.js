@@ -80,7 +80,14 @@ async function analyzeWithDocumentIntelligence(pdfBuffer, context) {
 
 // ── Parse DI table result into transactions ───────────────────────────────────
 const CATEGORY_MAP = {
+  // Income — must be first so salary/freelance are never flipped to expenses
   'ingresos':       'Income',
+  'nómin':          'Income',   'nomina':     'Income',
+  'salario':        'Income',   'sueldo':     'Income',
+  'freelance':      'Income',
+  'transferencia recib': 'Income',
+  'abono':          'Income',
+  // Expenses
   'hogar':          'Utilities', 'suministro': 'Utilities',
   'salud':          'Health',
   'transporte':     'Transport',
@@ -101,45 +108,105 @@ function mapCategory(raw) {
 function parseAmount(str) {
   const s = (str || '').replace(/\s|€|\$/g, '')
   const negative = s.startsWith('-') || s.includes('−')
-  const num = parseFloat(s.replace(/[+\-−]/g, '').replace(/,/g, ''))
+  // Handle European decimal format: 1.234,56 → 1234.56
+  // Detect: if both '.' and ',' present, the last one is the decimal separator
+  let numStr = s.replace(/[+\-−]/g, '').trim()
+  if (numStr.includes(',') && numStr.includes('.')) {
+    // European: 1.234,56 — remove thousands separator '.', replace ',' with '.'
+    numStr = numStr.replace(/\./g, '').replace(',', '.')
+  } else if (numStr.includes(',')) {
+    // Only comma: could be decimal separator (22,08) or thousands (1,234)
+    const commaPos = numStr.lastIndexOf(',')
+    const afterComma = numStr.slice(commaPos + 1)
+    if (afterComma.length <= 2) {
+      // Decimal comma: 22,08 → 22.08
+      numStr = numStr.replace(',', '.')
+    } else {
+      // Thousands comma: 1,234 → 1234
+      numStr = numStr.replace(/,/g, '')
+    }
+  }
+  const num = parseFloat(numStr)
   return isNaN(num) ? 0 : (negative ? -num : num)
 }
 
+// Rows that are balance/summary lines — not real transactions
+const SKIP_DESC_PREFIXES = ['saldo', 'total', 'balance', 'subtotal', 'resumen']
+
 function parseTransactionsFromDI(analyzeResult) {
   const transactions = []
+  let lastHeaders  = null  // headers from the previous valid table (for page-spanning tables)
+  let lastColCount = 0
+
   for (const table of (analyzeResult.tables || [])) {
+    // ── Build header map from row 0 ──────────────────────────────────────────
     const headers = {}
+    let maxCol = 0
     for (const cell of table.cells) {
+      if (cell.columnIndex > maxCol) maxCol = cell.columnIndex
       if (cell.rowIndex === 0) headers[cell.columnIndex] = cell.content.toLowerCase()
     }
-    const hasDate = Object.values(headers).some(h => h.includes('fecha') || h === 'date')
-    if (!hasDate) continue
+    const colCount = maxCol + 1
+    const hasDate  = Object.values(headers).some(h => h.includes('fecha') || h === 'date')
 
-    const dateCol = +Object.keys(headers).find(i => headers[i].includes('fecha') || headers[i] === 'date')
-    const descCol = +Object.keys(headers).find(i => headers[i].includes('descripci') || headers[i].includes('desc') || headers[i].includes('concepto'))
-    const catCol  = +Object.keys(headers).find(i => headers[i].includes('categor'))
-    const amtCol  = +Object.keys(headers).find(i => headers[i].includes('importe') || headers[i].includes('amount'))
+    // ── Determine active headers & whether to skip row 0 ────────────────────
+    let activeHeaders
+    let skipRow0
+    if (hasDate) {
+      // Normal table with header row
+      activeHeaders = headers
+      lastHeaders   = headers
+      lastColCount  = colCount
+      skipRow0      = true
+    } else if (lastHeaders && colCount >= lastColCount - 1) {
+      // Continuation of a multi-page table: same column structure, no new header row
+      // DI splits the table at each page boundary; the continued section has no header.
+      activeHeaders = lastHeaders
+      skipRow0      = false  // row 0 is data, not a header
+    } else {
+      continue  // unrelated table, skip
+    }
 
+    const dateCol = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('fecha') || activeHeaders[i] === 'date')
+    const descCol = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('descripci') || activeHeaders[i].includes('desc') || activeHeaders[i].includes('concepto'))
+    const catCol  = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('categor'))
+    const amtCol  = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('importe') || activeHeaders[i].includes('amount'))
+
+    // ── Collect rows ─────────────────────────────────────────────────────────
     const rows = {}
     for (const cell of table.cells) {
-      if (cell.rowIndex === 0) continue
+      if (skipRow0 && cell.rowIndex === 0) continue
       if (!rows[cell.rowIndex]) rows[cell.rowIndex] = {}
       rows[cell.rowIndex][cell.columnIndex] = cell.content
     }
 
+    // ── Parse each row into a transaction ────────────────────────────────────
     for (const row of Object.values(rows)) {
-      const desc   = (row[descCol] || '').trim()
+      const desc = (row[descCol] || '').trim()
       if (!desc) continue
-      const dateRaw  = row[dateCol] || ''
+
+      // Skip balance/summary rows (Saldo inicial, Saldo final, Total gastos, etc.)
+      const descLower = desc.toLowerCase()
+      if (SKIP_DESC_PREFIXES.some(p => descLower.startsWith(p))) continue
+
+      const dateRaw = row[dateCol] || ''
+      // Skip rows without a recognisable date
+      if (!dateRaw.match(/\d{1,2}[\/ \-]\d{1,2}[\/ \-]\d{4}/)) continue
+
       const dateParts = dateRaw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
-      const date     = dateParts ? `${dateParts[3]}-${dateParts[2].padStart(2,'0')}-${dateParts[1].padStart(2,'0')}` : dateRaw
+      const date = dateParts
+        ? `${dateParts[3]}-${dateParts[2].padStart(2,'0')}-${dateParts[1].padStart(2,'0')}`
+        : dateRaw
+
       let amount     = parseAmount(row[amtCol] || '0')
       const category = mapCategory(row[catCol] || desc)
-      // If amount is positive and not Income/Savings, treat as expense (negative)
-      // Many bank statements show expenses as positive numbers in a "Cargo" column
-      if (amount > 0 && category !== 'Income' && category !== 'Savings') {
-        amount = -amount
+
+      if (category === 'Income' || category === 'Savings') {
+        if (amount < 0) amount = Math.abs(amount)  // income always positive
+      } else {
+        if (amount > 0) amount = -amount  // expense always negative
       }
+
       transactions.push({ date, merchant: desc, category, amount, currency: 'EUR' })
     }
   }
