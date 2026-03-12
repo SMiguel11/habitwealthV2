@@ -95,6 +95,15 @@ class EnrichRequest(BaseModel):
     goals: list[UserGoal] = []
     surveyAnswers: list[Any] = []
 
+class ExplainScoreRequest(BaseModel):
+    habitWealthScore: int
+    netCashFlow: float = 0.0
+    hasSavings: bool = False
+    byCategory: dict = {}
+    fsiLevel: str = "Medium"
+    dominantPattern: str = "none"
+    weekendSpendAlert: bool = False
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Agent 1 – Document Intelligence Parser
 # ──────────────────────────────────────────────────────────────────────────────
@@ -576,3 +585,21 @@ def enrich_from_event_grid(event: dict):
         "filename": filename,
         "note": "Event Grid event received. In production, pipeline runs after Document Intelligence extraction."
     }
+
+@app.post("/explain-score")
+def explain_score(req: ExplainScoreRequest):
+    """Generate an AI-powered score explanation from aggregated summary data.
+    Called by the insights-api when a Cosmos document predates the scoreExplanation field.
+    Falls back to rule-based explanation if Azure OpenAI is not configured.
+    """
+    doc = {
+        "netCashFlow": req.netCashFlow,
+        "byCategory": req.byCategory if req.byCategory else ({"Savings": 1.0} if req.hasSavings else {}),
+    }
+    emotional = {
+        "dominantPattern": req.dominantPattern,
+        "weekendSpend": 300.0 if req.weekendSpendAlert else 0.0,
+        "surveyStressScore": 0,
+    }
+    fsi = {"fsiLevel": req.fsiLevel}
+    return _ai_score_explanation(req.habitWealthScore, doc, emotional, fsi)

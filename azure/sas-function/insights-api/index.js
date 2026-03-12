@@ -5,6 +5,28 @@
  */
 const { getDocuments } = require('../shared/cosmos-db')
 
+/**
+ * Calls /explain-score on the enrichment agent to generate a GPT-powered explanation.
+ * Used when an older Cosmos document was uploaded before scoreExplanation was added.
+ * Returns a { positives, warnings } object for the requested language, or null on failure.
+ */
+async function fetchAiExplanation(summaryData, lang, enrichmentUrl) {
+  try {
+    const res = await fetch(`${enrichmentUrl}/explain-score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(summaryData),
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    // data = { en: { positives, warnings }, es: { positives, warnings }, source }
+    return (lang === 'es' ? data.es ?? data.en : data.en) ?? null
+  } catch {
+    return null
+  }
+}
+
 module.exports = async function (context, req) {
   const userId = req.query.userId || 'local-user'
   const lang   = req.query.lang   || 'en'
@@ -71,10 +93,6 @@ module.exports = async function (context, req) {
   const nudges_es = latestDoc.agentResult?.agents?.cbtIntervention?.nudges_es || []
   const nudges = lang === 'es' && nudges_es.length > 0 ? nudges_es : nudges_en
 
-  // Score explanation — bilingual, pick correct language
-  const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
-  const scoreExplanation = (lang === 'es' ? scoreExpRaw?.es ?? scoreExpRaw?.en : scoreExpRaw?.en) ?? null
-
   // Trend data (last 7 scores)
   const trendScores = docs.slice(-7).map(d =>
     d.agentResult?.summary?.habitWealthScore ?? d.insights?.habitWealthScore ?? 50
@@ -87,6 +105,27 @@ module.exports = async function (context, req) {
     sum + (d.agentResult?.agents?.documentIntelligence?.totalIncome || 0), 0)
   const netCashFlowAll = docs.reduce((sum, d) =>
     sum + (d.agentResult?.agents?.documentIntelligence?.netCashFlow || 0), 0)
+
+  // Score explanation — bilingual, pick correct language
+  const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
+  let scoreExplanation = (lang === 'es' ? scoreExpRaw?.es ?? scoreExpRaw?.en : scoreExpRaw?.en) ?? null
+
+  // If explanation is missing (older docs), request it from the enrichment agent (AI-powered)
+  if (!scoreExplanation) {
+    const enrichmentUrl = (process.env.ENRICHMENT_AGENT_URL || '').replace(/\/$/, '')
+    if (enrichmentUrl) {
+      scoreExplanation = await fetchAiExplanation({
+        habitWealthScore: habitScore,
+        netCashFlow:      netCashFlowAll,
+        hasSavings:       (byCategory.Savings || byCategory.savings || 0) > 0,
+        byCategory,
+        fsiLevel:         latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
+        dominantPattern:  latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || 'none',
+        weekendSpendAlert: latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
+      }, lang, enrichmentUrl)
+      context.log(`[insights-api] scoreExplanation generated on-demand via AI: ${scoreExplanation ? 'ok' : 'null'}`)
+    }
+  }
 
   context.res = {
     status: 200,
