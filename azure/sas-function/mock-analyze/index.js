@@ -216,6 +216,60 @@ function parseTransactionsFromDI(analyzeResult) {
       transactions.push({ date, merchant: desc, category, amount, currency: 'EUR' })
     }
   }
+
+  // ── Fallback: scan raw page lines for transactions DI didn't put in a table ─
+  // (e.g. a single-row continuation on page 2 that DI emits as paragraphs)
+  const known = new Set(
+    transactions.map(t => t.date + '|' + t.merchant + '|' + Math.abs(t.amount).toFixed(2))
+  )
+  const DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/
+  const AMT_RE  = /^[+\-−]?\d/
+
+  const allLines = []
+  for (const page of (analyzeResult.pages || [])) {
+    for (const line of (page.lines || [])) {
+      allLines.push((line.content || '').trim())
+    }
+  }
+
+  for (let i = 0; i < allLines.length - 2; i++) {
+    const dm = allLines[i].match(DATE_RE)
+    if (!dm) continue
+
+    const desc   = allLines[i + 1] || ''
+    const catRaw = allLines[i + 2] || ''
+    // Amount may be at i+3 or fused onto i+2 (e.g. "Compras-22.08")
+    let amtStr = allLines[i + 3] || ''
+    let skip   = 4
+
+    if (!AMT_RE.test(amtStr)) {
+      // Try extracting amount fused into catRaw: "Compras-22.08"
+      const fused = catRaw.match(/([+\-−]\d[\d.,]*)/)
+      if (fused) { amtStr = fused[1]; skip = 3 }
+      else { continue }
+    }
+
+    const descLower = desc.toLowerCase()
+    if (SKIP_DESC_PREFIXES.some(p => descLower.startsWith(p))) { i += skip - 1; continue }
+
+    const date = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`
+    let amount  = parseAmount(amtStr)
+    if (amount === 0) continue
+
+    const category = mapCategory(catRaw.replace(/[+\-−][\d.,]+.*/, '').trim() || desc)
+    const key = `${date}|${desc}|${Math.abs(amount).toFixed(2)}`
+    if (known.has(key)) { i += skip - 1; continue }
+    known.add(key)
+
+    if (category === 'Income') {
+      if (amount < 0) amount = Math.abs(amount)
+    } else {
+      if (amount > 0) amount = -amount
+    }
+    transactions.push({ date, merchant: desc, category, amount, currency: 'EUR' })
+    i += skip - 1
+  }
+
   return transactions
 }
 
