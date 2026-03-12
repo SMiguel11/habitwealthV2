@@ -6,6 +6,74 @@
 const { getDocuments } = require('../shared/cosmos-db')
 const https = require('https')
 
+function getMonthlySavings(byCategory = {}, transactions = []) {
+  for (const [key, value] of Object.entries(byCategory || {})) {
+    const normalized = String(key || '').trim().toLowerCase()
+    if (normalized === 'savings' || normalized === 'saving' || normalized === 'ahorros' || normalized === 'ahorro' || normalized.includes('saving') || normalized.includes('ahorr') || normalized.includes('invers')) {
+      return Math.round(Math.abs(Number(value) || 0) * 100) / 100
+    }
+  }
+
+  return Math.round(
+    (transactions || []).reduce((sum, tx) => {
+      const amount = Number(tx?.amount) || 0
+      const category = String(tx?.category || '').toLowerCase()
+      const merchant = String(tx?.merchant || '').toLowerCase()
+      const looksLikeSavings = category.includes('saving') || category.includes('ahorr') || merchant.includes('ahorro') || merchant.includes('myinvestor') || merchant.includes('etf') || merchant.includes('investment')
+      return looksLikeSavings && amount < 0 ? sum + Math.abs(amount) : sum
+    }, 0) * 100
+  ) / 100
+}
+
+function buildGoalSummaries(rawGoals = [], goalAlignmentGoals = [], savingsMonthly = 0) {
+  if (Array.isArray(goalAlignmentGoals) && goalAlignmentGoals.length) {
+    return goalAlignmentGoals.map((goal) => {
+      const currentSavings = Math.round(Math.abs(Number(goal.currentSavings) || 0) * 100) / 100
+      const monthlyNeeded = Math.round((Number(goal.monthlyNeeded) || 0) * 100) / 100
+      return {
+        ...goal,
+        currentSavings,
+        monthlyNeeded,
+        onTrack: typeof goal.onTrack === 'boolean' ? goal.onTrack : currentSavings >= monthlyNeeded,
+      }
+    })
+  }
+
+  return (rawGoals || []).map((goal) => {
+    const targetAmount = Number(goal?.targetAmount) || 0
+    const deadlineMonths = Math.max(Number(goal?.deadlineMonths) || 1, 1)
+    const monthlyNeeded = Math.round((targetAmount / deadlineMonths) * 100) / 100
+    return {
+      goal: goal?.description || 'Goal',
+      monthlyNeeded,
+      currentSavings: savingsMonthly,
+      onTrack: savingsMonthly >= monthlyNeeded,
+      projectedMonths: savingsMonthly > 0 ? Math.ceil(targetAmount / savingsMonthly) : null,
+    }
+  })
+}
+
+function deriveGoalAlignmentScore(summaryScore, goalSummaries = []) {
+  if (typeof summaryScore === 'number' && !Number.isNaN(summaryScore)) return summaryScore
+  if (!goalSummaries.length) return 0
+  const onTrackGoals = goalSummaries.filter(goal => goal.onTrack).length
+  return Math.round((onTrackGoals / goalSummaries.length) * 100)
+}
+
+function getDocumentCategoryTotals(doc = {}) {
+  const catMap = doc.agentResult?.agents?.documentIntelligence?.byCategory
+  if (catMap && Object.keys(catMap).length > 0) return catMap
+
+  return (doc.transactions || []).reduce((acc, tx) => {
+    const amount = Number(tx?.amount) || 0
+    if (amount < 0) {
+      const category = tx?.category || 'Other'
+      acc[category] = (acc[category] || 0) + Math.abs(amount)
+    }
+    return acc
+  }, {})
+}
+
 /**
  * Call Azure OpenAI via native https (no extra npm deps needed).
  * Returns the raw text content from the model, or null on failure.
@@ -70,7 +138,7 @@ function _staticExplanation(score, netFlow, hasSavings, fsiLevel, weekendAlert, 
  */
 async function generateScoreExplanation(summaryData, lang) {
   const { habitWealthScore, netCashFlow, fsiLevel, dominantPattern, weekendSpendAlert, byCategory } = summaryData
-  const hasSavings = (byCategory?.Savings || byCategory?.savings || 0) > 0
+  const hasSavings = getMonthlySavings(byCategory) > 0
   const staticResult = _staticExplanation(habitWealthScore, netCashFlow, hasSavings, fsiLevel, weekendSpendAlert, dominantPattern, lang)
 
   const endpoint   = (process.env.AZURE_OPENAI_ENDPOINT   || '').replace(/\/$/, '')
@@ -139,23 +207,16 @@ module.exports = async function (context, req) {
   docs.sort((a, b) => (a.analyzedAt || '').localeCompare(b.analyzedAt || ''))
   const latestDoc = docs[docs.length - 1]
   const twin      = latestDoc.agentResult?.agents?.digitalTwin
+  const latestByCategory = getDocumentCategoryTotals(latestDoc)
 
   // Aggregate spending by category across all docs
   // Fallback: compute directly from transactions if agent didn't run
   const byCategory = {}
   for (const doc of docs) {
-    const catMap = doc.agentResult?.agents?.documentIntelligence?.byCategory || null
-    if (catMap && Object.keys(catMap).length > 0) {
+    const catMap = getDocumentCategoryTotals(doc)
+    if (Object.keys(catMap).length > 0) {
       for (const [cat, amt] of Object.entries(catMap)) {
         byCategory[cat] = (byCategory[cat] || 0) + amt
-      }
-    } else {
-      // Compute from raw transactions
-      for (const tx of (doc.transactions || [])) {
-        if (tx.amount < 0) {
-          const cat = tx.category || 'Other'
-          byCategory[cat] = (byCategory[cat] || 0) + Math.abs(tx.amount)
-        }
       }
     }
   }
@@ -183,6 +244,9 @@ module.exports = async function (context, req) {
     sum + (d.agentResult?.agents?.documentIntelligence?.totalIncome || 0), 0)
   const netCashFlowAll = docs.reduce((sum, d) =>
     sum + (d.agentResult?.agents?.documentIntelligence?.netCashFlow || 0), 0)
+  const savingsMonthly = getMonthlySavings(latestByCategory, latestDoc.transactions || [])
+  const goalSummaries = buildGoalSummaries(latestDoc.goals || [], latestDoc.agentResult?.agents?.goalAlignment?.goals, savingsMonthly)
+  const goalAlignmentScore = deriveGoalAlignmentScore(latestDoc.agentResult?.summary?.goalAlignmentScore, goalSummaries)
 
   // Score explanation — bilingual, pick correct language
   const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
@@ -210,7 +274,7 @@ module.exports = async function (context, req) {
         habitWealthScore:   habitScore,
         financialPersona:   twin?.financialPersona || 'Conscious Spender',
         fsiLevel:           latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
-        goalAlignmentScore: latestDoc.agentResult?.summary?.goalAlignmentScore || 0,
+        goalAlignmentScore,
         topNudge:           latestDoc.agentResult?.summary?.topNudge || '',
         totalExpenses:      totalExpensesAll || Object.values(byCategory).reduce((s, v) => s + v, 0),
         totalIncome:        totalIncomeAll,
@@ -225,15 +289,7 @@ module.exports = async function (context, req) {
         weekendSpendAlert:  latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
         interventionUrgency: latestDoc.agentResult?.agents?.cbtIntervention?.interventionUrgency || 'Low',
         trendScores,
-        goals: latestDoc.agentResult?.agents?.goalAlignment?.goals
-            || (latestDoc.goals || []).map(g => ({
-                goal: g.description,
-                monthlyNeeded: Math.round(g.targetAmount / Math.max(g.deadlineMonths, 1) * 100) / 100,
-                currentSavings: 0,
-                onTrack: false,
-                projectedMonths: null
-               })),
-        goalAlignmentScore: latestDoc.agentResult?.summary?.goalAlignmentScore || 0,
+        goals: goalSummaries,
       },
       recentTransactions: (latestDoc.transactions || []).slice(0, 20),
       documents: docs.map(d => ({

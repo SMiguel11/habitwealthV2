@@ -183,6 +183,14 @@ def agent_emotional_pattern(transactions: list[dict], survey_answers: list) -> d
         "surveyStressScore": survey_stress,
     }
 
+def _get_monthly_savings(doc: dict) -> float:
+    by_category = doc.get("byCategory", {}) or {}
+    for key, value in by_category.items():
+        normalized = str(key).strip().lower()
+        if normalized in {"savings", "saving", "ahorros", "ahorro"} or "saving" in normalized or "ahorr" in normalized or "invers" in normalized:
+            return round(abs(float(value or 0)), 2)
+    return 0.0
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Agent 3 – Financial Stress Index
 # ──────────────────────────────────────────────────────────────────────────────
@@ -216,7 +224,7 @@ def agent_financial_stress(doc: dict, emotional: dict) -> dict:
 # Agent 4 – Goal Alignment Agent
 # ──────────────────────────────────────────────────────────────────────────────
 def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
-    savings_monthly = doc["byCategory"].get("Savings", 0)
+    savings_monthly = _get_monthly_savings(doc)
     alignments = []
     for g in goals:
         target  = g.get("targetAmount", 0)
@@ -401,7 +409,7 @@ def agent_digital_twin(user_id: str, doc: dict, emotional: dict,
         "monthlySnapshot": {
             "income": doc["totalIncome"],
             "expenses": doc["totalExpenses"],
-            "savings": doc["byCategory"].get("Savings", 0),
+            "savings": _get_monthly_savings(doc),
             "netFlow": doc["netCashFlow"],
         },
     }
@@ -424,7 +432,7 @@ def _classify_persona(dominant: str, fsi_level: str) -> str:
 def _static_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi_level: str) -> dict:
     """Rule-based score explanation used as fallback when GPT is unavailable."""
     net_flow     = doc.get("netCashFlow", 0)
-    has_savings  = doc.get("byCategory", {}).get("Savings", 0) > 0
+    has_savings  = _get_monthly_savings(doc) > 0
     weekend_warn = emotional.get("weekendSpend", 0) > 200
     dominant     = emotional.get("dominantPattern", "none")
 
@@ -468,7 +476,7 @@ def _ai_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi: dic
     fsi_level  = fsi.get("fsiLevel", "Medium")
     dominant   = emotional.get("dominantPattern", "none")
     net_flow   = doc.get("netCashFlow", 0)
-    has_savings = doc.get("byCategory", {}).get("Savings", 0) > 0
+    has_savings = _get_monthly_savings(doc) > 0
     weekend_alert = emotional.get("weekendSpend", 0) > 200
 
     fallback = _static_score_explanation(habit_score, doc, emotional, fsi_level)
