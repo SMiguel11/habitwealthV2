@@ -209,7 +209,9 @@
                   <p class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">{{ t.merchant }}</p>
                   <p class="text-[11px] text-slate-700">{{ t.date }}</p>
                 </div>
-                <span class="text-sm font-bold text-red-400 tabular-nums">−€{{ Math.abs(t.amount) }}</span>
+                <span class="text-sm font-bold tabular-nums" :class="t.amount >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                  {{ t.amount >= 0 ? '+' : '−' }}€{{ Math.abs(t.amount).toFixed(2) }}
+                </span>
               </div>
             </div>
             <div v-else class="text-sm text-slate-600">{{ t('ins_transactions_empty') }}</div>
