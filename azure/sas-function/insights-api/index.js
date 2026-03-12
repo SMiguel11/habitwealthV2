@@ -4,27 +4,105 @@
  * Uses Cosmos DB in production, falls back to /tmp JSON locally.
  */
 const { getDocuments } = require('../shared/cosmos-db')
+const https = require('https')
 
 /**
- * Calls /explain-score on the enrichment agent to generate a GPT-powered explanation.
- * Used when an older Cosmos document was uploaded before scoreExplanation was added.
- * Returns a { positives, warnings } object for the requested language, or null on failure.
+ * Call Azure OpenAI via native https (no extra npm deps needed).
+ * Returns the raw text content from the model, or null on failure.
  */
-async function fetchAiExplanation(summaryData, lang, enrichmentUrl) {
+function _callOpenAI(endpoint, deployment, apiKey, prompt) {
+  return new Promise((resolve) => {
+    try {
+      const url = new URL(`/openai/deployments/${deployment}/chat/completions?api-version=2024-02-01`, endpoint)
+      const body = JSON.stringify({
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.6,
+        max_tokens: 350,
+      })
+      const req = https.request({
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: url.pathname + url.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+          'Content-Length': Buffer.byteLength(body),
+        },
+      }, (res) => {
+        let data = ''
+        res.on('data', chunk => { data += chunk })
+        res.on('end', () => {
+          try { resolve(JSON.parse(data).choices?.[0]?.message?.content || null) }
+          catch { resolve(null) }
+        })
+      })
+      req.on('error', () => resolve(null))
+      req.setTimeout(9000, () => { req.destroy(); resolve(null) })
+      req.write(body)
+      req.end()
+    } catch { resolve(null) }
+  })
+}
+
+/**
+ * Build a rule-based explanation (bilingual) from summary data.
+ * Used as fallback when Azure OpenAI is not configured.
+ */
+function _staticExplanation(score, netFlow, hasSavings, fsiLevel, weekendAlert, dominant, lang) {
+  const es = lang === 'es'
+  const pos = []
+  const warn = []
+  if (netFlow > 0)   pos.push(es ? 'Tus ingresos superaron tus gastos este período' : 'Your income exceeded your spending this period')
+  if (hasSavings)    pos.push(es ? 'Realizaste una aportación a ahorros o inversión' : 'You made a savings or investment contribution')
+  if (score >= 70)   pos.push(es ? 'Tus hábitos financieros están por encima de la media' : 'Your overall financial habits are above average')
+  if (!weekendAlert && dominant === 'none') pos.push(es ? 'No se detectaron patrones de gasto impulsivo' : 'No significant impulse-spending patterns detected')
+  if (pos.length === 0) pos.push(es ? 'Estás haciendo seguimiento activo de tus finanzas' : 'You are actively tracking your finances — great first step')
+  if (weekendAlert)       warn.push(es ? 'Se detectó gasto elevado los fines de semana' : 'High weekend spending pattern detected')
+  else if (fsiLevel === 'High') warn.push(es ? 'Tu índice de estrés financiero es elevado — revisa tus gastos fijos' : 'Your financial stress index is elevated — review fixed costs')
+  return { positives: pos.slice(0, 3), warnings: warn.slice(0, 1), source: 'static' }
+}
+
+/**
+ * Generate an AI score explanation for existing Cosmos data that predates this field.
+ * Calls Azure OpenAI directly (no enrichment-agent dependency).
+ * Always returns a { positives, warnings, source } object — never null.
+ */
+async function generateScoreExplanation(summaryData, lang) {
+  const { habitWealthScore, netCashFlow, fsiLevel, dominantPattern, weekendSpendAlert, byCategory } = summaryData
+  const hasSavings = (byCategory?.Savings || byCategory?.savings || 0) > 0
+  const staticResult = _staticExplanation(habitWealthScore, netCashFlow, hasSavings, fsiLevel, weekendSpendAlert, dominantPattern, lang)
+
+  const endpoint   = (process.env.AZURE_OPENAI_ENDPOINT   || '').replace(/\/$/, '')
+  const apiKey     = process.env.AZURE_OPENAI_KEY          || ''
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT   || 'gpt-4o-mini'
+
+  if (!endpoint || !apiKey) return staticResult
+
+  const prompt =
+    `You are a personal finance AI coach. The user has a HabitWealth Score of ${habitWealthScore}/100.\n\n` +
+    `Financial profile:\n` +
+    `- Dominant emotional spending pattern: "${dominantPattern}"\n` +
+    `- Financial Stress Level: ${fsiLevel}\n` +
+    `- Net cash flow this period: €${netCashFlow.toFixed(2)} (${netCashFlow > 0 ? 'positive — great!' : 'negative'})\n` +
+    `- Savings/investment contributions made: ${hasSavings ? 'yes' : 'no'}\n` +
+    `- Weekend spending alert: ${weekendSpendAlert ? 'yes' : 'no'}\n\n` +
+    `Generate a score explanation with:\n` +
+    `- 2-3 short POSITIVES (what the user did well to earn this score, max 12 words each)\n` +
+    `- 0-1 WARNING (only if fsiLevel=High or weekendAlert=yes, else empty list), max 15 words\n` +
+    `Tone: warm, encouraging, data-specific — NOT generic advice.\n` +
+    `Return ONLY valid JSON, no markdown:\n` +
+    `{"en":{"positives":["..."],"warnings":["..."]},"es":{"positives":["..."],"warnings":["..."]}}`
+
   try {
-    const res = await fetch(`${enrichmentUrl}/explain-score`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(summaryData),
-      signal: AbortSignal.timeout(8000),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    // data = { en: { positives, warnings }, es: { positives, warnings }, source }
-    return (lang === 'es' ? data.es ?? data.en : data.en) ?? null
-  } catch {
-    return null
-  }
+    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt)
+    if (!raw) return staticResult
+    const parsed = JSON.parse(raw)
+    const localized = lang === 'es' ? (parsed.es ?? parsed.en) : parsed.en
+    if (localized?.positives?.length) return { ...localized, source: 'gpt-4o' }
+  } catch { /* fall through */ }
+
+  return staticResult
 }
 
 module.exports = async function (context, req) {
@@ -110,21 +188,17 @@ module.exports = async function (context, req) {
   const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
   let scoreExplanation = (lang === 'es' ? scoreExpRaw?.es ?? scoreExpRaw?.en : scoreExpRaw?.en) ?? null
 
-  // If explanation is missing (older docs), request it from the enrichment agent (AI-powered)
+  // If explanation is missing (older docs), generate it via AI (or static fallback)
   if (!scoreExplanation) {
-    const enrichmentUrl = (process.env.ENRICHMENT_AGENT_URL || '').replace(/\/$/, '')
-    if (enrichmentUrl) {
-      scoreExplanation = await fetchAiExplanation({
-        habitWealthScore: habitScore,
-        netCashFlow:      netCashFlowAll,
-        hasSavings:       (byCategory.Savings || byCategory.savings || 0) > 0,
-        byCategory,
-        fsiLevel:         latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
-        dominantPattern:  latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || 'none',
-        weekendSpendAlert: latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
-      }, lang, enrichmentUrl)
-      context.log(`[insights-api] scoreExplanation generated on-demand via AI: ${scoreExplanation ? 'ok' : 'null'}`)
-    }
+    scoreExplanation = await generateScoreExplanation({
+      habitWealthScore: habitScore,
+      netCashFlow:      netCashFlowAll,
+      byCategory,
+      fsiLevel:         latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
+      dominantPattern:  latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || 'none',
+      weekendSpendAlert: latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
+    }, lang)
+    context.log(`[insights-api] scoreExplanation generated on-demand (source: ${scoreExplanation?.source})`)
   }
 
   context.res = {
