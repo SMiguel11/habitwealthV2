@@ -206,10 +206,11 @@ function parseTransactionsFromDI(analyzeResult) {
       let amount     = parseAmount(row[amtCol] || '0')
       const category = mapCategory(row[catCol] || desc)
 
-      if (category === 'Income' || category === 'Savings') {
+      if (category === 'Income') {
         if (amount < 0) amount = Math.abs(amount)  // income always positive
       } else {
-        if (amount > 0) amount = -amount  // expense always negative
+        // Savings transfers (ahorro, ETF) are debits — keep them negative
+        if (amount > 0) amount = -amount  // all outflows always negative
       }
 
       transactions.push({ date, merchant: desc, category, amount, currency: 'EUR' })
