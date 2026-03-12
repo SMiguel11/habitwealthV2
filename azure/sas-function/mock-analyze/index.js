@@ -108,24 +108,29 @@ function mapCategory(raw) {
 function parseAmount(str) {
   const s = (str || '').replace(/\s|€|\$/g, '')
   const negative = s.startsWith('-') || s.includes('−')
-  // Handle European decimal format: 1.234,56 → 1234.56
-  // Detect: if both '.' and ',' present, the last one is the decimal separator
   let numStr = s.replace(/[+\-−]/g, '').trim()
-  if (numStr.includes(',') && numStr.includes('.')) {
-    // European: 1.234,56 — remove thousands separator '.', replace ',' with '.'
-    numStr = numStr.replace(/\./g, '').replace(',', '.')
-  } else if (numStr.includes(',')) {
-    // Only comma: could be decimal separator (22,08) or thousands (1,234)
-    const commaPos = numStr.lastIndexOf(',')
-    const afterComma = numStr.slice(commaPos + 1)
-    if (afterComma.length <= 2) {
-      // Decimal comma: 22,08 → 22.08
-      numStr = numStr.replace(',', '.')
-    } else {
-      // Thousands comma: 1,234 → 1234
+
+  const lastDot   = numStr.lastIndexOf('.')
+  const lastComma = numStr.lastIndexOf(',')
+
+  if (lastDot !== -1 && lastComma !== -1) {
+    // Both separators present — the LAST one is the decimal separator
+    if (lastDot > lastComma) {
+      // Anglo-Saxon: 2,800.00 — comma=thousands, dot=decimal
       numStr = numStr.replace(/,/g, '')
+    } else {
+      // European: 2.800,00 — dot=thousands, comma=decimal
+      numStr = numStr.replace(/\./g, '').replace(',', '.')
     }
+  } else if (lastComma !== -1) {
+    // Only comma: decimal if ≤2 digits after it, thousands otherwise
+    const afterComma = numStr.slice(lastComma + 1)
+    numStr = afterComma.length <= 2
+      ? numStr.replace(',', '.')   // 22,08 → 22.08
+      : numStr.replace(/,/g, '')   // 1,234 → 1234
   }
+  // Only dot: already valid JS float (e.g. 22.08 or 1234.56)
+
   const num = parseFloat(numStr)
   return isNaN(num) ? 0 : (negative ? -num : num)
 }
