@@ -410,6 +410,96 @@ def _classify_persona(dominant: str, fsi_level: str) -> str:
     return mapping.get((dominant, fsi_level), "Conscious Spender")
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Score Explanation helpers
+# ──────────────────────────────────────────────────────────────────────────────
+def _static_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi_level: str) -> dict:
+    """Rule-based score explanation used as fallback when GPT is unavailable."""
+    net_flow     = doc.get("netCashFlow", 0)
+    has_savings  = doc.get("byCategory", {}).get("Savings", 0) > 0
+    weekend_warn = emotional.get("weekendSpend", 0) > 200
+    dominant     = emotional.get("dominantPattern", "none")
+
+    pos_en, pos_es, warn_en, warn_es = [], [], [], []
+
+    if net_flow > 0:
+        pos_en.append("Your income exceeded your spending this period")
+        pos_es.append("Tus ingresos superaron tus gastos este período")
+    if has_savings:
+        pos_en.append("You contributed to savings or an investment fund")
+        pos_es.append("Realizaste una aportación a ahorros o inversión")
+    if habit_score >= 70:
+        pos_en.append("Your overall financial habits are above average")
+        pos_es.append("Tus hábitos financieros están por encima de la media")
+    if not weekend_warn and dominant in ("none", "social"):
+        pos_en.append("No significant impulse spending patterns were detected")
+        pos_es.append("No se detectaron patrones de gasto impulsivo significativos")
+    if not pos_en:
+        pos_en.append("You are actively tracking your finances — great first step")
+        pos_es.append("Estás haciendo seguimiento de tus finanzas — excelente primer paso")
+
+    if weekend_warn:
+        warn_en.append("Stress-related purchases were detected near the end of the month")
+        warn_es.append("Se detectaron compras relacionadas con el estrés a final de mes")
+    if fsi_level == "High":
+        warn_en.append("Your financial stress index is elevated — consider reviewing fixed costs")
+        warn_es.append("Tu índice de estrés financiero es elevado — revisa tus gastos fijos")
+
+    return {
+        "en": {"positives": pos_en[:3], "warnings": warn_en[:1]},
+        "es": {"positives": pos_es[:3], "warnings": warn_es[:1]},
+        "source": "static",
+    }
+
+
+def _ai_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi: dict) -> dict:
+    """Call GPT-4o-mini to generate a bilingual score explanation."""
+    api_key    = get_secret("openai-key", "AZURE_OPENAI_KEY")
+    endpoint   = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini")
+    fsi_level  = fsi.get("fsiLevel", "Medium")
+    dominant   = emotional.get("dominantPattern", "none")
+    net_flow   = doc.get("netCashFlow", 0)
+    has_savings = doc.get("byCategory", {}).get("Savings", 0) > 0
+    weekend_alert = emotional.get("weekendSpend", 0) > 200
+
+    fallback = _static_score_explanation(habit_score, doc, emotional, fsi_level)
+    if not api_key or not endpoint:
+        return fallback
+
+    try:
+        from openai import AzureOpenAI
+        client = AzureOpenAI(api_key=api_key, azure_endpoint=endpoint, api_version="2024-02-01")
+        prompt = (
+            f"You are a personal finance AI coach. The user has a HabitWealth Score of {habit_score}/100.\n\n"
+            f"Financial data this period:\n"
+            f"- Emotional spending pattern: {dominant}\n"
+            f"- Financial Stress Level: {fsi_level}\n"
+            f"- Net cash flow: €{net_flow:.2f} ({'positive' if net_flow > 0 else 'negative'})\n"
+            f"- Has savings/investment contributions: {'yes' if has_savings else 'no'}\n"
+            f"- Weekend spending alert triggered: {'yes' if weekend_alert else 'no'}\n\n"
+            f"Generate a score explanation with:\n"
+            f"- 2-3 short bullet POSITIVES (what the user did well to earn this score, max 12 words each)\n"
+            f"- 0-1 WARNING (only if stress/impulse detected, else empty list), max 15 words\n"
+            f"Tone: warm, encouraging, specific to the data.\n"
+            f"Return ONLY valid JSON (no markdown):\n"
+            f'{{"en": {{"positives": ["..."], "warnings": ["..."]}}, '
+            f'"es": {{"positives": ["..."], "warnings": ["..."]}}}}'  
+        )
+        resp = client.chat.completions.create(
+            model=deployment,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.6,
+            max_tokens=300,
+        )
+        raw = resp.choices[0].message.content.strip()
+        parsed = json.loads(raw)
+        parsed["source"] = "gpt-4o"
+        return parsed
+    except Exception as exc:
+        logger.warning("Score explanation GPT failed (%s) — static fallback", exc)
+        return fallback
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Pipeline orchestrator
 # ──────────────────────────────────────────────────────────────────────────────
 def run_pipeline(request: EnrichRequest) -> dict:
@@ -423,6 +513,7 @@ def run_pipeline(request: EnrichRequest) -> dict:
     goal      = agent_goal_alignment(doc, gs)
     cbt       = agent_cbt_intervention(emotional, fsi, doc)
     twin      = agent_digital_twin(request.userId, doc, emotional, fsi, goal, cbt)
+    cbt["scoreExplanation"] = _ai_score_explanation(twin["habitWealthScore"], doc, emotional, fsi)
 
     return {
         "userId": request.userId,

@@ -71,6 +71,10 @@ module.exports = async function (context, req) {
   const nudges_es = latestDoc.agentResult?.agents?.cbtIntervention?.nudges_es || []
   const nudges = lang === 'es' && nudges_es.length > 0 ? nudges_es : nudges_en
 
+  // Score explanation — bilingual, pick correct language
+  const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
+  const scoreExplanation = (lang === 'es' ? scoreExpRaw?.es ?? scoreExpRaw?.en : scoreExpRaw?.en) ?? null
+
   // Trend data (last 7 scores)
   const trendScores = docs.slice(-7).map(d =>
     d.agentResult?.summary?.habitWealthScore ?? d.insights?.habitWealthScore ?? 50
@@ -103,6 +107,7 @@ module.exports = async function (context, req) {
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,
         nudgeSource:        latestDoc.agentResult?.agents?.cbtIntervention?.nudgeSource || 'static',
+        scoreExplanation,
         primaryPattern:     latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || '',
         weekendSpendAlert:  latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
         interventionUrgency: latestDoc.agentResult?.agents?.cbtIntervention?.interventionUrgency || 'Low',
