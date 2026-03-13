@@ -25,32 +25,41 @@ function getMonthlySavings(byCategory = {}, transactions = []) {
   ) / 100
 }
 
-function buildGoalSummaries(rawGoals = [], goalAlignmentGoals = [], savingsMonthly = 0) {
-  if (Array.isArray(goalAlignmentGoals) && goalAlignmentGoals.length) {
-    return goalAlignmentGoals.map((goal) => {
-      const currentSavings = Math.round(Math.abs(Number(goal.currentSavings) || 0) * 100) / 100
-      const monthlyNeeded = Math.round((Number(goal.monthlyNeeded) || 0) * 100) / 100
+function buildGoalSummaries(rawGoals = [], goalAlignmentGoals = [], effectiveMonthlyCapacity = 0) {
+  if (Array.isArray(rawGoals) && rawGoals.length) {
+    return (rawGoals || []).map((goal) => {
+      const targetAmount = Number(goal?.targetAmount) || 0
+      const deadlineMonths = Math.max(Number(goal?.deadlineMonths) || 1, 1)
+      const monthlyNeeded = Math.round((targetAmount / deadlineMonths) * 100) / 100
       return {
-        ...goal,
-        currentSavings,
+        goal: goal?.description || 'Goal',
         monthlyNeeded,
-        onTrack: typeof goal.onTrack === 'boolean' ? goal.onTrack : currentSavings >= monthlyNeeded,
+        currentSavings: effectiveMonthlyCapacity,
+        onTrack: effectiveMonthlyCapacity >= monthlyNeeded,
+        projectedMonths: effectiveMonthlyCapacity > 0 ? Math.ceil(targetAmount / effectiveMonthlyCapacity) : null,
       }
     })
   }
 
-  return (rawGoals || []).map((goal) => {
-    const targetAmount = Number(goal?.targetAmount) || 0
-    const deadlineMonths = Math.max(Number(goal?.deadlineMonths) || 1, 1)
-    const monthlyNeeded = Math.round((targetAmount / deadlineMonths) * 100) / 100
-    return {
-      goal: goal?.description || 'Goal',
-      monthlyNeeded,
-      currentSavings: savingsMonthly,
-      onTrack: savingsMonthly >= monthlyNeeded,
-      projectedMonths: savingsMonthly > 0 ? Math.ceil(targetAmount / savingsMonthly) : null,
-    }
-  })
+  if (Array.isArray(goalAlignmentGoals) && goalAlignmentGoals.length) {
+    return goalAlignmentGoals.map((goal) => {
+      const currentSavingsBase = Math.round(Math.abs(Number(goal.currentSavings) || 0) * 100) / 100
+      const monthlyNeeded = Math.round((Number(goal.monthlyNeeded) || 0) * 100) / 100
+      const currentSavings = Math.max(currentSavingsBase, effectiveMonthlyCapacity)
+      const targetAmount = Number(goal?.targetAmount) || 0
+      return {
+        ...goal,
+        currentSavings,
+        monthlyNeeded,
+        onTrack: currentSavings >= monthlyNeeded,
+        projectedMonths: currentSavings > 0
+          ? (goal?.projectedMonths || (targetAmount > 0 ? Math.ceil(targetAmount / currentSavings) : null))
+          : null,
+      }
+    })
+  }
+
+  return []
 }
 
 function deriveGoalAlignmentScore(summaryScore, goalSummaries = []) {
@@ -72,6 +81,17 @@ function getDocumentCategoryTotals(doc = {}) {
     }
     return acc
   }, {})
+}
+
+function getLatestNetCashFlow(doc = {}) {
+  const netFromDoc = Number(doc?.agentResult?.agents?.documentIntelligence?.netCashFlow)
+  if (!Number.isNaN(netFromDoc)) return netFromDoc
+
+  const income = Number(doc?.agentResult?.agents?.documentIntelligence?.totalIncome)
+  const expenses = Number(doc?.agentResult?.agents?.documentIntelligence?.totalExpenses)
+  if (!Number.isNaN(income) && !Number.isNaN(expenses)) return income - expenses
+
+  return (doc.transactions || []).reduce((sum, tx) => sum + (Number(tx?.amount) || 0), 0)
 }
 
 /**
@@ -245,7 +265,13 @@ module.exports = async function (context, req) {
   const netCashFlowAll = docs.reduce((sum, d) =>
     sum + (d.agentResult?.agents?.documentIntelligence?.netCashFlow || 0), 0)
   const savingsMonthly = getMonthlySavings(latestByCategory, latestDoc.transactions || [])
-  const goalSummaries = buildGoalSummaries(latestDoc.goals || [], latestDoc.agentResult?.agents?.goalAlignment?.goals, savingsMonthly)
+  const latestNetCashFlow = getLatestNetCashFlow(latestDoc)
+  const effectiveMonthlyCapacity = Math.max(savingsMonthly, Math.max(latestNetCashFlow, 0))
+  const goalSummaries = buildGoalSummaries(
+    latestDoc.goals || [],
+    latestDoc.agentResult?.agents?.goalAlignment?.goals,
+    effectiveMonthlyCapacity
+  )
   const goalAlignmentScore = deriveGoalAlignmentScore(latestDoc.agentResult?.summary?.goalAlignmentScore, goalSummaries)
 
   // Score explanation — bilingual, pick correct language
