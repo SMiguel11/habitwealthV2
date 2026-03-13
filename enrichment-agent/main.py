@@ -225,19 +225,23 @@ def agent_financial_stress(doc: dict, emotional: dict) -> dict:
 # ──────────────────────────────────────────────────────────────────────────────
 def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
     savings_monthly = _get_monthly_savings(doc)
-    # If no explicit savings transfer is detected, use positive monthly surplus as available capacity.
-    available_monthly = max(savings_monthly, max(float(doc.get("netCashFlow", 0) or 0), 0.0))
     alignments = []
     for g in goals:
         target  = g.get("targetAmount", 0)
         months  = g.get("deadlineMonths", 12)
         needed  = target / max(months, 1)
-        on_track = available_monthly >= needed
-        months_to_goal = math.ceil(target / available_monthly) if available_monthly > 0 else None
+        saved_amount = float(g.get("savedAmount", g.get("currentSaved", savings_monthly)) or 0)
+        saved_amount = min(max(saved_amount, 0.0), float(target or 0))
+        remaining = max(float(target or 0) - saved_amount, 0.0)
+        on_track = savings_monthly >= needed
+        months_to_goal = math.ceil(remaining / savings_monthly) if savings_monthly > 0 else None
+        progress_pct = round((saved_amount / target) * 100, 1) if target and target > 0 else 0.0
         alignments.append({
             "goal": g.get("description", "Goal"),
             "monthlyNeeded": round(needed, 2),
-            "currentSavings": round(available_monthly, 2),
+            "currentSavings": round(savings_monthly, 2),
+            "savedAmount": round(saved_amount, 2),
+            "progressPct": progress_pct,
             "onTrack": on_track,
             "projectedMonths": months_to_goal,
         })
