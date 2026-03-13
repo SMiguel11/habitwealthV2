@@ -235,16 +235,17 @@ module.exports = async function (context, req) {
   }
   docs = Array.from(seenFilenames.values())
 
-  // Sort by analyzedAt ascending for timeline
+  // Sort by analyzedAt ascending for timeline and focus dashboard on latest 3 statements
   docs.sort((a, b) => (a.analyzedAt || '').localeCompare(b.analyzedAt || ''))
-  const latestDoc = docs[docs.length - 1]
+  const analysisDocs = docs.slice(-3)
+  const latestDoc = analysisDocs[analysisDocs.length - 1]
   const twin      = latestDoc.agentResult?.agents?.digitalTwin
   const latestByCategory = getDocumentCategoryTotals(latestDoc)
 
-  // Aggregate spending by category across all docs
+  // Aggregate spending by category across the analysis window (latest 3 docs)
   // Fallback: compute directly from transactions if agent didn't run
   const byCategory = {}
-  for (const doc of docs) {
+  for (const doc of analysisDocs) {
     const catMap = getDocumentCategoryTotals(doc)
     if (Object.keys(catMap).length > 0) {
       for (const [cat, amt] of Object.entries(catMap)) {
@@ -253,8 +254,8 @@ module.exports = async function (context, req) {
     }
   }
 
-  // Average habit score across docs
-  const scores = docs.map(d =>
+  // Average habit score across the analysis window
+  const scores = analysisDocs.map(d =>
     d.agentResult?.summary?.habitWealthScore ?? d.insights?.habitWealthScore ?? 50
   )
   const habitScore = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length)
@@ -264,17 +265,17 @@ module.exports = async function (context, req) {
   const nudges_es = latestDoc.agentResult?.agents?.cbtIntervention?.nudges_es || []
   const nudges = lang === 'es' && nudges_es.length > 0 ? nudges_es : nudges_en
 
-  // Trend data (last 7 scores)
-  const trendScores = docs.slice(-7).map(d =>
+  // Trend data from current analysis window
+  const trendScores = analysisDocs.map(d =>
     d.agentResult?.summary?.habitWealthScore ?? d.insights?.habitWealthScore ?? 50
   )
 
-  // Aggregate financial totals across ALL documents (not just latest)
-  const totalExpensesAll = docs.reduce((sum, d) =>
+  // Aggregate financial totals across the current analysis window
+  const totalExpensesAll = analysisDocs.reduce((sum, d) =>
     sum + (d.agentResult?.agents?.documentIntelligence?.totalExpenses || 0), 0)
-  const totalIncomeAll = docs.reduce((sum, d) =>
+  const totalIncomeAll = analysisDocs.reduce((sum, d) =>
     sum + (d.agentResult?.agents?.documentIntelligence?.totalIncome || 0), 0)
-  const netCashFlowAll = docs.reduce((sum, d) =>
+  const netCashFlowAll = analysisDocs.reduce((sum, d) =>
     sum + (d.agentResult?.agents?.documentIntelligence?.netCashFlow || 0), 0)
   const savingsMonthly = getMonthlySavings(latestByCategory, latestDoc.transactions || [])
   const goalSummaries = buildGoalSummaries(
@@ -305,7 +306,8 @@ module.exports = async function (context, req) {
     status: 200,
     body: {
       userId,
-      documentCount: docs.length,
+      documentCount: analysisDocs.length,
+      totalDocumentCount: docs.length,
       summary: {
         habitWealthScore:   habitScore,
         financialPersona:   twin?.financialPersona || 'Conscious Spender',
@@ -328,7 +330,7 @@ module.exports = async function (context, req) {
         goals: goalSummaries,
       },
       recentTransactions: (latestDoc.transactions || []).slice(0, 20),
-      documents: docs.map(d => ({
+      documents: analysisDocs.map(d => ({
         id:         d.id,
         filename:   d.filename,
         analyzedAt: d.analyzedAt,
