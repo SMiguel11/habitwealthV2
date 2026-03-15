@@ -199,26 +199,31 @@
         <div class="lg:col-span-2 space-y-6">
 
           <!-- Spending by category -->
-          <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
+          <div class="relative rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.01] p-6">
             <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-            <h2 class="text-sm font-bold text-white mb-5">{{ t('ins_categories_title') }}</h2>
-            <div v-if="topCategories.length" class="flex flex-col items-center gap-6">
-              <div class="w-full flex justify-center">
-                <ApexChart
-                  type="donut"
-                  :series="pieChartSeries"
-                  :options="pieChartOptions"
-                  :height="250"
-                />
+            <div class="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-5 -z-10 blur-2xl bg-gradient-to-b from-emerald-500 to-teal-500 transition-opacity duration-500"></div>
+            <h2 class="text-sm font-bold text-white mb-6 tracking-tight">{{ t('ins_categories_title') }}</h2>
+            <div v-if="topCategories.length" class="flex flex-col items-center gap-8">
+              <div class="w-full flex justify-center transition-all duration-700 opacity-0 animate-fadeInUp" style="animation: fadeInUp 0.8s ease-out forwards;">
+                <div class="w-full max-w-sm">
+                  <ApexChart
+                    type="donut"
+                    :series="pieChartSeries"
+                    :options="pieChartOptions"
+                    :height="280"
+                  />
+                </div>
               </div>
               <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div v-for="(item, idx) in topCategories" :key="idx" class="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
-                  <div class="w-3 h-3 rounded-full shrink-0" :style="{ backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'][idx] }"></div>
+                <div v-for="(item, idx) in topCategories" :key="idx" 
+                  class="group/card flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.06] hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.08] hover:to-white/[0.02] transition-all duration-300 cursor-pointer"
+                  style="animation: slideIn 0.5s ease-out forwards; animation-delay: ${idx * 50}ms; opacity: 0;">
+                  <div class="w-3 h-3 rounded-full shrink-0 shadow-lg shadow-current/20" :style="{ backgroundColor: ['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx], boxShadow: `0 0 12px ${['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx]}40` }"></div>
                   <div class="flex-1 min-w-0">
-                    <p class="text-xs font-medium text-slate-400 truncate">{{ item.cat }}</p>
-                    <p class="text-xs text-slate-600">€{{ item.amt }}</p>
+                    <p class="text-xs font-semibold text-slate-300 group-hover/card:text-white truncate transition-colors">{{ item.cat }}</p>
+                    <p class="text-xs text-slate-600 group-hover/card:text-slate-500 transition-colors">€{{ item.amt }}</p>
                   </div>
-                  <span class="text-xs font-bold text-white shrink-0">{{ item.pct }}%</span>
+                  <span class="text-xs font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent shrink-0">{{ item.pct }}%</span>
                 </div>
               </div>
             </div>
@@ -576,38 +581,74 @@ const pieChartLabels = computed(() => topCategories.value.map(item => item.cat))
 const pieChartOptions = computed(() => ({
   chart: {
     type: 'donut',
-    fontFamily: 'inherit',
-    sparkline: { enabled: false }
+    fontFamily: '"Inter", "system-ui", sans-serif',
+    sparkline: { enabled: false },
+    background: 'transparent',
+    animations: {
+      enabled: true,
+      speed: 1200,
+      animateGradually: {
+        enabled: true,
+        delay: 150
+      },
+      dynamicAnimation: {
+        enabled: true,
+        speed: 350
+      }
+    }
   },
-  colors: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'],
+  colors: ['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'],
   labels: pieChartLabels.value,
   legend: {
     position: 'bottom',
     fontSize: '12px',
-    fontFamily: 'inherit',
+    fontFamily: '"Inter", "system-ui", sans-serif',
+    fontWeight: 500,
+    offsetY: 8,
+    itemMargin: { vertical: 6 },
     labels: {
-      colors: '#cbd5e1'
+      colors: '#cbd5e1',
+      useSeriesColors: false
+    },
+    markers: {
+      width: 8,
+      height: 8,
+      strokeWidth: 0,
+      radius: 4
     }
   },
   dataLabels: {
     enabled: true,
     formatter: (val) => Math.round(val) + '%',
     style: {
-      fontSize: '12px',
-      fontWeight: '600',
+      fontSize: '13px',
+      fontWeight: '700',
+      fontFamily: '"Inter", "system-ui", sans-serif',
       colors: ['#ffffff']
+    },
+    dropShadow: {
+      enabled: true,
+      top: 1,
+      left: 1,
+      blur: 2,
+      color: '#000000',
+      opacity: 0.5
     }
   },
   plotOptions: {
     pie: {
       donut: {
-        size: '65%',
+        size: '72%',
+        background: 'transparent',
         labels: {
           show: true,
           name: {
             show: false
           },
           value: {
+            show: false
+          },
+          total: {
             show: false
           }
         }
@@ -617,27 +658,100 @@ const pieChartOptions = computed(() => ({
   states: {
     hover: {
       filter: {
-        type: 'none'
+        type: 'lighten',
+        value: 0.15
       }
     },
     active: {
       filter: {
-        type: 'none'
+        type: 'darken',
+        value: 0.15
       }
     }
   },
+  stroke: {
+    show: true,
+    width: 0,
+    colors: ['#0f172a']
+  },
   tooltip: {
+    enabled: true,
     theme: 'dark',
     style: {
-      fontSize: '11px'
+      fontSize: '12px',
+      fontFamily: '"Inter", "system-ui", sans-serif'
     },
     y: {
       formatter: (value) => Math.round(value) + '%'
+    },
+    marker: {
+      show: true
     }
-  }
+  },
+  responsive: [{
+    breakpoint: 480,
+    options: {
+      chart: {
+        width: 300
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '65%'
+          }
+        }
+      }
+    }
+  }]
 }))
 </script>
 
 <style scoped>
-/* small page-level adjustments, Tailwind does most of the work */
+/* Smooth animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* ApexCharts dark theme customization */
+:deep(.apexcharts-svg) {
+  background: transparent !important;
+}
+
+:deep(.apexcharts-theme-dark) {
+  background: transparent !important;
+}
+
+:deep(.apexcharts-text) {
+  font-family: 'Inter', 'system-ui', sans-serif !important;
+}
+
+:deep(.apexcharts-legend) {
+  margin-top: 16px !important;
+}
+
+:deep(.apexcharts-legend-series) {
+  padding: 4px 0 !important;
+}
 </style>
