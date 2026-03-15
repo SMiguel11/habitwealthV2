@@ -427,9 +427,12 @@ const SAS_API = '/api/sas-function'
 // Capture authenticated user on mount
 onMounted(async () => {
   try {
-    await refresh()
-    if (isAuthenticated.value) {
-      userName.value = displayName.value
+    // Only fetch auth if no name was provided in query (manual form entry)
+    if (!route.query.name) {
+      await refresh()
+      if (isAuthenticated.value) {
+        userName.value = displayName.value
+      }
     }
   } catch (err) {
     console.error('Failed to load auth:', err)
