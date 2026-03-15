@@ -202,19 +202,23 @@
           <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
             <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
             <h2 class="text-sm font-bold text-white mb-5">{{ t('ins_categories_title') }}</h2>
-            <div v-if="topCategories.length" class="space-y-3.5">
-              <div v-for="(item, idx) in topCategories" :key="idx" class="group">
-                <div class="flex items-center justify-between mb-1.5">
-                  <span class="text-xs font-medium text-slate-400 group-hover:text-white transition-colors">{{ item.cat }}</span>
-                  <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-600">{{ item.pct }}%</span>
-                    <span class="text-xs font-bold text-white tabular-nums">€{{ item.amt }}</span>
+            <div v-if="topCategories.length" class="flex flex-col items-center gap-6">
+              <div class="w-full flex justify-center">
+                <ApexChart
+                  type="donut"
+                  :series="pieChartSeries"
+                  :options="pieChartOptions"
+                  :height="250"
+                />
+              </div>
+              <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div v-for="(item, idx) in topCategories" :key="idx" class="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
+                  <div class="w-3 h-3 rounded-full shrink-0" :style="{ backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'][idx] }"></div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-medium text-slate-400 truncate">{{ item.cat }}</p>
+                    <p class="text-xs text-slate-600">€{{ item.amt }}</p>
                   </div>
-                </div>
-                <div class="w-full bg-white/[0.05] rounded-full h-1.5">
-                  <div class="h-1.5 rounded-full transition-all duration-700"
-                    :style="{ width: item.pct + '%', background: categoryColors[idx] }"
-                  ></div>
+                  <span class="text-xs font-bold text-white shrink-0">{{ item.pct }}%</span>
                 </div>
               </div>
             </div>
@@ -397,6 +401,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from '#imports'
 import AppLogo from '../components/AppLogo.vue'
+import ApexChart from 'vue3-apexcharts'
 
 const { t, locale } = useI18n()
 
@@ -565,6 +570,72 @@ const topCategories = computed(() => {
       }
     })
 })
+
+const pieChartSeries = computed(() => topCategories.value.map(item => item.pct))
+const pieChartLabels = computed(() => topCategories.value.map(item => item.cat))
+const pieChartOptions = computed(() => ({
+  chart: {
+    type: 'donut',
+    fontFamily: 'inherit',
+    sparkline: { enabled: false }
+  },
+  colors: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'],
+  labels: pieChartLabels.value,
+  legend: {
+    position: 'bottom',
+    fontSize: '12px',
+    fontFamily: 'inherit',
+    labels: {
+      colors: '#cbd5e1'
+    }
+  },
+  dataLabels: {
+    enabled: true,
+    formatter: (val) => Math.round(val) + '%',
+    style: {
+      fontSize: '12px',
+      fontWeight: '600',
+      colors: ['#ffffff']
+    }
+  },
+  plotOptions: {
+    pie: {
+      donut: {
+        size: '65%',
+        labels: {
+          show: true,
+          name: {
+            show: false
+          },
+          value: {
+            show: false
+          }
+        }
+      }
+    }
+  },
+  states: {
+    hover: {
+      filter: {
+        type: 'none'
+      }
+    },
+    active: {
+      filter: {
+        type: 'none'
+      }
+    }
+  },
+  tooltip: {
+    theme: 'dark',
+    style: {
+      fontSize: '11px'
+    },
+    y: {
+      formatter: (value) => Math.round(value) + '%'
+    }
+  }
+}))
 </script>
 
 <style scoped>
