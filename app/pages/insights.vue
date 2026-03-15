@@ -621,7 +621,7 @@ const pieChartOptions = computed(() => ({
     enabled: true,
     formatter: (val) => Math.round(val) + '%',
     style: {
-      fontSize: '13px',
+      fontSize: '11px',
       fontWeight: '700',
       fontFamily: '"Inter", "system-ui", sans-serif',
       colors: ['#ffffff']
