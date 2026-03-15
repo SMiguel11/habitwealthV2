@@ -204,7 +204,7 @@
             <div class="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-5 -z-10 blur-2xl bg-gradient-to-b from-emerald-500 to-teal-500 transition-opacity duration-500"></div>
             <h2 class="text-sm font-bold text-white mb-6 tracking-tight">{{ t('ins_categories_title') }}</h2>
             <div v-if="topCategories.length" class="flex flex-col items-center gap-8">
-              <div class="w-full flex justify-center transition-all duration-700 opacity-0 animate-fadeInUp" style="animation: fadeInUp 0.8s ease-out forwards;">
+              <div class="w-full flex justify-center transition-all duration-700 animate-fadeInUp" style="animation: fadeInUp 0.8s ease-out forwards; opacity: 1;">
                 <div class="w-full max-w-sm">
                   <ApexChart
                     type="donut"
@@ -217,7 +217,7 @@
               <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div v-for="(item, idx) in topCategories" :key="idx" 
                   class="group/card flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.06] hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.08] hover:to-white/[0.02] transition-all duration-300 cursor-pointer"
-                  style="animation: slideIn 0.5s ease-out forwards; animation-delay: ${idx * 50}ms; opacity: 0;">
+                  :style="{ animation: `slideIn 0.5s ease-out forwards`, animationDelay: `${idx * 50}ms`, opacity: 1 }">
                   <div class="w-3 h-3 rounded-full shrink-0 shadow-lg shadow-current/20" :style="{ backgroundColor: ['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx], boxShadow: `0 0 12px ${['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx]}40` }"></div>
                   <div class="flex-1 min-w-0">
                     <p class="text-xs font-semibold text-slate-300 group-hover/card:text-white truncate transition-colors">{{ item.cat }}</p>
