@@ -427,17 +427,20 @@ function start() {
 }
 
 function loginGoogle() {
-  const redirect = encodeURIComponent(window.location.href)
+  const baseUrl = window.location.origin
+  const redirect = encodeURIComponent(`${baseUrl}/get-started`)
   window.location.href = `/.auth/login/google?post_login_redirect_uri=${redirect}`
 }
 
 function loginMicrosoft() {
-  const redirect = encodeURIComponent(window.location.href)
+  const baseUrl = window.location.origin
+  const redirect = encodeURIComponent(`${baseUrl}/get-started`)
   window.location.href = `/.auth/login/aad?post_login_redirect_uri=${redirect}`
 }
 
 function loginGithub() {
-  const redirect = encodeURIComponent(window.location.href)
+  const baseUrl = window.location.origin
+  const redirect = encodeURIComponent(`${baseUrl}/get-started`)
   window.location.href = `/.auth/login/github?post_login_redirect_uri=${redirect}`
 }
 </script>

@@ -407,13 +407,15 @@ import AppLogo from '~/components/AppLogo.vue'
 import AnimatedGradientText from '~/components/ui/AnimatedGradientText.vue'
 import ParticlesBg from '~/components/ui/ParticlesBg.vue'
 import { useRouter, useRoute } from '#app'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from '#imports'
+import { useSwaAuth } from '~/composables/useSwaAuth'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const userName = route.query.name || 'Guest'
+const { displayName, refresh, isAuthenticated } = useSwaAuth()
+const userName = ref(route.query.name || 'Guest')
 const showUploadModal = ref(false)
 const uploadedFiles = ref([])
 const uploading = ref(false)
@@ -421,6 +423,18 @@ const uploadCompleted = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 const SAS_API = '/api/sas-function'
+
+// Capture authenticated user on mount
+onMounted(async () => {
+  try {
+    await refresh()
+    if (isAuthenticated.value) {
+      userName.value = displayName.value
+    }
+  } catch (err) {
+    console.error('Failed to load auth:', err)
+  }
+})
 const showSurveyModal = ref(false)
 const surveyQuestions = computed(() => [
   t('gs_q1'),
