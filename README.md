@@ -95,7 +95,7 @@ habitwealthTest/
 
 ## 🚀 Live Demo
 
-**App:** https://lemon-tree-0cc9df103.azurestaticapps.net](https://lemon-tree-0cc9df103.2.azurestaticapps.net
+**App:** https://lemon-tree-0cc9df103.2.azurestaticapps.net 
 
 **Agent API:** https://hwbase-agent-00211.graymeadow-30edd248.westeurope.azurecontainerapps.io
 
