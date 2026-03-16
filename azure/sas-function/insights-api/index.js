@@ -277,7 +277,14 @@ module.exports = async function (context, req) {
     sum + (d.agentResult?.agents?.documentIntelligence?.totalIncome || 0), 0)
   // FIX: netCashFlow should be recalculated from aggregated totals, not summed
   const netCashFlowAll = totalIncomeAll - totalExpensesAll
-  const savingsMonthly = getMonthlySavings(latestByCategory, latestDoc.transactions || [])
+  
+  // Calculate average monthly savings across all documents in analysis window
+  // (not just the latest month, which would be unreliable)
+  const totalSavingsAllMonths = analysisDocs.reduce((sum, doc) => {
+    const docByCategory = getDocumentCategoryTotals(doc)
+    return sum + getMonthlySavings(docByCategory, doc.transactions || [])
+  }, 0)
+  const savingsMonthly = Math.round((totalSavingsAllMonths / analysisDocs.length) * 100) / 100
   const goalSummaries = buildGoalSummaries(
     latestDoc.goals || [],
     latestDoc.agentResult?.agents?.goalAlignment?.goals,
