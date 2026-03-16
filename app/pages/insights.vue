@@ -154,41 +154,79 @@
         </div>
 
         <!-- Total Spent -->
-        <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 overflow-hidden hover:border-pink-500/20 hover:bg-pink-500/[0.03] transition-all duration-300">
+        <div class="relative rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.05] to-white/[0.01] p-5 overflow-hidden hover:border-pink-500/20 hover:bg-gradient-to-br hover:from-white/[0.08] transition-all duration-300 group">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent"></div>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_spent_label') }}</span>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_spent_label') }}</span>
+              <p class="text-xs text-slate-700 mt-0.5">{{ t('ins_spent_period') }}</p>
+            </div>
             <div class="w-7 h-7 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
               <svg class="w-3.5 h-3.5 text-pink-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
             </div>
           </div>
-          <div class="flex items-end gap-1">
-            <span class="text-2xl font-black text-white tracking-tight leading-none">€{{ totalSpent.toLocaleString() }}</span>
+          <div class="space-y-4">
+            <div>
+              <div class="flex items-end gap-1.5 mb-2">
+                <span class="text-3xl font-black text-white tracking-tight leading-none">€{{ totalSpent.toLocaleString() }}</span>
+                <span class="text-xs text-slate-600 font-medium">total spent</span>
+              </div>
+              <div class="w-full bg-white/[0.05] rounded-full h-1">
+                <div class="h-1 rounded-full bg-gradient-to-r from-pink-500 to-rose-400" :style="{ width: Math.min((totalSpent / totalIncome * 100) || 0, 100) + '%' }"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/[0.05]">
+              <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.03]">
+                <p class="text-[9px] text-slate-600 font-semibold uppercase mb-1">Income</p>
+                <p class="text-sm font-bold text-emerald-400">€{{ totalIncome.toLocaleString() }}</p>
+              </div>
+              <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.03]">
+                <p class="text-[9px] text-slate-600 font-semibold uppercase mb-1">Net Income</p>
+                <p :class="['text-sm font-bold', netCashFlow >= 0 ? 'text-emerald-400' : 'text-red-400']">
+                  {{ netCashFlow >= 0 ? '+' : '' }}€{{ netCashFlow.toLocaleString() }}
+                </p>
+              </div>
+            </div>
           </div>
-          <div class="mt-2 flex items-center gap-1.5">
-            <span class="text-[10px] text-emerald-400 font-semibold">↑ €{{ totalIncome.toLocaleString() }}</span>
-            <span class="text-[10px] text-slate-700">·</span>
-            <span :class="['text-[10px] font-semibold', netCashFlow >= 0 ? 'text-emerald-400' : 'text-red-400']">
-              {{ netCashFlow >= 0 ? '+' : '' }}€{{ netCashFlow.toLocaleString() }} {{ t('ins_net') }}
-            </span>
-          </div>
-          <p class="text-[11px] text-slate-600 mt-1">{{ t('ins_spent_period') }}</p>
         </div>
 
         <!-- Impulse Control -->
-        <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 overflow-hidden hover:border-cyan-500/20 hover:bg-cyan-500/[0.03] transition-all duration-300">
+        <div class="relative rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.05] to-white/[0.01] p-5 overflow-hidden hover:border-cyan-500/20 hover:bg-gradient-to-br hover:from-white/[0.08] transition-all duration-300 group">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent"></div>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_impulse_label') }}</span>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_impulse_label') }}</span>
+              <p class="text-xs text-slate-700 mt-0.5">Control score</p>
+            </div>
             <div class="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
               <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
             </div>
           </div>
-          <div class="flex items-end gap-1.5">
-            <span class="text-4xl font-black text-white tracking-tighter leading-none">{{ impulseScore }}</span>
-            <span class="text-lg text-slate-700 font-semibold mb-0.5">%</span>
+          <div class="space-y-4">
+            <div>
+              <div class="flex items-end gap-2 mb-3">
+                <div class="text-4xl font-black text-white tracking-tighter leading-none">{{ impulseScore }}</div>
+                <span class="text-lg text-slate-700 font-semibold mb-1">%</span>
+              </div>
+              <div class="w-full bg-white/[0.05] rounded-full h-2">
+                <div class="h-2 rounded-full transition-all duration-500" 
+                  :class="{
+                    'bg-gradient-to-r from-red-500 to-orange-400': impulseScore < 40,
+                    'bg-gradient-to-r from-amber-500 to-yellow-400': impulseScore >= 40 && impulseScore < 70,
+                    'bg-gradient-to-r from-emerald-500 to-teal-400': impulseScore >= 70
+                  }"
+                  :style="{ width: impulseScore + '%' }">
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-teal-500/5 border border-cyan-500/20">
+              <p class="text-[11px] font-medium text-cyan-300 leading-relaxed">
+                <span v-if="impulseScore >= 70" class="block">✓ Strong control! Your spending is deliberate and aligned with goals.</span>
+                <span v-else-if="impulseScore >= 40" class="block">⚡ Moderate control. Room to improve decision-making on discretionary spending.</span>
+                <span v-else class="block">⚠ Low control. Consider implementing the 48-hour rule before purchases.</span>
+              </p>
+            </div>
           </div>
-          <p class="text-[11px] text-slate-600 mt-2">{{ t('ins_impulse_desc') }}</p>
         </div>
       </div>
 
