@@ -245,11 +245,17 @@ module.exports = async function (context, req) {
   // Aggregate spending by category across the analysis window (latest 3 docs)
   // Fallback: compute directly from transactions if agent didn't run
   const byCategory = {}
-  for (const doc of analysisDocs) {
+  const byCategoryByMonth = {}  // Monthly breakdown per category
+  for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
+    const doc = analysisDocs[docIdx]
     const catMap = getDocumentCategoryTotals(doc)
+    const monthIndex = docIdx + 1  // 1, 2, 3 for display
     if (Object.keys(catMap).length > 0) {
       for (const [cat, amt] of Object.entries(catMap)) {
         byCategory[cat] = (byCategory[cat] || 0) + amt
+        // Track monthly breakdown
+        if (!byCategoryByMonth[cat]) byCategoryByMonth[cat] = []
+        byCategoryByMonth[cat][docIdx] = Math.round(amt * 100) / 100
       }
     }
   }
@@ -325,6 +331,7 @@ module.exports = async function (context, req) {
         totalIncome:        totalIncomeAll,
         netCashFlow:        netCashFlowAll,
         byCategory,
+        byCategoryByMonth,  // Monthly breakdown: { "Utilities": [€950, €920, €891], ... }
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,

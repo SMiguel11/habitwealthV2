@@ -254,14 +254,30 @@
               </div>
               <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div v-for="(item, idx) in topCategories" :key="idx" 
-                  class="group/card flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.06] hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.08] hover:to-white/[0.02] transition-all duration-300 cursor-pointer"
+                  class="group/card flex flex-col gap-2 p-3.5 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.06] hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.08] hover:to-white/[0.02] transition-all duration-300 cursor-pointer"
                   :style="{ animation: `slideIn 0.5s ease-out forwards`, animationDelay: `${idx * 50}ms`, opacity: 1 }">
-                  <div class="w-3 h-3 rounded-full shrink-0 shadow-lg shadow-current/20" :style="{ backgroundColor: ['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx], boxShadow: `0 0 12px ${['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx]}40` }"></div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-semibold text-slate-300 group-hover/card:text-white truncate transition-colors">{{ item.cat }}</p>
-                    <p class="text-xs text-slate-600 group-hover/card:text-slate-500 transition-colors">€{{ item.amt }}</p>
+                  <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full shrink-0 shadow-lg shadow-current/20" :style="{ backgroundColor: ['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx], boxShadow: `0 0 12px ${['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx]}40` }"></div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-semibold text-slate-300 group-hover/card:text-white truncate transition-colors">{{ item.cat }}</p>
+                      <p class="text-xs text-slate-600 group-hover/card:text-slate-500 transition-colors">€{{ item.amt }}</p>
+                    </div>
+                    <span class="text-xs font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent shrink-0">{{ item.pct }}%</span>
                   </div>
-                  <span class="text-xs font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent shrink-0">{{ item.pct }}%</span>
+                  <!-- Monthly breakdown -->
+                  <div v-if="item.monthlyBreakdown.length > 0" class="flex flex-col gap-1 pt-1 border-t border-white/[0.05]">
+                    <p class="text-[10px] text-slate-600 font-medium">{{ t('ins_monthly_breakdown') || 'Monthly' }}</p>
+                    <div class="flex gap-1.5 items-center justify-between">
+                      <div v-for="(monthly, mIdx) in item.monthlyBreakdown" :key="mIdx" class="flex-1 text-center">
+                        <p class="text-[10px] text-slate-500 font-semibold">€{{ monthly }}</p>
+                        <p class="text-[9px] text-slate-700">M{{ mIdx + 1 }}</p>
+                      </div>
+                      <div class="flex-1 text-center bg-white/[0.05] rounded px-1 py-0.5">
+                        <p class="text-[10px] text-slate-300 font-bold">€{{ item.avgMonthly }}</p>
+                        <p class="text-[9px] text-slate-600">{{ t('ins_avg') || 'Avg' }}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -601,15 +617,21 @@ const topCategories = computed(() => {
   if (!summary.value?.byCategory) return []
   const entries = Object.entries(summary.value.byCategory)
   const total = entries.reduce((sum, [_, amt]) => sum + amt, 0)
+  const byCategoryByMonth = summary.value?.byCategoryByMonth || {}
   return entries
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
     .map(([cat, amt]) => {
       const key = categoryKeyMap[cat.toLowerCase()]
+      const monthlyBreakdown = byCategoryByMonth[cat] || []
       return {
         cat: key ? t(key) : cat.charAt(0).toUpperCase() + cat.slice(1),
         amt: Math.round(amt * 100) / 100,
-        pct: Math.round((amt / total) * 100)
+        pct: Math.round((amt / total) * 100),
+        monthlyBreakdown: monthlyBreakdown,  // [€950, €920, €891] for 3 months
+        avgMonthly: monthlyBreakdown.length > 0 
+          ? Math.round((monthlyBreakdown.reduce((s, v) => s + (v || 0), 0) / monthlyBreakdown.length) * 100) / 100
+          : 0
       }
     })
 })

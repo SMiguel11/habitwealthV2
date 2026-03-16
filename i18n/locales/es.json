@@ -129,6 +129,8 @@
   "ins_impulse_desc": "Control sobre compras impulsivas",
   "ins_categories_title": "Gasto por Categoría",
   "ins_categories_empty": "Aún no hay datos de categorías.",
+  "ins_monthly_breakdown": "Desglose mensual",
+  "ins_avg": "Prom",
   "ins_goals_title": "Metas de Ahorro",
   "ins_on_track_pct": "al día",
   "ins_on_track": "✓ Al día",

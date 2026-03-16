@@ -129,6 +129,8 @@
   "ins_impulse_desc": "Control over impulse buys",
   "ins_categories_title": "Spending by Category",
   "ins_categories_empty": "No category data yet.",
+  "ins_monthly_breakdown": "Monthly breakdown",
+  "ins_avg": "Avg",
   "ins_goals_title": "Saving Goals",
   "ins_on_track_pct": "on track",
   "ins_on_track": "✓ On Track",
