@@ -217,10 +217,22 @@ function parseTransactionsFromDI(analyzeResult) {
     }
   }
 
+  // ── Deduplicates transactions on a normalized key (date + normalized desc + abs amount)
+  // ── This handles variations in merchant naming from table vs fallback extraction
+  function normalizeForDedup(desc) {
+    return (desc || '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ')  // collapse multiple spaces
+      .replace(/[.,]/g, '')  // remove punctuation that might vary
+  }
+
   // ── Fallback: scan raw page lines for transactions DI didn't put in a table ─
   // (e.g. a single-row continuation on page 2 that DI emits as paragraphs)
   const known = new Set(
-    transactions.map(t => t.date + '|' + t.merchant + '|' + Math.abs(t.amount).toFixed(2))
+    transactions.map(t => 
+      `${t.date}|${normalizeForDedup(t.merchant)}|${Math.abs(t.amount).toFixed(2)}`
+    )
   )
   const DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/
   const AMT_RE  = /^[+\-−]?\d/
@@ -257,7 +269,8 @@ function parseTransactionsFromDI(analyzeResult) {
     if (amount === 0) continue
 
     const category = mapCategory(catRaw.replace(/[+\-−][\d.,]+.*/, '').trim() || desc)
-    const key = `${date}|${desc}|${Math.abs(amount).toFixed(2)}`
+    // Use normalized key to match against table-extracted transactions
+    const key = `${date}|${normalizeForDedup(desc)}|${Math.abs(amount).toFixed(2)}`
     if (known.has(key)) { i += skip - 1; continue }
     known.add(key)
 
@@ -270,7 +283,26 @@ function parseTransactionsFromDI(analyzeResult) {
     i += skip - 1
   }
 
-  return transactions
+  // ── FINAL DEDUP PASS: Eliminate duplicate salary entries
+  // If we see multiple "nómina" / "salary" entries on the same date with same amount,
+  // keep only one per date per amount for Income category.
+  const incomeByDate = {}
+  const finalTransactions = []
+  
+  for (const tx of transactions) {
+    if (tx.category === 'Income' && (tx.merchant.toLowerCase().includes('nómin') || tx.merchant.toLowerCase().includes('salario'))) {
+      const dateAmtKey = `${tx.date}|${tx.amount}`
+      if (incomeByDate[dateAmtKey]) {
+        // Duplicate salary entry — skip it
+        console.log(`[DeduP] Filtered duplicate salary: ${tx.date} ${tx.merchant} €${tx.amount}`)
+        continue
+      }
+      incomeByDate[dateAmtKey] = true
+    }
+    finalTransactions.push(tx)
+  }
+
+  return finalTransactions
 }
 
 // ── Fallback: random mock transactions ────────────────────────────────────────
