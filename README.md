@@ -196,6 +196,9 @@ Managed via GitHub Actions — see [.github/workflows/](.github/workflows/).
 | **Real-World Impact** | FSI score + CBT interventions + Digital Twin — addresses behavioral root causes |
 | **User Experience** | 4-page flow, EN/ES i18n, responsive, dark theme, 3D product card |
 | **Hackathon Category** | Azure AI Foundry + Agent Framework + GitHub Copilot + Azure deploy |
+Video Presentation: https://youtu.be/nj30hwcKy-Q?si=s8U7Cl6JH10Z0_q4
+Video Using App-Phone: https://youtu.be/0z7I7SxTwBY?si=F_45F8H3O8gbCe50
+
 
 ---
 
