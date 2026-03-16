@@ -268,13 +268,14 @@
                   <div v-if="item.monthlyBreakdown.length > 0" class="flex flex-col gap-1 pt-1 border-t border-white/[0.05]">
                     <p class="text-[10px] text-slate-600 font-medium">{{ t('ins_monthly_breakdown') || 'Monthly' }}</p>
                     <div class="flex gap-1.5 items-center justify-between">
-                      <div v-for="(monthly, mIdx) in item.monthlyBreakdown" :key="mIdx" class="flex-1 text-center">
-                        <p class="text-[10px] text-slate-500 font-semibold">€{{ monthly }}</p>
-                        <p class="text-[9px] text-slate-700">M{{ mIdx + 1 }}</p>
+                      <div v-for="(monthly, mIdx) in item.monthlyBreakdown" :key="mIdx" class="flex-1 text-center"
+                        :class="mIdx === item.maxMonthIndex ? 'bg-red-500/20 rounded px-1 py-0.5' : ''">
+                        <p class="text-[10px] font-semibold" :class="mIdx === item.maxMonthIndex ? 'text-red-400' : 'text-slate-500'">€{{ monthly }}</p>
+                        <p class="text-[9px]" :class="mIdx === item.maxMonthIndex ? 'text-red-600' : 'text-slate-700'">{{ item.monthNames[mIdx] }}</p>
                       </div>
-                      <div class="flex-1 text-center bg-white/[0.05] rounded px-1 py-0.5">
-                        <p class="text-[10px] text-slate-300 font-bold">€{{ item.avgMonthly }}</p>
-                        <p class="text-[9px] text-slate-600">{{ t('ins_avg') || 'Avg' }}</p>
+                      <div class="flex-1 text-center bg-emerald-500/10 rounded px-1 py-0.5">
+                        <p class="text-[10px] text-emerald-400 font-bold">€{{ item.avgMonthly }}</p>
+                        <p class="text-[9px] text-emerald-700">{{ t('ins_avg') || 'Avg' }}</p>
                       </div>
                     </div>
                   </div>
@@ -618,17 +619,45 @@ const topCategories = computed(() => {
   const entries = Object.entries(summary.value.byCategory)
   const total = entries.reduce((sum, [_, amt]) => sum + amt, 0)
   const byCategoryByMonth = summary.value?.byCategoryByMonth || {}
+  const documentDates = summary.value?.documentDates || []
+  
+  // Get month names based on current locale (es or en)
+  const monthNames = documentDates.map(dateStr => {
+    if (!dateStr) return '?'
+    try {
+      const date = new Date(dateStr)
+      // Use current locale (locale.value is 'es' or 'en')
+      const monthStr = date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase()
+      return monthStr.slice(0, 3)
+    } catch {
+      return '?'
+    }
+  })
+  
   return entries
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
     .map(([cat, amt]) => {
       const key = categoryKeyMap[cat.toLowerCase()]
       const monthlyBreakdown = byCategoryByMonth[cat] || []
+      
+      // Find the month with highest expense for this category
+      let maxMonthIndex = -1
+      let maxMonthValue = 0
+      monthlyBreakdown.forEach((val, idx) => {
+        if (val > maxMonthValue) {
+          maxMonthValue = val
+          maxMonthIndex = idx
+        }
+      })
+      
       return {
         cat: key ? t(key) : cat.charAt(0).toUpperCase() + cat.slice(1),
         amt: Math.round(amt * 100) / 100,
         pct: Math.round((amt / total) * 100),
-        monthlyBreakdown: monthlyBreakdown,  // [€950, €920, €891] for 3 months
+        monthlyBreakdown: monthlyBreakdown,
+        monthNames: monthNames,
+        maxMonthIndex: maxMonthIndex,
         avgMonthly: monthlyBreakdown.length > 0 
           ? Math.round((monthlyBreakdown.reduce((s, v) => s + (v || 0), 0) / monthlyBreakdown.length) * 100) / 100
           : 0

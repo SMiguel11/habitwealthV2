@@ -332,6 +332,7 @@ module.exports = async function (context, req) {
         netCashFlow:        netCashFlowAll,
         byCategory,
         byCategoryByMonth,  // Monthly breakdown: { "Utilities": [€950, €920, €891], ... }
+        documentDates:      analysisDocs.map(d => d.analyzedAt || d.filename || ''),  // For month names
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,
