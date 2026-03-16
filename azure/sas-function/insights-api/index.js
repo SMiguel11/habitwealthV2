@@ -275,8 +275,8 @@ module.exports = async function (context, req) {
     sum + (d.agentResult?.agents?.documentIntelligence?.totalExpenses || 0), 0)
   const totalIncomeAll = analysisDocs.reduce((sum, d) =>
     sum + (d.agentResult?.agents?.documentIntelligence?.totalIncome || 0), 0)
-  const netCashFlowAll = analysisDocs.reduce((sum, d) =>
-    sum + (d.agentResult?.agents?.documentIntelligence?.netCashFlow || 0), 0)
+  // FIX: netCashFlow should be recalculated from aggregated totals, not summed
+  const netCashFlowAll = totalIncomeAll - totalExpensesAll
   const savingsMonthly = getMonthlySavings(latestByCategory, latestDoc.transactions || [])
   const goalSummaries = buildGoalSummaries(
     latestDoc.goals || [],
