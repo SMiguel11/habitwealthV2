@@ -324,7 +324,14 @@ async function generateGoalOptimization(summaryData) {
   const apiKey = process.env.AZURE_OPENAI_KEY || ''
   const deployment = process.env.AZURE_OPENAI_GOAL_DEPLOYMENT || process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini'
 
-  if (!endpoint || !apiKey) return null
+  console.log('[generateGoalOptimization] endpoint:', endpoint ? '✓ configured' : '✗ missing')
+  console.log('[generateGoalOptimization] apiKey:', apiKey ? '✓ configured' : '✗ missing')
+  console.log('[generateGoalOptimization] deployment:', deployment)
+
+  if (!endpoint || !apiKey) {
+    console.warn('[generateGoalOptimization] missing credentials - returning null for fallback')
+    return null
+  }
 
   const payload = {
     currency: 'EUR',
