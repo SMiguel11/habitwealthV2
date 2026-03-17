@@ -283,6 +283,112 @@ async function generateScoreExplanation(summaryData, lang) {
   return staticResult
 }
 
+/**
+ * Generate optimization actions on-demand via Azure OpenAI when historical docs
+ * do not include GoalOptimization results.
+ */
+async function generateGoalOptimization(summaryData) {
+  const {
+    byCategory,
+    weekendSpend,
+    primaryPattern,
+    fsiLevel,
+    goals,
+    currentMonthlySavings,
+  } = summaryData
+
+  const endpoint = (process.env.AZURE_OPENAI_ENDPOINT || '').replace(/\/$/, '')
+  const apiKey = process.env.AZURE_OPENAI_KEY || ''
+  const deployment = process.env.AZURE_OPENAI_GOAL_DEPLOYMENT || process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini'
+
+  if (!endpoint || !apiKey) return null
+
+  const payload = {
+    currency: 'EUR',
+    spendingByCategory: byCategory || {},
+    weekendSpend: Number(weekendSpend) || 0,
+    dominantPattern: primaryPattern || 'none',
+    fsiLevel: fsiLevel || 'Medium',
+    goals: goals || [],
+    currentMonthlySavings: Number(currentMonthlySavings) || 0,
+  }
+
+  const prompt =
+    'You are a financial optimization advisor. Return ONLY valid JSON. ' +
+    'Build an actionable monthly plan to achieve the goals faster using user spending and behavior context. ' +
+    'Schema: ' +
+    '{"actions":[{"title":string,"description":string,"category":string,"potentialSavings":number,"effort":"Low"|"Medium"|"High","implementation":string}],"totalPotentialSavings":number,"currentMonthlySavings":number,"optimizedMonthlySavings":number,"optimizedGoals":[{"goal":string,"currentProjected":number|null,"optimizedProjected":number|null,"timeSaved":number}]} ' +
+    'Rules: max 4 actions, realistic monthly EUR savings, never worsen goal timeline (optimizedProjected <= currentProjected), at least 1 action.\n\n' +
+    `UserData:\n${JSON.stringify(payload)}`
+
+  try {
+    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt)
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw)
+    const parsedActions = Array.isArray(parsed?.actions) ? parsed.actions : []
+    const actions = parsedActions
+      .filter(a => a && a.title)
+      .slice(0, 4)
+      .map(a => ({
+        title: String(a.title),
+        description: String(a.description || ''),
+        category: String(a.category || 'Planning'),
+        potentialSavings: Math.round(Math.max(0, Number(a.potentialSavings) || 0) * 100) / 100,
+        effort: String(a.effort || 'Medium'),
+        implementation: String(a.implementation || 'Apply this action for 30 days and review results.'),
+      }))
+
+    if (!actions.length) return null
+
+    const totalPotentialSavings = Math.round(
+      ((Number(parsed?.totalPotentialSavings) > 0
+        ? Number(parsed.totalPotentialSavings)
+        : actions.reduce((sum, action) => sum + (Number(action?.potentialSavings) || 0), 0)) * 100)
+    ) / 100
+
+    const current = Math.round((Number(parsed?.currentMonthlySavings) || Number(currentMonthlySavings) || 0) * 100) / 100
+    const optimized = Math.round((Number(parsed?.optimizedMonthlySavings) || (current + totalPotentialSavings)) * 100) / 100
+
+    let optimizedGoals = Array.isArray(parsed?.optimizedGoals) ? parsed.optimizedGoals : []
+    if (!optimizedGoals.length && Array.isArray(goals) && goals.length) {
+      optimizedGoals = goals.map(goal => {
+        const currentProjected = Number(goal?.projectedMonths)
+        if (!currentProjected || !Number.isFinite(currentProjected)) {
+          return {
+            goal: goal?.goal || 'Goal',
+            currentProjected: goal?.projectedMonths ?? null,
+            optimizedProjected: null,
+            timeSaved: 0,
+          }
+        }
+        const remaining = (Number(goal?.currentSavings) || current || 0) * currentProjected
+        let optimizedProjected = optimized > 0 ? Math.max(1, Math.ceil(remaining / optimized)) : null
+        if (optimizedProjected && currentProjected) {
+          optimizedProjected = Math.min(currentProjected, optimizedProjected)
+        }
+        return {
+          goal: goal?.goal || 'Goal',
+          currentProjected,
+          optimizedProjected,
+          timeSaved: optimizedProjected ? Math.max(0, currentProjected - optimizedProjected) : 0,
+        }
+      })
+    }
+
+    return {
+      source: deployment,
+      actions,
+      totalPotentialSavings,
+      currentMonthlySavings: current,
+      optimizedMonthlySavings: optimized,
+      optimizedGoals,
+    }
+  } catch {
+    return null
+  }
+}
+
 module.exports = async function (context, req) {
   const userId = req.query.userId || 'local-user'
   const lang   = req.query.lang   || 'en'
@@ -437,12 +543,28 @@ module.exports = async function (context, req) {
   )
   const goalAlignmentScore = deriveGoalAlignmentScore(latestDoc.agentResult?.summary?.goalAlignmentScore, goalSummaries)
   
-  const optimizationSummary = buildOptimizationSummary(
+  let optimizationSummary = buildOptimizationSummary(
     latestDoc.agentResult?.agents?.goalOptimization,
     goalSummaries,
     savingsMonthly,
     latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium'
   )
+
+  // If only fallback is available from historical docs, try AI generation on-demand.
+  if (optimizationSummary.source === 'api-fallback') {
+    const aiOptimization = await generateGoalOptimization({
+      byCategory,
+      weekendSpend: latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
+      primaryPattern: latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || 'none',
+      fsiLevel: latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
+      goals: goalSummaries,
+      currentMonthlySavings: savingsMonthly,
+    })
+    if (aiOptimization?.actions?.length) {
+      optimizationSummary = aiOptimization
+      context.log(`[insights-api] optimization generated on-demand (source: ${aiOptimization.source})`)
+    }
+  }
 
   // Score explanation — bilingual, pick correct language
   const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
