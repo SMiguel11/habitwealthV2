@@ -256,156 +256,221 @@ def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
 # Agent 4b – Goal Optimization Agent (NEW)
 # Detects patterns + recommends actions + simulates impact
 # ──────────────────────────────────────────────────────────────────────────────
-def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict:
-    """
-    Analyzes spending patterns and generates actionable optimization recommendations.
-    Simulates potential savings and impact on goal timelines.
-    """
-    import sys
+def _static_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict:
+    """Rules-based fallback when GPT-4o is unavailable or returns invalid JSON."""
+    actions = []
+    total_expenses = float(doc.get("totalExpenses") or 0)
+
+    weekend_spend = float(emotional.get("weekendSpend") or 0)
+    if total_expenses > 0 and weekend_spend > (total_expenses * 0.15):
+        actions.append({
+            "title": "Reduce weekend discretionary spending",
+            "description": f"Weekend spend is €{weekend_spend:.2f}; adding a weekend cap can accelerate your goal.",
+            "category": "Discretionary",
+            "potentialSavings": round(weekend_spend * 0.30, 2),
+            "effort": "Medium",
+            "implementation": "Set a weekly weekend budget and pre-plan leisure expenses.",
+        })
+
+    impulse_score = float(emotional.get("emotionalSpendScores", {}).get("impulse") or 0)
+    impulse_ratio = (impulse_score / total_expenses) if total_expenses > 0 else 0
+    if impulse_ratio > 0.08:
+        actions.append({
+            "title": "Control impulse purchases",
+            "description": f"Impulse spend is {round(impulse_ratio * 100, 1)}% of expenses.",
+            "category": "Behavior",
+            "potentialSavings": round(impulse_score * 0.35, 2),
+            "effort": "Medium",
+            "implementation": "Apply a 24h rule before non-essential purchases.",
+        })
+
+    by_cat = doc.get("byCategory", {}) or {}
+    utilities_spend = float(by_cat.get("Utilities", by_cat.get("Hogar / Suministro", 0)) or 0)
+    if utilities_spend > 950:
+        actions.append({
+            "title": "Optimize utilities",
+            "description": "Utility costs are above target; renegotiation may reduce fixed costs.",
+            "category": "Fixed Costs",
+            "potentialSavings": round(utilities_spend * 0.08, 2),
+            "effort": "Low",
+            "implementation": "Compare providers and renegotiate electricity/internet contracts.",
+        })
+
+    if str(fsi.get("fsiLevel", "")).lower() in {"high", "medium"}:
+        actions.append({
+            "title": "Build emergency buffer",
+            "description": "A safety buffer reduces stress-driven spending and keeps you on plan.",
+            "category": "Savings",
+            "potentialSavings": round(total_expenses * 0.05, 2) if total_expenses > 0 else 35.0,
+            "effort": "Medium",
+            "implementation": "Automate a monthly transfer to a dedicated emergency account.",
+        })
+
+    if not actions:
+        actions = [{
+            "title": "Review spending habits",
+            "description": "A monthly budget review can uncover fast savings opportunities.",
+            "category": "Planning",
+            "potentialSavings": 50.0,
+            "effort": "Low",
+            "implementation": "Block 20 minutes monthly to review subscriptions and variable spending.",
+        }]
+
+    total_potential_savings = round(sum(float(a.get("potentialSavings") or 0) for a in actions), 2)
+    current_savings = round(_get_monthly_savings(doc), 2)
+    optimized_savings = round(current_savings + total_potential_savings, 2)
+
+    optimized_goals = []
+    for g in goals.get("goals", []) or []:
+        current_projected = g.get("projectedMonths")
+        remaining = (float(g.get("monthlyNeeded") or 0) * (current_projected or 12))
+        optimized_projected = math.ceil(remaining / optimized_savings) if optimized_savings > 0 else None
+        time_saved = (current_projected - optimized_projected) if (current_projected and optimized_projected) else 0
+        optimized_goals.append({
+            "goal": g.get("goal", "Goal"),
+            "currentProjected": current_projected,
+            "optimizedProjected": optimized_projected,
+            "timeSaved": max(0, time_saved),
+        })
+
+    return {
+        "agent": "GoalOptimization",
+        "source": "static",
+        "actions": actions,
+        "totalPotentialSavings": total_potential_savings,
+        "currentMonthlySavings": current_savings,
+        "optimizedMonthlySavings": optimized_savings,
+        "optimizedGoals": optimized_goals,
+    }
+
+
+def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict | None:
+    """Use Azure OpenAI GPT-4o-mini to generate personalized optimization actions and timeline impact."""
+    api_key = get_secret("openai-key", "AZURE_OPENAI_KEY")
+    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+    deployment = os.getenv("AZURE_OPENAI_GOAL_DEPLOYMENT", os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini"))
+
+    if not api_key or not endpoint:
+        return None
+
     try:
-        actions = []
-        total_expenses = doc.get("totalExpenses", 1)
-        
-        print(f"[OptimAgent] Starting - total_expenses={total_expenses}, fsi.fsiLevel={fsi.get('fsiLevel')}", file=sys.stderr)
-        
-        # ─────── Pattern 1: Weekend spending ───────
-        weekend_spend = emotional.get("weekendSpend", 0)
-        pattern1_triggered = weekend_spend > (total_expenses * 0.15)
-        print(f"[OptimAgent] Pattern 1 (weekend): {weekend_spend:.2f} vs threshold {total_expenses * 0.15:.2f} = {pattern1_triggered}", file=sys.stderr)
-        if pattern1_triggered:
-            potential_savings = round(weekend_spend * 0.30, 2)  # 30% reduction target
-            actions.append({
-                "title": "Reduce weekend discretionary spending",
-                "description": f"Your weekend spending (€{weekend_spend:.2f}) represents {round((weekend_spend/total_expenses)*100, 0):.0f}% of monthly expenses.",
-                "category": "Discretionary",
-                "potentialSavings": potential_savings,
-                "effort": "Medium",
-                "implementation": "Plan weekend activities in advance, set a weekly budget",
+        from openai import AzureOpenAI
+
+        current_savings = round(_get_monthly_savings(doc), 2)
+        payload = {
+            "currency": "EUR",
+            "financial": {
+                "totalIncome": doc.get("totalIncome", 0),
+                "totalExpenses": doc.get("totalExpenses", 0),
+                "netCashFlow": doc.get("netCashFlow", 0),
+                "byCategory": doc.get("byCategory", {}),
+            },
+            "behavior": {
+                "dominantPattern": emotional.get("dominantPattern", "none"),
+                "emotionalSpendScores": emotional.get("emotionalSpendScores", {}),
+                "weekendSpend": emotional.get("weekendSpend", 0),
+                "surveyStressScore": emotional.get("surveyStressScore", 0),
+                "fsiLevel": fsi.get("fsiLevel", "Medium"),
+                "fsi": fsi.get("fsi", 0),
+            },
+            "goals": goals.get("goals", []),
+            "currentMonthlySavings": current_savings,
+        }
+
+        prompt = (
+            "You are a financial optimization advisor. Analyze the user data and produce an actionable plan to achieve goals faster. "
+            "Prioritize realistic, behavior-aware actions from both transactions and behavioral survey signals. "
+            "Return ONLY valid JSON with this schema: "
+            "{"
+            "\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Low\"|\"Medium\"|\"High\", \"implementation\": str}],"
+            "\"totalPotentialSavings\": number,"
+            "\"currentMonthlySavings\": number,"
+            "\"optimizedMonthlySavings\": number,"
+            "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]"
+            "}. "
+            "Rules: 1) max 4 actions, sorted by impact. 2) potentialSavings must be monthly EUR values. "
+            "3) If data quality is limited, still return at least 1 safe action. 4) Do not add markdown or explanation outside JSON.\n\n"
+            f"UserData:\n{json.dumps(payload, ensure_ascii=True)}"
+        )
+
+        client = AzureOpenAI(api_key=api_key, azure_endpoint=endpoint, api_version="2024-02-01")
+        resp = client.chat.completions.create(
+            model=deployment,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.35,
+            max_tokens=900,
+            response_format={"type": "json_object"},
+        )
+
+        raw = (resp.choices[0].message.content or "").strip()
+        raw = re.sub(r"^```json\s*|\s*```$", "", raw)
+        parsed = json.loads(raw)
+
+        actions = parsed.get("actions", []) if isinstance(parsed, dict) else []
+        if not isinstance(actions, list) or len(actions) == 0:
+            return None
+
+        normalized_actions = []
+        for action in actions[:4]:
+            if not isinstance(action, dict):
+                continue
+            normalized_actions.append({
+                "title": str(action.get("title") or "Optimization action"),
+                "description": str(action.get("description") or ""),
+                "category": str(action.get("category") or "Planning"),
+                "potentialSavings": round(max(0.0, float(action.get("potentialSavings") or 0.0)), 2),
+                "effort": str(action.get("effort") or "Medium"),
+                "implementation": str(action.get("implementation") or "Apply this action for the next 30 days."),
             })
-        
-        # ─────── Pattern 2: Impulse spending ───────
-        impulse_score = emotional.get("emotionalSpendScores", {}).get("impulse", 0)
-        total_out = doc.get("totalExpenses", 1)
-        impulse_ratio = impulse_score / total_out if total_out > 0 else 0
-        pattern2_triggered = impulse_ratio > 0.08
-        print(f"[OptimAgent] Pattern 2 (impulse): {impulse_score:.2f} / {total_out:.2f} = {impulse_ratio:.3f} (>{0.08}) = {pattern2_triggered}", file=sys.stderr)
-        if pattern2_triggered:
-            potential_savings = round(impulse_score * 0.40, 2)  # 40% reduction target
-            actions.append({
-                "title": "Optimize subscriptions and recurring purchases",
-                "description": f"Impulse purchases (€{impulse_score:.2f}) are {round(impulse_ratio*100, 0):.0f}% of spending.",
-                "category": "Fixed Costs",
-                "potentialSavings": potential_savings,
-                "effort": "Low",
-                "implementation": "Audit all subscriptions, cancel unused services",
-            })
-        
-        # ─────── Pattern 3: Utilities anomaly ───────
-        by_cat = doc.get("byCategory", {})
-        utilities_spend = by_cat.get("Utilities", by_cat.get("Hogar / Suministro", 0))
-        avg_monthly = utilities_spend / 3 if utilities_spend > 0 else 0  # Rough 3-month average
-        pattern3_triggered = utilities_spend > 950
-        print(f"[OptimAgent] Pattern 3 (utilities): {utilities_spend:.2f} > 950 = {pattern3_triggered}", file=sys.stderr)
-        if pattern3_triggered:
-            potential_savings = round(utilities_spend * 0.08, 2)  # 8% potential (switching provider, etc)
-            actions.append({
-                "title": "Review utility bills and providers",
-                "description": f"Monthly utilities average €{avg_monthly:.2f}. Compare providers for better rates.",
-                "category": "Fixed Costs",
-                "potentialSavings": potential_savings,
-                "effort": "Low",
-                "implementation": "Request quotes from alternative providers",
-            })
-        
-        # ─────── Pattern 4: FSI-based recommendation ───────
-        fsi_level = fsi.get("fsiLevel", "")
-        pattern4_triggered = fsi_level in ["High", "Medium"]
-        print(f"[OptimAgent] Pattern 4 (FSI): fsiLevel={fsi_level} in ['High','Medium'] = {pattern4_triggered}", file=sys.stderr)
-        if pattern4_triggered:
-            potential_savings = round(total_expenses * 0.05, 2)  # Conservative 5% cushion savings
-            actions.append({
-                "title": "Build emergency buffer",
-                "description": "Strengthen your financial resilience with a small emergency fund.",
-                "category": "Savings",
-                "potentialSavings": potential_savings,
-                "effort": "Medium",
-                "implementation": "Automate €50/month transfer to savings",
-            })
-        
-        print(f"[OptimAgent] After patterns: {len(actions)} actions", file=sys.stderr)
-        
-        # ─────── GUARANTEED fallback: Always have at least 1 action ───────
-        if len(actions) == 0:
-            print(f"[OptimAgent] Triggering fallback - no patterns matched, adding generic action", file=sys.stderr)
-            actions.append({
-                "title": "Review spending habits",
-                "description": "Regular account audits help identify savings opportunities.",
-                "category": "Planning",
-                "potentialSavings": 50.00,
-                "effort": "Low",
-                "implementation": "Monthly budget review to spot trends",
-            })
-        
-        print(f"[OptimAgent] Final: {len(actions)} actions, total savings €{sum(a.get('potentialSavings', 0) for a in actions):.2f}", file=sys.stderr)
-        
-        # ─────── Simulate impact on goals ───────
-        total_potential_savings = sum(a.get("potentialSavings", 0) for a in actions)
-        current_savings = _get_monthly_savings(doc)
-        optimized_savings = current_savings + total_potential_savings
-        
-        optimized_goals = []
-        if goals.get("goals"):
-            for g in goals["goals"]:
+
+        if not normalized_actions:
+            return None
+
+        total_potential_savings = round(
+            float(parsed.get("totalPotentialSavings") or 0) or
+            sum(a["potentialSavings"] for a in normalized_actions),
+            2
+        )
+        current_monthly_savings = round(float(parsed.get("currentMonthlySavings") or current_savings), 2)
+        optimized_monthly_savings = round(float(parsed.get("optimizedMonthlySavings") or (current_monthly_savings + total_potential_savings)), 2)
+
+        optimized_goals = parsed.get("optimizedGoals", []) if isinstance(parsed.get("optimizedGoals", []), list) else []
+        if not optimized_goals and goals.get("goals"):
+            for g in goals.get("goals", []):
                 current_projected = g.get("projectedMonths")
-                remaining = g.get("monthlyNeeded", 0) * (current_projected or 1) if current_projected else g.get("monthlyNeeded", 0) * 12
-                
-                new_projected = None
-                if optimized_savings > 0:
-                    new_projected = math.ceil(remaining / optimized_savings)
-                
-                time_saved = (current_projected or 0) - (new_projected or 0) if current_projected and new_projected else 0
-                
+                remaining = float(g.get("monthlyNeeded") or 0) * (current_projected or 12)
+                opt_projected = math.ceil(remaining / optimized_monthly_savings) if optimized_monthly_savings > 0 else None
+                time_saved = (current_projected - opt_projected) if (current_projected and opt_projected) else 0
                 optimized_goals.append({
                     "goal": g.get("goal", "Goal"),
                     "currentProjected": current_projected,
-                    "optimizedProjected": new_projected,
+                    "optimizedProjected": opt_projected,
                     "timeSaved": max(0, time_saved),
                 })
-        
-        result = {
-            "agent": "GoalOptimization",
-            "actions": actions,
-            "totalPotentialSavings": total_potential_savings,
-            "currentMonthlySavings": round(current_savings, 2),
-            "optimizedMonthlySavings": round(optimized_savings, 2),
-            "optimizedGoals": optimized_goals,
-        }
-        print(f"[OptimAgent] Returning: {len(result['actions'])} actions", file=sys.stderr)
-        return result
-        
-    except Exception as e:
-        print(f"[OptimAgent] ERROR in agent: {str(e)}", file=sys.stderr)
-        import traceback
-        print(traceback.format_exc(), file=sys.stderr)
-        # FALLBACK: Return a safe default response even on error
+
         return {
             "agent": "GoalOptimization",
-            "actions": [{
-                "title": "Review spending habits",
-                "description": "Regular budget reviews help improve financial health.",
-                "category": "Planning",
-                "potentialSavings": 50.00,
-                "effort": "Low",
-                "implementation": "Monthly spend audit",
-            }],
-            "totalPotentialSavings": 50.00,
-            "currentMonthlySavings": 0,
-            "optimizedMonthlySavings": 50.00,
-            "optimizedGoals": [],
+            "source": deployment,
+            "actions": normalized_actions,
+            "totalPotentialSavings": total_potential_savings,
+            "currentMonthlySavings": current_monthly_savings,
+            "optimizedMonthlySavings": optimized_monthly_savings,
+            "optimizedGoals": optimized_goals,
         }
+    except Exception as exc:
+        logger.warning("Goal optimization with Azure OpenAI failed (%s) — static fallback", exc)
+        return None
+
+
+def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict:
+    """AI-first goal optimization using Azure OpenAI GPT-4o-mini with static fallback."""
+    ai_result = _ai_goal_optimization(doc, emotional, fsi, goals)
+    if ai_result and ai_result.get("actions"):
+        return ai_result
+    return _static_goal_optimization(doc, emotional, fsi, goals)
     
 # ──────────────────────────────────────────────────────────────────────────────
-# Agent 5 – CBT Intervention Agent  (Azure OpenAI GPT-4o + static fallback)
+# Agent 5 – CBT Intervention Agent  (Azure OpenAI GPT-4o-mini + static fallback)
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Static fallback nudges — used when Azure OpenAI is not configured or fails
@@ -437,9 +502,9 @@ def _ai_nudges(
     emotional_scores: dict,
     doc_summary: dict,
 ) -> tuple[list[str], str]:
-    """Generate 3 personalized CBT nudges via Azure OpenAI GPT-4o.
+    """Generate 3 personalized CBT nudges via Azure OpenAI GPT-4o-mini.
 
-    Returns (nudges, source) where source is 'gpt-4o' or 'static'.
+    Returns (nudges, source) where source is deployment name or 'static'.
     Falls back gracefully to the static dict if OpenAI is not configured
     or if the API call fails (network error, quota, etc.).
     """
