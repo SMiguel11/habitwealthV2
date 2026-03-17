@@ -266,7 +266,7 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
     
     # ─────── Pattern 1: Weekend spending ───────
     weekend_spend = emotional.get("weekendSpend", 0)
-    if weekend_spend > (total_expenses * 0.25):  # >25% of total is weekend
+    if weekend_spend > (total_expenses * 0.15):  # >15% of total is weekend
         potential_savings = round(weekend_spend * 0.30, 2)  # 30% reduction target
         actions.append({
             "title": "Reduce weekend discretionary spending",
@@ -281,7 +281,7 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
     impulse_score = emotional.get("emotionalSpendScores", {}).get("impulse", 0)
     total_out = doc.get("totalExpenses", 1)
     impulse_ratio = impulse_score / total_out if total_out > 0 else 0
-    if impulse_ratio > 0.12:  # >12% is concerning
+    if impulse_ratio > 0.08:  # >8% is concerning
         potential_savings = round(impulse_score * 0.40, 2)  # 40% reduction target
         actions.append({
             "title": "Optimize subscriptions and recurring purchases",
@@ -308,15 +308,26 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
         })
     
     # ─────── Pattern 4: FSI-based recommendation ───────
-    if fsi.get("fsiLevel") == "High":
+    if fsi.get("fsiLevel") in ["High", "Medium"]:
         potential_savings = round(total_expenses * 0.05, 2)  # Conservative 5% cushion savings
         actions.append({
             "title": "Build emergency buffer",
-            "description": "High financial stress detected. Creating a small buffer reduces anxiety.",
+            "description": "Strengthen your financial resilience with a small emergency fund.",
             "category": "Savings",
             "potentialSavings": potential_savings,
             "effort": "Medium",
             "implementation": "Automate €50/month transfer to savings",
+        })
+    
+    # ─────── Fallback: If no patterns detected, suggest basic habit ───────
+    if not actions:
+        actions.append({
+            "title": "Review spending habits",
+            "description": "Regular account audits help identify savings opportunities.",
+            "category": "Planning",
+            "potentialSavings": 50.00,
+            "effort": "Low",
+            "implementation": "Monthly budget review to spot trends",
         })
     
     # ─────── Simulate impact on goals ───────
