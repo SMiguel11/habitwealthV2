@@ -284,10 +284,6 @@
                           </div>
                         </div>
                       </div>
-                      <div class="flex-1 text-center bg-emerald-500/10 rounded px-1 py-0.5">
-                        <p class="text-[10px] text-emerald-400 font-bold">€{{ item.avgMonthly }}</p>
-                        <p class="text-[9px] text-emerald-700">{{ t('ins_avg') || 'Avg' }}</p>
-                      </div>
                     </div>
                   </div>
                 </div>
