@@ -332,7 +332,52 @@ module.exports = async function (context, req) {
         netCashFlow:        netCashFlowAll,
         byCategory,
         byCategoryByMonth,  // Monthly breakdown: { "Utilities": [€950, €920, €891], ... }
-        documentDates:      analysisDocs.map(d => d.analyzedAt || d.filename || ''),  // For month names
+        // Extract month from filename, with fallback to analyzedAt date
+        documentMonths: analysisDocs.map(d => {
+          const filename = (d.filename || '').toLowerCase()
+          
+          // Try to extract month number from filename patterns like "_12_"
+          const monthMatch = filename.match(/_(\d{1,2})_/)
+          if (monthMatch) return parseInt(monthMatch[1], 10)
+          
+          // Try Spanish month names in filename
+          if (filename.includes('diciembre')) return 12
+          if (filename.includes('enero')) return 1
+          if (filename.includes('febrero')) return 2
+          if (filename.includes('marzo')) return 3
+          if (filename.includes('abril')) return 4
+          if (filename.includes('mayo')) return 5
+          if (filename.includes('junio')) return 6
+          if (filename.includes('julio')) return 7
+          if (filename.includes('agosto')) return 8
+          if (filename.includes('septiembre') || filename.includes('setiembre')) return 9
+          if (filename.includes('octubre')) return 10
+          if (filename.includes('noviembre')) return 11
+          
+          // Try English month names in filename
+          if (filename.includes('january') || filename.includes('jan')) return 1
+          if (filename.includes('february') || filename.includes('feb')) return 2
+          if (filename.includes('march') || filename.includes('mar')) return 3
+          if (filename.includes('april') || filename.includes('apr')) return 4
+          if (filename.includes('may')) return 5
+          if (filename.includes('june') || filename.includes('jun')) return 6
+          if (filename.includes('july') || filename.includes('jul')) return 7
+          if (filename.includes('august') || filename.includes('aug')) return 8
+          if (filename.includes('september') || filename.includes('sept')) return 9
+          if (filename.includes('october') || filename.includes('oct')) return 10
+          if (filename.includes('november') || filename.includes('nov')) return 11
+          if (filename.includes('december') || filename.includes('dec')) return 12
+          
+          // Fallback: extract month from analyzedAt date (YYYY-MM-DDTHH:mm:ss.sssZ)
+          if (d.analyzedAt) {
+            try {
+              const date = new Date(d.analyzedAt)
+              return date.getMonth() + 1  // getMonth() returns 0-11, so add 1
+            } catch { /* fall through */ }
+          }
+          
+          return null  // Could not determine month
+        }),
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,

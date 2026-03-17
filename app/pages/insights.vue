@@ -619,19 +619,15 @@ const topCategories = computed(() => {
   const entries = Object.entries(summary.value.byCategory)
   const total = entries.reduce((sum, [_, amt]) => sum + amt, 0)
   const byCategoryByMonth = summary.value?.byCategoryByMonth || {}
-  const documentDates = summary.value?.documentDates || []
+  const documentMonths = summary.value?.documentMonths || []
   
-  // Get month names based on current locale (es or en)
-  const monthNames = documentDates.map(dateStr => {
-    if (!dateStr) return '?'
-    try {
-      const date = new Date(dateStr)
-      // Use current locale (locale.value is 'es' or 'en')
-      const monthStr = date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase()
-      return monthStr.slice(0, 3)
-    } catch {
-      return '?'
-    }
+  // Get month names from month numbers (1-12)
+  const monthNames = documentMonths.map(monthNum => {
+    if (!monthNum) return '?'
+    const date = new Date(2024, monthNum - 1, 1)  // monthNum is 1-12
+    // Use current locale (locale.value is 'es' or 'en')
+    const monthStr = date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase()
+    return monthStr.slice(0, 3)
   })
   
   return entries
