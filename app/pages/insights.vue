@@ -343,12 +343,14 @@
           </div>
 
           <!-- AI Action Plan (Goal Optimization) NEW -->
-          <div v-if="optimizationActions.length" class="relative rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.05] to-emerald-500/[0.01] p-6">
+          <div class="relative rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.05] to-emerald-500/[0.01] p-6">
             <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
             <div class="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-5 -z-10 blur-2xl bg-gradient-to-b from-emerald-500 to-teal-500 transition-opacity duration-500"></div>
             
             <div class="mb-4">
               <h2 class="text-sm font-bold text-white mb-2">🚀 {{ t('ins_action_plan_title') || 'AI Action Plan' }}</h2>
+              <!-- DEBUG: Show raw optimization object -->
+              <p class="text-[9px] text-slate-600 mb-2">DEBUG: {{ JSON.stringify(summary.optimization).slice(0, 100) }}</p>
               <p v-if="optimizationGoals.length > 0" class="text-xs text-slate-400">
                 {{ t('ins_action_plan_desc') || 'Reduce your goal time from' }} 
                 <span class="text-red-400 font-bold">{{ optimizationGoals[0]?.currentProjected || '?' }}</span>
@@ -359,6 +361,7 @@
             </div>
 
             <div class="space-y-2">
+              <p class="text-[9px] text-slate-500 mb-2">Actions count: {{ optimizationActions.length }} | Raw: {{ JSON.stringify(optimizationActions).slice(0, 150) }}</p>
               <div v-for="(action, idx) in optimizationActions" :key="idx"
                 class="rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-3 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/25">
                 <div class="flex items-start justify-between gap-2 mb-1">
