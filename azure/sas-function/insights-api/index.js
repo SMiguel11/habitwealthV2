@@ -188,15 +188,19 @@ function getDocumentCategoryTotals(doc = {}) {
  * Call Azure OpenAI via native https (no extra npm deps needed).
  * Returns the raw text content from the model, or null on failure.
  */
-function _callOpenAI(endpoint, deployment, apiKey, prompt) {
+function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
   return new Promise((resolve) => {
     try {
       const url = new URL(`/openai/deployments/${deployment}/chat/completions?api-version=2024-02-01`, endpoint)
-      const body = JSON.stringify({
+      const payload = {
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.6,
-        max_tokens: 350,
-      })
+        temperature: Number(options.temperature ?? 0.6),
+        max_tokens: Number(options.maxTokens ?? 350),
+      }
+      if (options.responseFormat === 'json_object') {
+        payload.response_format = { type: 'json_object' }
+      }
+      const body = JSON.stringify(payload)
       const req = https.request({
         hostname: url.hostname,
         port: url.port || 443,
@@ -221,6 +225,25 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt) {
       req.end()
     } catch { resolve(null) }
   })
+}
+
+function _extractJsonObject(raw) {
+  if (!raw || typeof raw !== 'string') return null
+  const cleaned = raw.trim().replace(/^```json\s*/i, '').replace(/```$/i, '').trim()
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    const first = cleaned.indexOf('{')
+    const last = cleaned.lastIndexOf('}')
+    if (first >= 0 && last > first) {
+      try {
+        return JSON.parse(cleaned.slice(first, last + 1))
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
 }
 
 /**
@@ -322,10 +345,15 @@ async function generateGoalOptimization(summaryData) {
     `UserData:\n${JSON.stringify(payload)}`
 
   try {
-    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt)
+    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, {
+      responseFormat: 'json_object',
+      temperature: 0.25,
+      maxTokens: 900,
+    })
     if (!raw) return null
 
-    const parsed = JSON.parse(raw)
+    const parsed = _extractJsonObject(raw)
+    if (!parsed) return null
     const parsedActions = Array.isArray(parsed?.actions) ? parsed.actions : []
     const actions = parsedActions
       .filter(a => a && a.title)
@@ -384,7 +412,9 @@ async function generateGoalOptimization(summaryData) {
       optimizedMonthlySavings: optimized,
       optimizedGoals,
     }
-  } catch {
+  } catch (err) {
+    // Keep this non-fatal: API summary will still return fallback actions.
+    console.warn('[insights-api] generateGoalOptimization failed:', err?.message || err)
     return null
   }
 }
