@@ -692,10 +692,7 @@ const topCategories = computed(() => {
         pct: Math.round((amt / total) * 100),
         monthlyBreakdown: monthlyBreakdown,
         monthNames: monthNames,
-        maxMonthIndex: maxMonthIndex,
-        avgMonthly: monthlyBreakdown.length > 0 
-          ? Math.round((monthlyBreakdown.reduce((s, v) => s + (v || 0), 0) / monthlyBreakdown.length) * 100) / 100
-          : 0
+        maxMonthIndex: maxMonthIndex
       }
     })
 })
