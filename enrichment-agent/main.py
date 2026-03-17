@@ -253,6 +253,106 @@ def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
     }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Agent 4b – Goal Optimization Agent (NEW)
+# Detects patterns + recommends actions + simulates impact
+# ──────────────────────────────────────────────────────────────────────────────
+def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict:
+    """
+    Analyzes spending patterns and generates actionable optimization recommendations.
+    Simulates potential savings and impact on goal timelines.
+    """
+    actions = []
+    total_expenses = doc.get("totalExpenses", 1)
+    
+    # ─────── Pattern 1: Weekend spending ───────
+    weekend_spend = emotional.get("weekendSpend", 0)
+    if weekend_spend > (total_expenses * 0.25):  # >25% of total is weekend
+        potential_savings = round(weekend_spend * 0.30, 2)  # 30% reduction target
+        actions.append({
+            "title": "Reduce weekend discretionary spending",
+            "description": f"Your weekend spending (€{weekend_spend:.2f}) represents {round((weekend_spend/total_expenses)*100, 0):.0f}% of monthly expenses.",
+            "category": "Discretionary",
+            "potentialSavings": potential_savings,
+            "effort": "Medium",
+            "implementation": "Plan weekend activities in advance, set a weekly budget",
+        })
+    
+    # ─────── Pattern 2: Impulse spending ───────
+    impulse_score = emotional.get("emotionalSpendScores", {}).get("impulse", 0)
+    total_out = doc.get("totalExpenses", 1)
+    impulse_ratio = impulse_score / total_out if total_out > 0 else 0
+    if impulse_ratio > 0.12:  # >12% is concerning
+        potential_savings = round(impulse_score * 0.40, 2)  # 40% reduction target
+        actions.append({
+            "title": "Optimize subscriptions and recurring purchases",
+            "description": f"Impulse purchases (€{impulse_score:.2f}) are {round(impulse_ratio*100, 0):.0f}% of spending.",
+            "category": "Fixed Costs",
+            "potentialSavings": potential_savings,
+            "effort": "Low",
+            "implementation": "Audit all subscriptions, cancel unused services",
+        })
+    
+    # ─────── Pattern 3: Utilities anomaly ───────
+    by_cat = doc.get("byCategory", {})
+    utilities_spend = by_cat.get("Utilities", by_cat.get("Hogar / Suministro", 0))
+    avg_monthly = utilities_spend / 3 if utilities_spend > 0 else 0  # Rough 3-month average
+    if utilities_spend > 950:  # Threshold for Spanish context
+        potential_savings = round(utilities_spend * 0.08, 2)  # 8% potential (switching provider, etc)
+        actions.append({
+            "title": "Review utility bills and providers",
+            "description": f"Monthly utilities average €{avg_monthly:.2f}. Compare providers for better rates.",
+            "category": "Fixed Costs",
+            "potentialSavings": potential_savings,
+            "effort": "Low",
+            "implementation": "Request quotes from alternative providers",
+        })
+    
+    # ─────── Pattern 4: FSI-based recommendation ───────
+    if fsi.get("fsiLevel") == "High":
+        potential_savings = round(total_expenses * 0.05, 2)  # Conservative 5% cushion savings
+        actions.append({
+            "title": "Build emergency buffer",
+            "description": "High financial stress detected. Creating a small buffer reduces anxiety.",
+            "category": "Savings",
+            "potentialSavings": potential_savings,
+            "effort": "Medium",
+            "implementation": "Automate €50/month transfer to savings",
+        })
+    
+    # ─────── Simulate impact on goals ───────
+    total_potential_savings = sum(a.get("potentialSavings", 0) for a in actions)
+    current_savings = _get_monthly_savings(doc)
+    optimized_savings = current_savings + total_potential_savings
+    
+    optimized_goals = []
+    if goals.get("goals"):
+        for g in goals["goals"]:
+            current_projected = g.get("projectedMonths")
+            remaining = g.get("monthlyNeeded", 0) * (current_projected or 1) if current_projected else g.get("monthlyNeeded", 0) * 12
+            
+            new_projected = None
+            if optimized_savings > 0:
+                new_projected = math.ceil(remaining / optimized_savings)
+            
+            time_saved = (current_projected or 0) - (new_projected or 0) if current_projected and new_projected else 0
+            
+            optimized_goals.append({
+                "goal": g.get("goal", "Goal"),
+                "currentProjected": current_projected,
+                "optimizedProjected": new_projected,
+                "timeSaved": max(0, time_saved),
+            })
+    
+    return {
+        "agent": "GoalOptimization",
+        "actions": actions,
+        "totalPotentialSavings": total_potential_savings,
+        "currentMonthlySavings": round(current_savings, 2),
+        "optimizedMonthlySavings": round(optimized_savings, 2),
+        "optimizedGoals": optimized_goals,
+    }
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Agent 5 – CBT Intervention Agent  (Azure OpenAI GPT-4o + static fallback)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -534,6 +634,7 @@ def run_pipeline(request: EnrichRequest) -> dict:
     emotional = agent_emotional_pattern(txs, sv)
     fsi       = agent_financial_stress(doc, emotional)
     goal      = agent_goal_alignment(doc, gs)
+    optim     = agent_goal_optimization(doc, emotional, fsi, goal)  # NEW
     cbt       = agent_cbt_intervention(emotional, fsi, doc)
     twin      = agent_digital_twin(request.userId, doc, emotional, fsi, goal, cbt)
     cbt["scoreExplanation"] = _ai_score_explanation(twin["habitWealthScore"], doc, emotional, fsi)
@@ -547,6 +648,7 @@ def run_pipeline(request: EnrichRequest) -> dict:
             "emotionalPattern":     emotional,
             "financialStress":      fsi,
             "goalAlignment":        goal,
+            "goalOptimization":     optim,  # NEW
             "cbtIntervention":      cbt,
             "digitalTwin":          twin,
         },
@@ -565,7 +667,7 @@ def run_pipeline(request: EnrichRequest) -> dict:
 # ──────────────────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "HabitWealth Enrichment Agent", "agents": 6}
+    return {"status": "ok", "service": "HabitWealth Enrichment Agent", "agents": 7}
 
 @app.get("/")
 def root():

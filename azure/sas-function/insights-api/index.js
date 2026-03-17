@@ -358,6 +358,16 @@ module.exports = async function (context, req) {
     savingsMonthly
   )
   const goalAlignmentScore = deriveGoalAlignmentScore(latestDoc.agentResult?.summary?.goalAlignmentScore, goalSummaries)
+  
+  // Extract Goal Optimization actions (NEW)
+  const optimizationActions = latestDoc.agentResult?.agents?.goalOptimization?.actions || []
+  const optimizationSummary = {
+    totalPotentialSavings: latestDoc.agentResult?.agents?.goalOptimization?.totalPotentialSavings || 0,
+    currentMonthlySavings: latestDoc.agentResult?.agents?.goalOptimization?.currentMonthlySavings || savingsMonthly,
+    optimizedMonthlySavings: latestDoc.agentResult?.agents?.goalOptimization?.optimizedMonthlySavings || savingsMonthly,
+    optimizedGoals: latestDoc.agentResult?.agents?.goalOptimization?.optimizedGoals || [],
+    actions: optimizationActions,
+  }
 
   // Score explanation — bilingual, pick correct language
   const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
@@ -450,6 +460,7 @@ module.exports = async function (context, req) {
         interventionUrgency: latestDoc.agentResult?.agents?.cbtIntervention?.interventionUrgency || 'Low',
         trendScores,
         goals: goalSummaries,
+        optimization: optimizationSummary,  // NEW: Goal optimization recommendations
       },
       recentTransactions: (latestDoc.transactions || []).slice(0, 20),
       documents: analysisDocs.map(d => ({

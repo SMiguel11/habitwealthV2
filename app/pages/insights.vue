@@ -342,6 +342,38 @@
             </div>
           </div>
 
+          <!-- AI Action Plan (Goal Optimization) NEW -->
+          <div v-if="optimizationActions.length" class="relative rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.05] to-emerald-500/[0.01] p-6">
+            <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+            <div class="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-5 -z-10 blur-2xl bg-gradient-to-b from-emerald-500 to-teal-500 transition-opacity duration-500"></div>
+            
+            <div class="mb-4">
+              <h2 class="text-sm font-bold text-white mb-2">🚀 {{ t('ins_action_plan_title') || 'AI Action Plan' }}</h2>
+              <p v-if="optimizationGoals.length > 0" class="text-xs text-slate-400">
+                {{ t('ins_action_plan_desc') || 'Reduce your goal time from' }} 
+                <span class="text-red-400 font-bold">{{ optimizationGoals[0]?.currentProjected || '?' }}</span>
+                {{ t('ins_to') || '→' }}
+                <span class="text-emerald-400 font-bold">{{ optimizationGoals[0]?.optimizedProjected || '?' }}</span>
+                {{ t('ins_months') || 'months' }}
+              </p>
+            </div>
+
+            <div class="space-y-2">
+              <div v-for="(action, idx) in optimizationActions" :key="idx"
+                class="rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-3 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/25">
+                <div class="flex items-start justify-between gap-2 mb-1">
+                  <p class="text-sm font-semibold text-white flex-1">✔ {{ action.title }}</p>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">€{{ action.potentialSavings }}/mo</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-2">{{ action.description }}</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-slate-600">{{ action.implementation }}</span>
+                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/5 text-slate-400">{{ action.effort }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Recent Transactions -->
           <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
             <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
@@ -800,6 +832,15 @@ const pieChartOptions = computed(() => ({
     }
   }]
 }))
+
+// Goal Optimization (AI Action Plan)
+const optimizationActions = computed(() => {
+  return summary.value?.optimization?.actions || []
+})
+
+const optimizationGoals = computed(() => {
+  return summary.value?.optimization?.optimizedGoals || []
+})
 
 const getTopTransactions = (categoryName, monthName) => {
   const transactionsByMonth = summary.value?.transactionsByMonthAndCategory?.[categoryName] || []

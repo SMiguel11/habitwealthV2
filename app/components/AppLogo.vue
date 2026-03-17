@@ -969,7 +969,7 @@
          id="tspan4"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold'"
            id="tspan1">$</tspan><tspan
-           style="font-size:192px;line-height:0.1;font-family:Arial;-inkscape-font-specification:Arial"
+           style="font-size:192px;line-height:0.1;font-family:Arial;-inkscape-font-specification:Arial, sans-serif"
            id="tspan2"> </tspan><tspan
            style="line-height:0.1"
            id="tspan3"> </tspan></tspan></text>
