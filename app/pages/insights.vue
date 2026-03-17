@@ -268,10 +268,21 @@
                   <div v-if="item.monthlyBreakdown.length > 0" class="flex flex-col gap-1 pt-1 border-t border-white/[0.05]">
                     <p class="text-[10px] text-slate-600 font-medium">{{ t('ins_monthly_breakdown') || 'Monthly' }}</p>
                     <div class="flex gap-1.5 items-center justify-between">
-                      <div v-for="(monthly, mIdx) in item.monthlyBreakdown" :key="mIdx" class="flex-1 text-center"
-                        :class="mIdx === item.maxMonthIndex ? 'bg-red-500/20 rounded px-1 py-0.5' : ''">
+                      <div v-for="(monthly, mIdx) in item.monthlyBreakdown" :key="mIdx" class="flex-1 text-center group/month relative"
+                        :class="mIdx === item.maxMonthIndex ? 'bg-red-500/20 rounded px-1 py-0.5 cursor-help' : ''">
                         <p class="text-[10px] font-semibold" :class="mIdx === item.maxMonthIndex ? 'text-red-400' : 'text-slate-500'">€{{ monthly }}</p>
                         <p class="text-[9px]" :class="mIdx === item.maxMonthIndex ? 'text-red-600' : 'text-slate-700'">{{ item.monthNames[mIdx] }}</p>
+                        
+                        <!-- Popover with top transactions (only for max month) -->
+                        <div v-if="mIdx === item.maxMonthIndex" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover/month:opacity-100 pointer-events-none group-hover/month:pointer-events-auto transition-opacity duration-200">
+                          <div v-if="getTopTransactions(item.cat, item.monthNames[mIdx])" class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-2 min-w-max whitespace-nowrap">
+                            <p class="text-[10px] font-bold text-slate-400 mb-1.5 pb-1 border-b border-slate-700">{{ t('ins_top_expenses') || 'Top Expenses' }}</p>
+                            <div v-for="(tx, txIdx) in getTopTransactions(item.cat, item.monthNames[mIdx])" :key="txIdx" class="text-[10px] text-slate-300 py-0.5 flex items-center justify-between gap-2">
+                              <span class="truncate max-w-[180px]">{{ tx.merchant }}</span>
+                              <span class="text-red-400 font-semibold shrink-0">€{{ tx.amount }}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       <div class="flex-1 text-center bg-emerald-500/10 rounded px-1 py-0.5">
                         <p class="text-[10px] text-emerald-400 font-bold">€{{ item.avgMonthly }}</p>
@@ -789,6 +800,18 @@ const pieChartOptions = computed(() => ({
     }
   }]
 }))
+
+const getTopTransactions = (categoryName, monthName) => {
+  const transactionsByMonth = summary.value?.transactionsByMonthAndCategory?.[categoryName] || []
+  // Find transactions for this category and month
+  const monthData = transactionsByMonth.find(m => {
+    if (!m.month) return false
+    const date = new Date(2024, m.month - 1, 1)
+    const mName = date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase().slice(0, 3)
+    return mName === monthName
+  })
+  return monthData?.transactions || []
+}
 </script>
 
 <style scoped>

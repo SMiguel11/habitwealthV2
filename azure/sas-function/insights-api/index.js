@@ -246,10 +246,71 @@ module.exports = async function (context, req) {
   // Fallback: compute directly from transactions if agent didn't run
   const byCategory = {}
   const byCategoryByMonth = {}  // Monthly breakdown per category
+  const transactionsByMonthAndCategory = {}  // Detailed transactions: { "Utilities": [{ month: 2, txs: [...] }, ...] }
+  
   for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
     const doc = analysisDocs[docIdx]
     const catMap = getDocumentCategoryTotals(doc)
-    const monthIndex = docIdx + 1  // 1, 2, 3 for display
+    const transactions = doc.transactions || []
+    
+    // Extract month from filename/analyzedAt (use same logic as frontend)
+    let monthNum = null
+    const filename = (doc.filename || '').toLowerCase()
+    
+    // Try filename patterns
+    const monthMatch = filename.match(/_(\d{1,2})_/)
+    if (monthMatch) monthNum = parseInt(monthMatch[1], 10)
+    
+    // Try Spanish month names
+    if (!monthNum) {
+      if (filename.includes('diciembre')) monthNum = 12
+      else if (filename.includes('enero')) monthNum = 1
+      else if (filename.includes('febrero')) monthNum = 2
+      // ... other months
+    }
+    
+    // Try English month names
+    if (!monthNum) {
+      if (filename.includes('january') || filename.includes('jan')) monthNum = 1
+      else if (filename.includes('february') || filename.includes('feb')) monthNum = 2
+      else if (filename.includes('december') || filename.includes('dec')) monthNum = 12
+      // ... other months
+    }
+    
+    // Fallback to analyzedAt month
+    if (!monthNum && doc.analyzedAt) {
+      try {
+        const date = new Date(doc.analyzedAt)
+        monthNum = date.getMonth() + 1
+      } catch { /* use null */ }
+    }
+    
+    // Group transactions by category for this month
+    const txsByCategory = {}
+    for (const tx of transactions) {
+      const cat = tx.category || 'Other'
+      const amount = Math.abs(Number(tx.amount) || 0)
+      if (amount > 0) {  // only expenses (negative amounts)
+        if (!txsByCategory[cat]) txsByCategory[cat] = []
+        txsByCategory[cat].push({
+          merchant: tx.merchant,
+          amount: Math.round(amount * 100) / 100
+        })
+      }
+    }
+    
+    // Sort by amount desc and keep top 5 per category
+    for (const [cat, txs] of Object.entries(txsByCategory)) {
+      const sorted = txs.sort((a, b) => b.amount - a.amount).slice(0, 5)
+      if (!transactionsByMonthAndCategory[cat]) {
+        transactionsByMonthAndCategory[cat] = []
+      }
+      transactionsByMonthAndCategory[cat].push({
+        month: monthNum,
+        transactions: sorted
+      })
+    }
+    
     if (Object.keys(catMap).length > 0) {
       for (const [cat, amt] of Object.entries(catMap)) {
         byCategory[cat] = (byCategory[cat] || 0) + amt
@@ -332,6 +393,7 @@ module.exports = async function (context, req) {
         netCashFlow:        netCashFlowAll,
         byCategory,
         byCategoryByMonth,  // Monthly breakdown: { "Utilities": [€950, €920, €891], ... }
+        transactionsByMonthAndCategory,  // Top 5 transactions per category per month
         // Extract month from filename, with fallback to analyzedAt date
         documentMonths: analysisDocs.map(d => {
           const filename = (d.filename || '').toLowerCase()
