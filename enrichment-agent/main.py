@@ -323,8 +323,20 @@ def _static_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict
     optimized_goals = []
     for g in goals.get("goals", []) or []:
         current_projected = g.get("projectedMonths")
-        remaining = (float(g.get("monthlyNeeded") or 0) * (current_projected or 12))
+        current_goal_savings = float(g.get("currentSavings") or current_savings or 0)
+        monthly_needed = float(g.get("monthlyNeeded") or 0)
+        # Infer remaining from current projection and current savings first.
+        # Using monthlyNeeded * projectedMonths can overestimate remaining and worsen projections.
+        if current_projected and current_goal_savings > 0:
+            remaining = current_goal_savings * float(current_projected)
+        elif current_projected and monthly_needed > 0:
+            remaining = monthly_needed * float(current_projected)
+        else:
+            remaining = monthly_needed * 12
+
         optimized_projected = math.ceil(remaining / optimized_savings) if optimized_savings > 0 else None
+        if current_projected and optimized_projected:
+            optimized_projected = min(int(current_projected), int(optimized_projected))
         time_saved = (current_projected - optimized_projected) if (current_projected and optimized_projected) else 0
         optimized_goals.append({
             "goal": g.get("goal", "Goal"),
@@ -438,8 +450,18 @@ def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) ->
         if not optimized_goals and goals.get("goals"):
             for g in goals.get("goals", []):
                 current_projected = g.get("projectedMonths")
-                remaining = float(g.get("monthlyNeeded") or 0) * (current_projected or 12)
+                current_goal_savings = float(g.get("currentSavings") or current_monthly_savings or 0)
+                monthly_needed = float(g.get("monthlyNeeded") or 0)
+                if current_projected and current_goal_savings > 0:
+                    remaining = current_goal_savings * float(current_projected)
+                elif current_projected and monthly_needed > 0:
+                    remaining = monthly_needed * float(current_projected)
+                else:
+                    remaining = monthly_needed * 12
+
                 opt_projected = math.ceil(remaining / optimized_monthly_savings) if optimized_monthly_savings > 0 else None
+                if current_projected and opt_projected:
+                    opt_projected = min(int(current_projected), int(opt_projected))
                 time_saved = (current_projected - opt_projected) if (current_projected and opt_projected) else 0
                 optimized_goals.append({
                     "goal": g.get("goal", "Goal"),

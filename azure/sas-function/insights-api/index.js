@@ -95,6 +95,7 @@ function deriveGoalAlignmentScore(_summaryScore, goalSummaries = []) {
 function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], savingsMonthly = 0, fsiLevel = 'Medium') {
   const rawActions = Array.isArray(goalOptimization?.actions) ? goalOptimization.actions : []
   let actions = rawActions.filter(action => action && action.title)
+  const source = goalOptimization?.source || (actions.length ? 'agent' : 'api-fallback')
 
   // Backward-compatible fallback for older analyzed docs where goalOptimization may be empty.
   if (!actions.length) {
@@ -141,9 +142,13 @@ function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], sav
         }
       }
 
+      const currentSavings = Number(goal?.currentSavings) || Number(currentMonthlySavings) || 0
       const monthlyNeeded = Number(goal?.monthlyNeeded) || 0
-      const remaining = monthlyNeeded * currentProjected
-      const optimizedProjected = optimizedMonthlySavings > 0 ? Math.max(1, Math.ceil(remaining / optimizedMonthlySavings)) : null
+      const remaining = currentSavings > 0 ? (currentSavings * currentProjected) : (monthlyNeeded * currentProjected)
+      let optimizedProjected = optimizedMonthlySavings > 0 ? Math.max(1, Math.ceil(remaining / optimizedMonthlySavings)) : null
+      if (optimizedProjected && currentProjected) {
+        optimizedProjected = Math.min(currentProjected, optimizedProjected)
+      }
       const timeSaved = optimizedProjected ? Math.max(0, currentProjected - optimizedProjected) : 0
 
       return {
@@ -156,6 +161,7 @@ function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], sav
   }
 
   return {
+    source,
     totalPotentialSavings,
     currentMonthlySavings,
     optimizedMonthlySavings,
