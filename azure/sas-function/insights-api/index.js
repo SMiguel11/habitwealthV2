@@ -92,6 +92,78 @@ function deriveGoalAlignmentScore(_summaryScore, goalSummaries = []) {
   return Math.round((onTrackGoals / goalSummaries.length) * 100)
 }
 
+function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], savingsMonthly = 0, fsiLevel = 'Medium') {
+  const rawActions = Array.isArray(goalOptimization?.actions) ? goalOptimization.actions : []
+  let actions = rawActions.filter(action => action && action.title)
+
+  // Backward-compatible fallback for older analyzed docs where goalOptimization may be empty.
+  if (!actions.length) {
+    actions = [{
+      title: 'Review spending habits',
+      description: 'A monthly budget review helps uncover easy savings opportunities.',
+      category: 'Planning',
+      potentialSavings: 50,
+      effort: 'Low',
+      implementation: 'Set a 20-minute monthly review and cap non-essential spend.',
+    }]
+
+    if (String(fsiLevel || '').toLowerCase() === 'medium' || String(fsiLevel || '').toLowerCase() === 'high') {
+      actions.push({
+        title: 'Build emergency buffer',
+        description: 'A small safety buffer reduces stress and improves consistency.',
+        category: 'Savings',
+        potentialSavings: 35,
+        effort: 'Medium',
+        implementation: 'Automate a fixed transfer to savings on payday.',
+      })
+    }
+  }
+
+  const totalPotentialSavings = Math.round(
+    (Number(goalOptimization?.totalPotentialSavings) > 0
+      ? Number(goalOptimization.totalPotentialSavings)
+      : actions.reduce((sum, action) => sum + (Number(action?.potentialSavings) || 0), 0)) * 100
+  ) / 100
+
+  const currentMonthlySavings = Math.round((Number(goalOptimization?.currentMonthlySavings) || Number(savingsMonthly) || 0) * 100) / 100
+  const optimizedMonthlySavings = Math.round((Number(goalOptimization?.optimizedMonthlySavings) || (currentMonthlySavings + totalPotentialSavings)) * 100) / 100
+
+  let optimizedGoals = Array.isArray(goalOptimization?.optimizedGoals) ? goalOptimization.optimizedGoals : []
+  if (!optimizedGoals.length && Array.isArray(goalSummaries) && goalSummaries.length) {
+    optimizedGoals = goalSummaries.map(goal => {
+      const currentProjected = Number(goal?.projectedMonths)
+      if (!currentProjected || !Number.isFinite(currentProjected)) {
+        return {
+          goal: goal?.goal || 'Goal',
+          currentProjected: goal?.projectedMonths ?? null,
+          optimizedProjected: null,
+          timeSaved: 0,
+        }
+      }
+
+      const monthlyNeeded = Number(goal?.monthlyNeeded) || 0
+      const remaining = monthlyNeeded * currentProjected
+      const optimizedProjected = optimizedMonthlySavings > 0 ? Math.max(1, Math.ceil(remaining / optimizedMonthlySavings)) : null
+      const timeSaved = optimizedProjected ? Math.max(0, currentProjected - optimizedProjected) : 0
+
+      return {
+        goal: goal?.goal || 'Goal',
+        currentProjected,
+        optimizedProjected,
+        timeSaved,
+      }
+    })
+  }
+
+  return {
+    totalPotentialSavings,
+    currentMonthlySavings,
+    optimizedMonthlySavings,
+    optimizedGoals,
+    actions,
+  }
+}
+
 function getDocumentCategoryTotals(doc = {}) {
   const catMap = doc.agentResult?.agents?.documentIntelligence?.byCategory
   if (catMap && Object.keys(catMap).length > 0) return catMap
@@ -359,15 +431,12 @@ module.exports = async function (context, req) {
   )
   const goalAlignmentScore = deriveGoalAlignmentScore(latestDoc.agentResult?.summary?.goalAlignmentScore, goalSummaries)
   
-  // Extract Goal Optimization actions (NEW)
-  const optimizationActions = latestDoc.agentResult?.agents?.goalOptimization?.actions || []
-  const optimizationSummary = {
-    totalPotentialSavings: latestDoc.agentResult?.agents?.goalOptimization?.totalPotentialSavings || 0,
-    currentMonthlySavings: latestDoc.agentResult?.agents?.goalOptimization?.currentMonthlySavings || savingsMonthly,
-    optimizedMonthlySavings: latestDoc.agentResult?.agents?.goalOptimization?.optimizedMonthlySavings || savingsMonthly,
-    optimizedGoals: latestDoc.agentResult?.agents?.goalOptimization?.optimizedGoals || [],
-    actions: optimizationActions,
-  }
+  const optimizationSummary = buildOptimizationSummary(
+    latestDoc.agentResult?.agents?.goalOptimization,
+    goalSummaries,
+    savingsMonthly,
+    latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium'
+  )
 
   // Score explanation — bilingual, pick correct language
   const scoreExpRaw = latestDoc.agentResult?.agents?.cbtIntervention?.scoreExplanation
