@@ -261,12 +261,17 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
     Analyzes spending patterns and generates actionable optimization recommendations.
     Simulates potential savings and impact on goal timelines.
     """
+    import sys
     actions = []
     total_expenses = doc.get("totalExpenses", 1)
     
+    print(f"[OptimAgent] Starting - total_expenses={total_expenses}, fsi.fsiLevel={fsi.get('fsiLevel')}", file=sys.stderr)
+    
     # ─────── Pattern 1: Weekend spending ───────
     weekend_spend = emotional.get("weekendSpend", 0)
-    if weekend_spend > (total_expenses * 0.15):  # >15% of total is weekend
+    pattern1_triggered = weekend_spend > (total_expenses * 0.15)
+    print(f"[OptimAgent] Pattern 1 (weekend): {weekend_spend:.2f} vs threshold {total_expenses * 0.15:.2f} = {pattern1_triggered}", file=sys.stderr)
+    if pattern1_triggered:
         potential_savings = round(weekend_spend * 0.30, 2)  # 30% reduction target
         actions.append({
             "title": "Reduce weekend discretionary spending",
@@ -281,7 +286,9 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
     impulse_score = emotional.get("emotionalSpendScores", {}).get("impulse", 0)
     total_out = doc.get("totalExpenses", 1)
     impulse_ratio = impulse_score / total_out if total_out > 0 else 0
-    if impulse_ratio > 0.08:  # >8% is concerning
+    pattern2_triggered = impulse_ratio > 0.08
+    print(f"[OptimAgent] Pattern 2 (impulse): {impulse_score:.2f} / {total_out:.2f} = {impulse_ratio:.3f} (>{0.08}) = {pattern2_triggered}", file=sys.stderr)
+    if pattern2_triggered:
         potential_savings = round(impulse_score * 0.40, 2)  # 40% reduction target
         actions.append({
             "title": "Optimize subscriptions and recurring purchases",
@@ -296,7 +303,9 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
     by_cat = doc.get("byCategory", {})
     utilities_spend = by_cat.get("Utilities", by_cat.get("Hogar / Suministro", 0))
     avg_monthly = utilities_spend / 3 if utilities_spend > 0 else 0  # Rough 3-month average
-    if utilities_spend > 950:  # Threshold for Spanish context
+    pattern3_triggered = utilities_spend > 950
+    print(f"[OptimAgent] Pattern 3 (utilities): {utilities_spend:.2f} > 950 = {pattern3_triggered}", file=sys.stderr)
+    if pattern3_triggered:
         potential_savings = round(utilities_spend * 0.08, 2)  # 8% potential (switching provider, etc)
         actions.append({
             "title": "Review utility bills and providers",
@@ -308,7 +317,10 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
         })
     
     # ─────── Pattern 4: FSI-based recommendation ───────
-    if fsi.get("fsiLevel") in ["High", "Medium"]:
+    fsi_level = fsi.get("fsiLevel", "")
+    pattern4_triggered = fsi_level in ["High", "Medium"]
+    print(f"[OptimAgent] Pattern 4 (FSI): fsiLevel={fsi_level} in ['High','Medium'] = {pattern4_triggered}", file=sys.stderr)
+    if pattern4_triggered:
         potential_savings = round(total_expenses * 0.05, 2)  # Conservative 5% cushion savings
         actions.append({
             "title": "Build emergency buffer",
@@ -319,8 +331,11 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
             "implementation": "Automate €50/month transfer to savings",
         })
     
-    # ─────── Fallback: If no patterns detected, suggest basic habit ───────
-    if not actions:
+    print(f"[OptimAgent] After patterns: {len(actions)} actions", file=sys.stderr)
+    
+    # ─────── Fallback: If no patterns detected, always suggest basic habit ───────
+    if len(actions) == 0:
+        print(f"[OptimAgent] Triggering fallback (no actions yet)", file=sys.stderr)
         actions.append({
             "title": "Review spending habits",
             "description": "Regular account audits help identify savings opportunities.",
@@ -329,6 +344,8 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
             "effort": "Low",
             "implementation": "Monthly budget review to spot trends",
         })
+    
+    print(f"[OptimAgent] Final: {len(actions)} actions, total savings €{sum(a.get('potentialSavings', 0) for a in actions):.2f}", file=sys.stderr)
     
     # ─────── Simulate impact on goals ───────
     total_potential_savings = sum(a.get("potentialSavings", 0) for a in actions)

@@ -208,5 +208,10 @@
   "ins_weekend_alert_desc": "Higher spending detected on weekends. Setting a weekend budget can help.",
   "ins_urgency_high":       "High Priority",
   "ins_urgency_medium":     "Medium Priority",
-  "ins_urgency_low":        "Low Priority"
+  "ins_urgency_low":        "Low Priority",
+  
+  "ins_action_plan_title": "AI Action Plan",
+  "ins_action_plan_desc": "Reduce your goal from",
+  "ins_to": "→",
+  "ins_months": "months"
 }
