@@ -343,12 +343,21 @@
           </div>
 
           <!-- AI Action Plan (Goal Optimization) NEW -->
-          <div v-if="optimizationActions.length > 0" class="relative rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.05] to-emerald-500/[0.01] p-6">
+          <div class="relative rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.05] to-emerald-500/[0.01] p-6">
             <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
-            <div class="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-5 -z-10 blur-2xl bg-gradient-to-b from-emerald-500 to-teal-500 transition-opacity duration-500"></div>
             
             <div class="mb-4">
-              <h2 class="text-sm font-bold text-white mb-2">🚀 {{ t('ins_action_plan_title') }}</h2>
+              <h2 class="text-sm font-bold text-white mb-3">🚀 {{ t('ins_action_plan_title') }}</h2>
+              
+              <!-- DEBUG: Always show optimization structure -->
+              <div class="p-2 mb-3 text-[9px] bg-slate-900/50 border border-slate-700 rounded font-mono text-slate-400 overflow-auto max-h-24">
+                <p>Actions: {{ optimizationActions.length }}</p>
+                <p>Total Savings: €{{ optimizationGoals[0]?.value }}</p>
+                <p>Raw optim: {{ summary?.optimization ? 'exists' : 'null' }}</p>
+                <p v-if="optimizationActions.length > 0">First action: {{ optimizationActions[0]?.title }}</p>
+                <p v-else class="text-amber-400">⚠ No actions in array</p>
+              </div>
+              
               <p v-if="optimizationGoals.length > 0" class="text-xs text-slate-400">
                 {{ t('ins_action_plan_desc') || 'Reduce your goal time from' }} 
                 <span class="text-red-400 font-bold">{{ optimizationGoals[0]?.currentProjected || '?' }}</span>
@@ -359,17 +368,22 @@
             </div>
 
             <div class="space-y-2">
-              <div v-for="(action, idx) in optimizationActions" :key="idx"
-                class="rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-3 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/25">
-                <div class="flex items-start justify-between gap-2 mb-1">
-                  <p class="text-sm font-semibold text-white flex-1">✔ {{ action.title }}</p>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">€{{ action.potentialSavings }}/mo</span>
+              <div v-if="optimizationActions.length > 0">
+                <div v-for="(action, idx) in optimizationActions" :key="idx"
+                  class="rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-3 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/25">
+                  <div class="flex items-start justify-between gap-2 mb-1">
+                    <p class="text-sm font-semibold text-white flex-1">✔ {{ action.title }}</p>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">€{{ action.potentialSavings }}/mo</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mb-2">{{ action.description }}</p>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-slate-600">{{ action.implementation }}</span>
+                    <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/5 text-slate-400">{{ action.effort }}</span>
+                  </div>
                 </div>
-                <p class="text-xs text-slate-500 mb-2">{{ action.description }}</p>
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] text-slate-600">{{ action.implementation }}</span>
-                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/5 text-slate-400">{{ action.effort }}</span>
-                </div>
+              </div>
+              <div v-else class="text-center py-4">
+                <p class="text-xs text-slate-500">Waiting for optimization data...</p>
               </div>
             </div>
           </div>
@@ -529,10 +543,13 @@ async function fetchInsights() {
   const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
   const res = await fetch(`${functionBase}/api/insights-api?userId=local-user&lang=${locale.value}`)
   const data = await res.json()
+  console.log('[Insights] Full API response:', data)
+  console.log('[Insights] optimization object:', data.summary?.optimization)
   if (data.summary) {
     summary.value = data.summary
     documentCount.value = data.documentCount || 0
     recentTransactions.value = data.recentTransactions || []
+    console.log('[Insights] Summary loaded, optimization actions:', data.summary?.optimization?.actions?.length || 0)
   }
   return data
 }
