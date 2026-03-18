@@ -365,7 +365,7 @@
                   </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-slate-500 mb-1.5">{{ t('gs_goal_timeline_label') }}</label>
+                  <label :for="'goal-time-' + idx" class="block text-xs font-medium text-slate-500 mb-1.5">{{ t('gs_goal_timeline_label') }}</label>
                   <div class="flex gap-2">
                     <div class="flex rounded-xl bg-white/[0.04] border border-white/[0.08] p-0.5 shrink-0" role="tablist">
                       <button @click="goal.timeUnit = 'months'" role="tab" :aria-selected="goal.timeUnit === 'months'" :class="['px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all', goal.timeUnit === 'months' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-white']">Mo</button>
@@ -456,7 +456,7 @@ const surveyQuestions = computed(() => [
     options: [t('gs_q7_opt1'), t('gs_q7_opt2'), t('gs_q7_opt3')]
   }
 ])
-const answers = ref(Array(7).fill(null))
+const answers = ref(new Array(7).fill(null))
 const surveyCompleted = ref(false)
 const isSurveyComplete = computed(() => answers.value.every(a => a !== null))
 const showGoalsModal = ref(false)

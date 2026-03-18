@@ -4,6 +4,7 @@ Debug script to test if mock-analyze is duplicating income transactions.
 Simulates the parseTransactionsFromDI logic with the user's correct data.
 """
 import json
+import math
 
 # Simulate December transactions from user's corrected data
 december_transactions = [
@@ -75,9 +76,9 @@ for scenario_name, docs in scenarios.items():
     for doc in docs:
         print(f"  {doc['name']}: €{doc['income']:,.2f} ({doc['txs']} tx)")
     print(f"  TOTAL: €{total_income_3mo:,.2f}")
-    if total_income_3mo == 9277.41:
+    if math.isclose(total_income_3mo, 9277.41, rel_tol=1e-9):
         print("  ✓ CORRECT")
-    elif total_income_3mo == 14877.41:
+    elif math.isclose(total_income_3mo, 14877.41, rel_tol=1e-9):
         print("  ✗ MATCHES CURRENT BUG REPORT")
     else:
         print(f"  ? DIFFERENT")

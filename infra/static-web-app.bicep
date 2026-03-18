@@ -22,7 +22,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 @description('Azure region — SWA has limited regions; must be one of the allowed values')
-@allowed([ 'westus2', 'centralus', 'eastus2', 'westeurope', 'eastasia' ])
 param location string = 'westeurope'
 
 @description('Base name used to generate resource names')

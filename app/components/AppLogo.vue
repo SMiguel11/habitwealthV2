@@ -959,7 +959,7 @@
 		</g>
     <text
        xml:space="preserve"
-       style="font-size:112.42px;line-height:0;font-family:Allura;-inkscape-font-specification:'Allura, Normal';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;white-space:pre;inline-size:390.321;display:inline;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.39685"
+       style="font-size:112.42px;line-height:0;font-family:Allura, cursive;-inkscape-font-specification:'Allura, Normal';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;white-space:pre;inline-size:390.321;display:inline;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.39685"
        x="461.3497"
        y="1595.092"
        id="text137"
@@ -967,9 +967,9 @@
          x="461.3497"
          y="1595.092"
          id="tspan4"><tspan
-           style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold'"
+           style="font-weight:bold;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial Bold'"
            id="tspan1">$</tspan><tspan
-           style="font-size:192px;line-height:0.1;font-family:Arial;-inkscape-font-specification:Arial, sans-serif"
+           style="font-size:192px;line-height:0.1;font-family:Arial, sans-serif;-inkscape-font-specification:Arial, sans-serif"
            id="tspan2"> </tspan><tspan
            style="line-height:0.1"
            id="tspan3"> </tspan></tspan></text>

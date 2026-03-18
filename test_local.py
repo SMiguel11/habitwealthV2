@@ -126,7 +126,7 @@ def test_sas_generation():
         from azure.storage.blob import BlobServiceClient as _BSC
         _svc = _BSC.from_connection_string(CONN_STR)
         account_key = _svc.credential.account_key
-        expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+        expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
         sas = generate_blob_sas(
             account_name   = ACCOUNT_NAME,
             container_name = CONTAINER,

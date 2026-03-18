@@ -106,9 +106,9 @@ function mapCategory(raw) {
 }
 
 function parseAmount(str) {
-  const s = (str || '').replace(/\s|€|\$/g, '')
+  const s = (str || '').replaceAll(/\s|€|\$/g, '')
   const negative = s.startsWith('-') || s.includes('−')
-  let numStr = s.replace(/[+\-−]/g, '').trim()
+  let numStr = s.replaceAll(/[+\-−]/g, '').trim()
 
   const lastDot   = numStr.lastIndexOf('.')
   const lastComma = numStr.lastIndexOf(',')
@@ -117,22 +117,22 @@ function parseAmount(str) {
     // Both separators present — the LAST one is the decimal separator
     if (lastDot > lastComma) {
       // Anglo-Saxon: 2,800.00 — comma=thousands, dot=decimal
-      numStr = numStr.replace(/,/g, '')
+      numStr = numStr.replaceAll(',', '')
     } else {
       // European: 2.800,00 — dot=thousands, comma=decimal
-      numStr = numStr.replace(/\./g, '').replace(',', '.')
+      numStr = numStr.replaceAll('.', '').replace(',', '.')
     }
   } else if (lastComma !== -1) {
     // Only comma: decimal if ≤2 digits after it, thousands otherwise
     const afterComma = numStr.slice(lastComma + 1)
     numStr = afterComma.length <= 2
       ? numStr.replace(',', '.')   // 22,08 → 22.08
-      : numStr.replace(/,/g, '')   // 1,234 → 1234
+      : numStr.replaceAll(',', '')   // 1,234 → 1234
   }
   // Only dot: already valid JS float (e.g. 22.08 or 1234.56)
 
-  const num = parseFloat(numStr)
-  return isNaN(num) ? 0 : (negative ? -num : num)
+  const num = Number.parseFloat(numStr)
+  return Number.isNaN(num) ? 0 : (negative ? -num : num)
 }
 
 // Rows that are balance/summary lines — not real transactions
@@ -223,8 +223,8 @@ function parseTransactionsFromDI(analyzeResult) {
     return (desc || '')
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, ' ')  // collapse multiple spaces
-      .replace(/[.,]/g, '')  // remove punctuation that might vary
+      .replaceAll(/\s+/g, ' ')  // collapse multiple spaces
+      .replaceAll(/[.,]/g, '')  // remove punctuation that might vary
   }
 
   // ── Fallback: scan raw page lines for transactions DI didn't put in a table ─
@@ -268,7 +268,7 @@ function parseTransactionsFromDI(analyzeResult) {
     let amount  = parseAmount(amtStr)
     if (amount === 0) continue
 
-    const category = mapCategory(catRaw.replace(/[+\-−][\d.,]+.*/, '').trim() || desc)
+    const category = mapCategory(catRaw.replaceAll(/[+\-−][\d.,]+.*/, '').trim() || desc)
     // Use normalized key to match against table-extracted transactions
     const key = `${date}|${normalizeForDedup(desc)}|${Math.abs(amount).toFixed(2)}`
     if (known.has(key)) { i += skip - 1; continue }

@@ -13,7 +13,7 @@ Locally: receives an HTTP POST from the Azure Function (mock or real Event Grid)
 In production: triggered by Event Grid → Container App ingress.
 """
 import os, json, math, re, logging
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -150,7 +150,7 @@ EMOTIONAL_KEYWORDS = {
 WEEKEND_DAYS = {5, 6}  # Saturday=5, Sunday=6
 
 def agent_emotional_pattern(transactions: list[dict], survey_answers: list) -> dict:
-    scores = {k: 0.0 for k in EMOTIONAL_KEYWORDS}
+    scores = dict.fromkeys(EMOTIONAL_KEYWORDS, 0.0)
     weekend_spend = 0.0
     late_night_spend = 0.0  # approximated from weekend flag for now
 
@@ -414,8 +414,8 @@ def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) ->
             response_format={"type": "json_object"},
         )
 
-        raw = (resp.choices[0].message.content or "").strip()
-        raw = re.sub(r"^```json\s*|\s*```$", "", raw)
+        raw = (resp.choices[0].message.content or "").strip() if resp.choices else ""
+        raw = re.sub(r"^```json\s*|(?:\s*```$)", "", raw)
         parsed = json.loads(raw)
 
         actions = parsed.get("actions", []) if isinstance(parsed, dict) else []
@@ -581,8 +581,8 @@ def _ai_nudges(
             max_tokens=600,
         )
 
-        raw = response.choices[0].message.content.strip()
-        parsed = json.loads(raw)
+        raw = response.choices[0].message.content.strip() if response.choices else ""
+        parsed = json.loads(raw) if raw else {}
         nudges_en = parsed.get("en", []) if isinstance(parsed, dict) else parsed
         nudges_es = parsed.get("es", []) if isinstance(parsed, dict) else []
         if isinstance(nudges_en, list) and len(nudges_en) >= 1:
@@ -644,7 +644,7 @@ def agent_digital_twin(user_id: str, doc: dict, emotional: dict,
     return {
         "agent": "DigitalTwin",
         "userId": user_id,
-        "updatedAt": datetime.utcnow().isoformat(),
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
         "habitWealthScore": habit_score,
         "financialPersona": _classify_persona(emotional["dominantPattern"], fsi["fsiLevel"]),
         "emotionVector": emotional["emotionalSpendScores"],
@@ -753,8 +753,8 @@ def _ai_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi: dic
             temperature=0.6,
             max_tokens=300,
         )
-        raw = resp.choices[0].message.content.strip()
-        parsed = json.loads(raw)
+        raw = resp.choices[0].message.content.strip() if resp.choices else ""
+        parsed = json.loads(raw) if raw else {}
         parsed["source"] = "gpt-4o"
         return parsed
     except Exception as exc:
@@ -781,7 +781,7 @@ def run_pipeline(request: EnrichRequest) -> dict:
     return {
         "userId": request.userId,
         "filename": request.filename,
-        "processedAt": datetime.utcnow().isoformat(),
+        "processedAt": datetime.now(timezone.utc).isoformat(),
         "agents": {
             "documentIntelligence": doc,
             "emotionalPattern":     emotional,
