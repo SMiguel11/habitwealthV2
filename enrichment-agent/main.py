@@ -415,7 +415,11 @@ def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) ->
         )
 
         raw = (resp.choices[0].message.content or "").strip() if resp.choices else ""
-        raw = re.sub(r"(?:^```json\s*)|(?:\s*```$)", "", raw)
+        # Safe cleanup: avoid regex backtracking vulnerability
+        if raw.startswith("```json"):
+            raw = raw[7:].lstrip()
+        if raw.endswith("```"):
+            raw = raw[:-3].rstrip()
         parsed = json.loads(raw)
 
         actions = parsed.get("actions", []) if isinstance(parsed, dict) else []

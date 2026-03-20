@@ -487,15 +487,31 @@ module.exports = async function (context, req) {
       if (filename.includes('diciembre')) monthNum = 12
       else if (filename.includes('enero')) monthNum = 1
       else if (filename.includes('febrero')) monthNum = 2
-      // ... other months
+      else if (filename.includes('marzo')) monthNum = 3
+      else if (filename.includes('abril')) monthNum = 4
+      else if (filename.includes('mayo')) monthNum = 5
+      else if (filename.includes('junio')) monthNum = 6
+      else if (filename.includes('julio')) monthNum = 7
+      else if (filename.includes('agosto')) monthNum = 8
+      else if (filename.includes('septiembre') || filename.includes('setiembre')) monthNum = 9
+      else if (filename.includes('octubre')) monthNum = 10
+      else if (filename.includes('noviembre')) monthNum = 11
     }
     
     // Try English month names
     if (!monthNum) {
       if (filename.includes('january') || filename.includes('jan')) monthNum = 1
       else if (filename.includes('february') || filename.includes('feb')) monthNum = 2
+      else if (filename.includes('march') || filename.includes('mar')) monthNum = 3
+      else if (filename.includes('april') || filename.includes('apr')) monthNum = 4
+      else if (filename.includes('may')) monthNum = 5
+      else if (filename.includes('june') || filename.includes('jun')) monthNum = 6
+      else if (filename.includes('july') || filename.includes('jul')) monthNum = 7
+      else if (filename.includes('august') || filename.includes('aug')) monthNum = 8
+      else if (filename.includes('september') || filename.includes('sept')) monthNum = 9
+      else if (filename.includes('october') || filename.includes('oct')) monthNum = 10
+      else if (filename.includes('november') || filename.includes('nov')) monthNum = 11
       else if (filename.includes('december') || filename.includes('dec')) monthNum = 12
-      // ... other months
     }
     
     // Fallback to analyzedAt month
