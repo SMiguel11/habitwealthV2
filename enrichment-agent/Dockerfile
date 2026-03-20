@@ -14,7 +14,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy only essential application files (avoid sensitive data like .env, .git, logs)
+COPY main.py .
 
 # Ensure the app user owns all files
 RUN chown -R app:app /app

@@ -107,9 +107,10 @@ resource enrichmentAgent 'Microsoft.App/containerApps@2024-03-01' = {
     environmentId: cae.id
     configuration: {
       ingress: {
-        external:   true
-        targetPort: 8001
-        transport:  'http'
+        external:            true
+        targetPort:          8001
+        transport:           'http'
+        clientCertificateMode: 'require'
       }
       registries: [
         {

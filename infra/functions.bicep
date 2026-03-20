@@ -115,8 +115,10 @@ resource sasFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
     userAssignedIdentities: { '${managedIdentityId}': {} }
   }
   properties: {
-    serverFarmId: consumptionPlan.id
-    httpsOnly:    true
+    serverFarmId:       consumptionPlan.id
+    httpsOnly:          true
+    clientCertEnabled:  true
+    clientCertMode:     'Required'
     siteConfig: {
       linuxFxVersion: 'NODE|20'
       appSettings: concat(commonSettings, [
@@ -142,8 +144,10 @@ resource docIntelFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
     userAssignedIdentities: { '${managedIdentityId}': {} }
   }
   properties: {
-    serverFarmId: consumptionPlan.id
-    httpsOnly:    true
+    serverFarmId:       consumptionPlan.id
+    httpsOnly:          true
+    clientCertEnabled:  true
+    clientCertMode:     'Required'
     siteConfig: {
       linuxFxVersion: 'NODE|20'
       appSettings: concat(commonSettings, [
