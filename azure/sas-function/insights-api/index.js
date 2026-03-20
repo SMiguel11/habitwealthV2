@@ -480,7 +480,7 @@ module.exports = async function (context, req) {
     
     // Try filename patterns
     const monthMatch = filename.match(/_(\d{1,2})_/)
-    if (monthMatch) monthNum = parseInt(monthMatch[1], 10)
+    if (monthMatch) monthNum = Number.parseInt(monthMatch[1], 10)
     
     // Try Spanish month names
     if (!monthNum) {
@@ -644,7 +644,7 @@ module.exports = async function (context, req) {
           
           // Try to extract month number from filename patterns like "_12_"
           const monthMatch = filename.match(/_(\d{1,2})_/)
-          if (monthMatch) return parseInt(monthMatch[1], 10)
+          if (monthMatch) return Number.parseInt(monthMatch[1], 10)
           
           // Try Spanish month names in filename
           if (filename.includes('diciembre')) return 12
