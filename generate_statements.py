@@ -100,8 +100,10 @@ COLORS = {
 
 
 # ── Transaction generator ─────────────────────────────────────────────────────
+# NOTE: random.* usage in this file is for demo data generation only, not for security/cryptographic purposes.
+# All generated bank statements are simulated and for testing/demonstration purposes only.
 def generate_month_transactions(year: int, month: int, seed: int) -> list[dict]:
-    random.seed(seed)
+    random.seed(seed)  # noqa: S311 - For demo data reproducibility, not security
     txs = []
     # Determine days in month
     if month == 12:
@@ -157,7 +159,7 @@ def generate_month_transactions(year: int, month: int, seed: int) -> list[dict]:
 
     # Savings transfer (end of month)
     for name, lo, hi in MERCHANTS["Ahorro / Inversión"]:
-        if random.random() < 0.7:
+        if random.random() < 0.7:  # noqa: S311 - Demo data only
             amount = round(random.uniform(lo, hi), 2)
             txs.append({
                 "date":     date(year, month, random.randint(25, n_days)),

@@ -317,15 +317,15 @@ function generateFakeTransactions(filename) {
     Utilities:     ['Electric Bill','Water Bill','Internet','Phone Bill'],
     Savings:       ['Bank Transfer - Savings','Investment Fund']
   }
-  const txCount = 18 + Math.floor(Math.random() * 10)
+  const txCount = 18 + Math.floor(Math.random() * 10) // NOSONAR: Mock data generation, not cryptographic context
   const transactions = []
   const now = new Date()
   for (let i = 0; i < txCount; i++) {
-    const cat      = categories[Math.floor(Math.random() * categories.length)]
-    const merchant = merchants[cat][Math.floor(Math.random() * merchants[cat].length)]
-    const daysAgo  = Math.floor(Math.random() * 90)
+    const cat      = categories[Math.floor(Math.random() * categories.length)] // NOSONAR: Mock data
+    const merchant = merchants[cat][Math.floor(Math.random() * merchants[cat].length)] // NOSONAR: Mock data
+    const daysAgo  = Math.floor(Math.random() * 90) // NOSONAR: Mock data
     const txDate   = new Date(now - daysAgo * 86400000).toISOString().split('T')[0]
-    const amount   = -(Math.round((5 + Math.random() * 195) * 100) / 100)
+    const amount   = -(Math.round((5 + Math.random() * 195) * 100) / 100) // NOSONAR: Mock data
     transactions.push({ date: txDate, merchant, category: cat, amount, currency: 'EUR' })
   }
   return transactions.sort((a, b) => b.date.localeCompare(a.date))

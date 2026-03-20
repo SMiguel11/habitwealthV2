@@ -26,7 +26,7 @@ resource docIntel 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
     name: 'S0'  // Paid tier — costs only ~$1.50 per 1,000 pages. No "one free per subscription" limit.
   }
   properties: {
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'  // Only accessed via API key from internal Function Apps
     networkAcls: {
       defaultAction: 'Allow'
     }

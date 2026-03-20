@@ -71,8 +71,8 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = 
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled:    true      // Needed for Container Apps to pull via admin credentials
-    publicNetworkAccess: 'Enabled'
+    adminUserEnabled:    true       // Needed for Container Apps to pull via admin credentials
+    publicNetworkAccess: 'Disabled' // Internal-only registry; Container Apps accesses via VNet
   }
 }
 
