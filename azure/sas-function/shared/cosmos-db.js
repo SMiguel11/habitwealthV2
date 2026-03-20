@@ -29,7 +29,7 @@ function getContainer() {
 async function upsertDocument(userId, filename, doc) {
   const container = getContainer()
   if (container) {
-    const id = `${userId}__${filename}`.replace(/[^a-zA-Z0-9_.-]/g, '_')
+    const id = `${userId}__${filename}`.replaceAll(/[^a-zA-Z0-9_.-]/g, '_')
     const item = { id, userId, filename, ...doc }
     await container.items.upsert(item)
     return
