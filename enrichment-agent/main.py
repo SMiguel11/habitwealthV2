@@ -711,8 +711,8 @@ def _static_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi_
         warn_es.append("Tu índice de estrés financiero es elevado — revisa tus gastos fijos")
 
     return {
-        "en": {"positives": pos_en[:3], "warnings": warn_en[:1]},
-        "es": {"positives": pos_es[:3], "warnings": warn_es[:1]},
+        "en": {"positives": pos_en[:3], "warnings": warn_en[:1] if warn_en else []},
+        "es": {"positives": pos_es[:3], "warnings": warn_es[:1] if warn_es else []},
         "source": "static",
     }
 
