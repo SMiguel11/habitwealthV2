@@ -1,4 +1,5 @@
 const { StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions } = require('@azure/storage-blob')
+const crypto = require('crypto')
 
 module.exports = async function (context, req) {
   try {
@@ -10,7 +11,7 @@ module.exports = async function (context, req) {
     }
 
     const containerName = (req.body && req.body.container) || process.env.SAS_CONTAINER || 'uploads'
-    const filename = (req.body && req.body.filename) || `${Date.now()}-${Math.random().toString(36).slice(2,8)}.pdf`
+    const filename = (req.body && req.body.filename) || `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.pdf`
     const expiresInMinutes = Number(process.env.SAS_EXPIRES_MINUTES || 15)
 
     const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
