@@ -131,6 +131,20 @@ resource sasFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
       ])
     }
   }
+
+  // Authentication required at app level; accessed by internal services with client certificates
+  resource authSettings 'config@2023-12-01' = {
+    name: 'authsettingsV2'
+    properties: {
+      globalValidation: {
+        requireAuthentication: true
+        unauthenticatedClientAction: 'Return401'
+      }
+      platform: {
+        enabled: true
+      }
+    }
+  }
 }
 
 // ─── Document Intelligence Function App (blob trigger) ────────────────────────
@@ -155,6 +169,20 @@ resource docIntelFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT', value: docIntelEndpoint }
         { name: 'AZURE_DOCUMENT_INTELLIGENCE_KEY',      value: docIntelKey }
       ])
+    }
+  }
+
+  // Authentication required at app level; accessed by internal services with client certificates
+  resource authSettings 'config@2023-12-01' = {
+    name: 'authsettingsV2'
+    properties: {
+      globalValidation: {
+        requireAuthentication: true
+        unauthenticatedClientAction: 'Return401'
+      }
+      platform: {
+        enabled: true
+      }
     }
   }
 }
