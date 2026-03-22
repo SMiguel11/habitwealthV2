@@ -71,8 +71,19 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = 
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled:    true       // Needed for Container Apps to pull via admin credentials
+    adminUserEnabled:    false      // Disabled — Container Apps uses Managed Identity via RBAC
     publicNetworkAccess: 'Disabled' // Internal-only registry; Container Apps accesses via VNet
+  }
+}
+
+// ─── Grant Managed Identity AcrPull role on registry ────────────────────────────
+resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(registry.id, managedIdentityId, '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-40881f42e221')
+  scope: registry
+  properties: {
+    roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-40881f42e221'
+    principalId: reference(managedIdentityId, '2023-01-31', 'Full').properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -114,15 +125,8 @@ resource enrichmentAgent 'Microsoft.App/containerApps@2024-03-01' = {
       }
       registries: [
         {
-          server:            registry.properties.loginServer
-          username:          registry.listCredentials().username
-          passwordSecretRef: 'registry-password'
-        }
-      ]
-      secrets: [
-        {
-          name:  'registry-password'
-          value: registry.listCredentials().passwords[0].value
+          server: registry.properties.loginServer
+          identity: managedIdentityId  // Use Managed Identity instead of admin credentials
         }
       ]
     }
