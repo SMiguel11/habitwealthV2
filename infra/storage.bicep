@@ -33,6 +33,9 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     minimumTlsVersion:        'TLS1_2'
     allowBlobPublicAccess:    false
     allowSharedKeyAccess:     true   // Required — Functions generate SAS tokens via shared key
+    encryption: {
+      requireInfrastructureEncryption: true  // Double encryption at infrastructure + service level
+    }
   }
 
   resource blobService 'blobServices' = {
