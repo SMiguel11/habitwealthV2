@@ -416,15 +416,15 @@ function start() {
 }
 
 function loginGoogle() {
-  const baseUrl = window.location.origin
+  const baseUrl = globalThis.location.origin
   const redirect = encodeURIComponent(`${baseUrl}/get-started`)
-  window.location.href = `/.auth/login/google?post_login_redirect_uri=${redirect}`
+  globalThis.location.href = `/.auth/login/google?post_login_redirect_uri=${redirect}`
 }
 
 function loginMicrosoft() {
-  const baseUrl = window.location.origin
+  const baseUrl = globalThis.location.origin
   const redirect = encodeURIComponent(`${baseUrl}/get-started`)
-  window.location.href = `/.auth/login/aad?post_login_redirect_uri=${redirect}`
+  globalThis.location.href = `/.auth/login/aad?post_login_redirect_uri=${redirect}`
 }
 </script>
 
