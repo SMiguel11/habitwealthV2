@@ -11,8 +11,6 @@ useHead({
   }
 })
 
-import AppLogo from '~/components/AppLogo.vue'
-
 const title = 'HabitWealth'
 const description = 'HabitWealth — Boost financial wellness with behavioral insights and personalized saving guidance.'
 

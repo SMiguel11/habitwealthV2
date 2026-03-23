@@ -38,7 +38,7 @@ export const useSwaAuth = () => {
   }
 
   const logout = () => {
-    window.location.href = '/.auth/logout?post_logout_redirect_uri=/'
+    globalThis.location.href = '/.auth/logout?post_logout_redirect_uri=/'
   }
 
   return {

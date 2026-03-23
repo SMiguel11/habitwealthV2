@@ -115,27 +115,33 @@ const elapsed = ref(0)
 let startTime = 0
 let timerHandle = null
 
+const getStepStatus = (elapsed, doneThreshold, activeThreshold) => {
+  if (elapsed >= doneThreshold) return 'done'
+  if (elapsed >= activeThreshold) return 'active'
+  return 'pending'
+}
+
 const steps = computed(() => [
   {
     label: t('an_step1'),
-    status: elapsed.value >= STEP_TIMES[1] ? 'done' : elapsed.value >= STEP_TIMES[0] ? 'active' : 'pending'
+    status: getStepStatus(elapsed.value, STEP_TIMES[1], STEP_TIMES[0])
   },
   {
     label: t('an_step2'),
-    status: elapsed.value >= STEP_TIMES[2] ? 'done' : elapsed.value >= STEP_TIMES[1] ? 'active' : 'pending'
+    status: getStepStatus(elapsed.value, STEP_TIMES[2], STEP_TIMES[1])
   },
   {
     label: t('an_step3'),
-    status: elapsed.value >= STEP_TIMES[3] ? 'done' : elapsed.value >= STEP_TIMES[2] ? 'active' : 'pending'
+    status: getStepStatus(elapsed.value, STEP_TIMES[3], STEP_TIMES[2])
   },
   {
     label: t('an_step4'),
-    status: elapsed.value >= MIN_WAIT_MS ? 'done' : elapsed.value >= STEP_TIMES[3] ? 'active' : 'pending'
+    status: getStepStatus(elapsed.value, MIN_WAIT_MS, STEP_TIMES[3])
   }
 ])
 
 async function pollAndRedirect() {
-  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  const isProduction = typeof globalThis.location !== 'undefined' && globalThis.location.hostname !== 'localhost'
   const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
 
   let hasData = false
@@ -149,7 +155,10 @@ async function pollAndRedirect() {
       if (data.documentCount && data.summary) {
         hasData = true
       }
-    } catch (_) { /* ignore transient errors */ }
+    } catch (err) {
+      // Log transient errors but continue retrying
+      console.debug(`Insights API poll attempt ${attempt + 1}/${maxAttempts} failed:`, err)
+    }
 
     // Wait until BOTH: data is ready AND minimum time has passed
     if (hasData && (Date.now() - startTime) >= MIN_WAIT_MS) break
