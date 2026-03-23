@@ -71,6 +71,8 @@ var defaultIndexingPolicy = {
   excludedPaths: [ { path: '/_etag/?' } ]
 }
 
+var userIdPartitionKey = '/userId'
+
 // ─── users container ──────────────────────────────────────────────────────────
 resource usersContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
   parent: database
@@ -78,7 +80,7 @@ resource usersContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/cont
   properties: {
     resource: {
       id:           'users'
-      partitionKey: { paths: [ '/userId' ], kind: 'Hash' }
+      partitionKey: { paths: [ userIdPartitionKey ], kind: 'Hash' }
       defaultTtl:   -1
       indexingPolicy: defaultIndexingPolicy
     }
@@ -92,7 +94,7 @@ resource documentsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/
   properties: {
     resource: {
       id:           'documents'
-      partitionKey: { paths: [ '/userId' ], kind: 'Hash' }
+      partitionKey: { paths: [ userIdPartitionKey ], kind: 'Hash' }
       defaultTtl:   -1
       indexingPolicy: {
         indexingMode:  'consistent'
@@ -115,7 +117,7 @@ resource goalsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/cont
   properties: {
     resource: {
       id:           'goals'
-      partitionKey: { paths: [ '/userId' ], kind: 'Hash' }
+      partitionKey: { paths: [ userIdPartitionKey ], kind: 'Hash' }
       defaultTtl:   -1
       indexingPolicy: defaultIndexingPolicy
     }
@@ -129,7 +131,7 @@ resource habitPointsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabase
   properties: {
     resource: {
       id:           'habitPoints'
-      partitionKey: { paths: [ '/userId' ], kind: 'Hash' }
+      partitionKey: { paths: [ userIdPartitionKey ], kind: 'Hash' }
       defaultTtl:   -1
       indexingPolicy: defaultIndexingPolicy
     }
@@ -143,7 +145,7 @@ resource interventionLogsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDat
   properties: {
     resource: {
       id:           'interventionLogs'
-      partitionKey: { paths: [ '/userId' ], kind: 'Hash' }
+      partitionKey: { paths: [ userIdPartitionKey ], kind: 'Hash' }
       defaultTtl:   7776000  // 90 days — matches cosmos-schema.json
       indexingPolicy: defaultIndexingPolicy
     }

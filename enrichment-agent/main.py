@@ -149,32 +149,51 @@ EMOTIONAL_KEYWORDS = {
 
 WEEKEND_DAYS = {5, 6}  # Saturday=5, Sunday=6
 
+def _score_transaction_patterns(transaction: dict, scores: dict) -> None:
+    """Update emotional pattern scores for a single transaction."""
+    name = transaction["merchant"].lower()
+    for pattern, keywords in EMOTIONAL_KEYWORDS.items():
+        if any(kw in name for kw in keywords):
+            scores[pattern] += abs(transaction["amount"])
+
+def _accumulate_weekend_spend(transaction: dict) -> float:
+    """Calculate weekend spend amount from a single transaction."""
+    try:
+        d = datetime.fromisoformat(transaction["date"])
+        if d.weekday() in WEEKEND_DAYS:
+            return abs(transaction["amount"])
+    except Exception:
+        pass
+    return 0.0
+
+def _calculate_survey_stress(survey_answers: list) -> float:
+    """Calculate stress score from survey answers."""
+    if not survey_answers:
+        return 0.0
+    numeric = [a for a in survey_answers[:5] if isinstance(a, (int, float))]
+    if not numeric:
+        return 0.0
+    return round(sum(numeric) / len(numeric), 2)
+
+def _find_dominant_pattern(scores: dict) -> str:
+    """Find the dominant emotional spending pattern."""
+    if not any(scores.values()):
+        return "none"
+    return max(scores, key=lambda k: scores[k])
+
 def agent_emotional_pattern(transactions: list[dict], survey_answers: list) -> dict:
     scores = dict.fromkeys(EMOTIONAL_KEYWORDS, 0.0)
     weekend_spend = 0.0
-    late_night_spend = 0.0  # approximated from weekend flag for now
 
     for t in transactions:
         if t["amount"] >= 0:
             continue
-        name = t["merchant"].lower()
-        for pattern, keywords in EMOTIONAL_KEYWORDS.items():
-            if any(kw in name for kw in keywords):
-                scores[pattern] += abs(t["amount"])
-        try:
-            d = datetime.fromisoformat(t["date"])
-            if d.weekday() in WEEKEND_DAYS:
-                weekend_spend += abs(t["amount"])
-        except Exception:
-            pass
+        _score_transaction_patterns(t, scores)
+        weekend_spend += _accumulate_weekend_spend(t)
 
-    # Incorporate survey answers (scale 1-4 for first 5 Qs)
-    survey_stress = 0
-    if survey_answers:
-        numeric = [a for a in survey_answers[:5] if isinstance(a, (int, float))]
-        survey_stress = round(sum(numeric) / max(len(numeric), 1), 2) if numeric else 0
-
-    dominant = max(scores, key=lambda k: scores[k]) if any(scores.values()) else "none"
+    survey_stress = _calculate_survey_stress(survey_answers)
+    dominant = _find_dominant_pattern(scores)
+    
     return {
         "agent": "EmotionalPattern",
         "emotionalSpendScores": {k: round(v, 2) for k, v in scores.items()},
@@ -256,94 +275,145 @@ def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
 # Agent 4b – Goal Optimization Agent (NEW)
 # Detects patterns + recommends actions + simulates impact
 # ──────────────────────────────────────────────────────────────────────────────
-def _static_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict:
-    """Rules-based fallback when GPT-4o is unavailable or returns invalid JSON."""
-    actions = []
-    total_expenses = float(doc.get("totalExpenses") or 0)
 
+def _check_weekend_spending(doc: dict, emotional: dict) -> dict | None:
+    """Check if weekend spending is high; return action or None."""
+    total_expenses = float(doc.get("totalExpenses") or 0)
     weekend_spend = float(emotional.get("weekendSpend") or 0)
     if total_expenses > 0 and weekend_spend > (total_expenses * 0.15):
-        actions.append({
+        return {
             "title": "Reduce weekend discretionary spending",
             "description": f"Weekend spend is €{weekend_spend:.2f}; adding a weekend cap can accelerate your goal.",
             "category": "Discretionary",
             "potentialSavings": round(weekend_spend * 0.30, 2),
             "effort": "Medium",
             "implementation": "Set a weekly weekend budget and pre-plan leisure expenses.",
-        })
+        }
+    return None
 
+def _check_impulse_spending(doc: dict, emotional: dict) -> dict | None:
+    """Check if impulse spending is high; return action or None."""
+    total_expenses = float(doc.get("totalExpenses") or 0)
     impulse_score = float(emotional.get("emotionalSpendScores", {}).get("impulse") or 0)
     impulse_ratio = (impulse_score / total_expenses) if total_expenses > 0 else 0
     if impulse_ratio > 0.08:
-        actions.append({
+        return {
             "title": "Control impulse purchases",
             "description": f"Impulse spend is {round(impulse_ratio * 100, 1)}% of expenses.",
             "category": "Behavior",
             "potentialSavings": round(impulse_score * 0.35, 2),
             "effort": "Medium",
             "implementation": "Apply a 24h rule before non-essential purchases.",
-        })
+        }
+    return None
 
+def _check_utilities_optimization(doc: dict) -> dict | None:
+    """Check if utilities are above target; return action or None."""
     by_cat = doc.get("byCategory", {}) or {}
     utilities_spend = float(by_cat.get("Utilities", by_cat.get("Hogar / Suministro", 0)) or 0)
     if utilities_spend > 950:
-        actions.append({
+        return {
             "title": "Optimize utilities",
             "description": "Utility costs are above target; renegotiation may reduce fixed costs.",
             "category": "Fixed Costs",
             "potentialSavings": round(utilities_spend * 0.08, 2),
             "effort": "Low",
             "implementation": "Compare providers and renegotiate electricity/internet contracts.",
-        })
+        }
+    return None
 
-    if str(fsi.get("fsiLevel", "")).lower() in {"high", "medium"}:
-        actions.append({
+def _check_emergency_buffer(doc: dict, fsi: dict) -> dict | None:
+    """Check if emergency buffer is needed; return action or None."""
+    fsi_level = str(fsi.get("fsiLevel", "")).lower()
+    if fsi_level in {"high", "medium"}:
+        total_expenses = float(doc.get("totalExpenses") or 0)
+        return {
             "title": "Build emergency buffer",
             "description": "A safety buffer reduces stress-driven spending and keeps you on plan.",
             "category": "Savings",
             "potentialSavings": round(total_expenses * 0.05, 2) if total_expenses > 0 else 35.0,
             "effort": "Medium",
             "implementation": "Automate a monthly transfer to a dedicated emergency account.",
-        })
+        }
+    return None
 
+def _collect_optimization_actions(doc: dict, emotional: dict, fsi: dict) -> list[dict]:
+    """Collect all applicable optimization actions."""
+    actions = []
+    
+    # Check each pattern and collect actions
+    weekend_action = _check_weekend_spending(doc, emotional)
+    if weekend_action:
+        actions.append(weekend_action)
+    
+    impulse_action = _check_impulse_spending(doc, emotional)
+    if impulse_action:
+        actions.append(impulse_action)
+    
+    utilities_action = _check_utilities_optimization(doc)
+    if utilities_action:
+        actions.append(utilities_action)
+    
+    buffer_action = _check_emergency_buffer(doc, fsi)
+    if buffer_action:
+        actions.append(buffer_action)
+    
+    return actions
+
+def _get_default_action() -> list[dict]:
+    """Return default action when no specific issues detected."""
+    return [{
+        "title": "Review spending habits",
+        "description": "A monthly budget review can uncover fast savings opportunities.",
+        "category": "Planning",
+        "potentialSavings": 50.0,
+        "effort": "Low",
+        "implementation": "Block 20 minutes monthly to review subscriptions and variable spending.",
+    }]
+
+def _calculate_goal_remaining(goal: dict, current_savings: float) -> float:
+    """Calculate remaining amount for a goal."""
+    current_projected = goal.get("projectedMonths")
+    current_goal_savings = float(goal.get("currentSavings") or current_savings or 0)
+    monthly_needed = float(goal.get("monthlyNeeded") or 0)
+    
+    if current_projected and current_goal_savings > 0:
+        return current_goal_savings * float(current_projected)
+    if current_projected and monthly_needed > 0:
+        return monthly_needed * float(current_projected)
+    return monthly_needed * 12
+
+def _optimize_goal_projection(goal: dict, remaining: float, optimized_savings: float) -> dict:
+    """Calculate optimized projection for a goal."""
+    current_projected = goal.get("projectedMonths")
+    optimized_projected = math.ceil(remaining / optimized_savings) if optimized_savings > 0 else None
+    
+    if current_projected and optimized_projected:
+        optimized_projected = min(int(current_projected), int(optimized_projected))
+    
+    time_saved = (current_projected - optimized_projected) if (current_projected and optimized_projected) else 0
+    
+    return {
+        "goal": goal.get("goal", "Goal"),
+        "currentProjected": current_projected,
+        "optimizedProjected": optimized_projected,
+        "timeSaved": max(0, time_saved),
+    }
+
+def _static_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict:
+    """Rules-based fallback when GPT-4o is unavailable or returns invalid JSON."""
+    actions = _collect_optimization_actions(doc, emotional, fsi)
     if not actions:
-        actions = [{
-            "title": "Review spending habits",
-            "description": "A monthly budget review can uncover fast savings opportunities.",
-            "category": "Planning",
-            "potentialSavings": 50.0,
-            "effort": "Low",
-            "implementation": "Block 20 minutes monthly to review subscriptions and variable spending.",
-        }]
+        actions = _get_default_action()
 
     total_potential_savings = round(sum(float(a.get("potentialSavings") or 0) for a in actions), 2)
     current_savings = round(_get_monthly_savings(doc), 2)
     optimized_savings = round(current_savings + total_potential_savings, 2)
 
     optimized_goals = []
-    for g in goals.get("goals", []) or []:
-        current_projected = g.get("projectedMonths")
-        current_goal_savings = float(g.get("currentSavings") or current_savings or 0)
-        monthly_needed = float(g.get("monthlyNeeded") or 0)
-        # Infer remaining from current projection and current savings first.
-        # Using monthlyNeeded * projectedMonths can overestimate remaining and worsen projections.
-        if current_projected and current_goal_savings > 0:
-            remaining = current_goal_savings * float(current_projected)
-        elif current_projected and monthly_needed > 0:
-            remaining = monthly_needed * float(current_projected)
-        else:
-            remaining = monthly_needed * 12
-
-        optimized_projected = math.ceil(remaining / optimized_savings) if optimized_savings > 0 else None
-        if current_projected and optimized_projected:
-            optimized_projected = min(int(current_projected), int(optimized_projected))
-        time_saved = (current_projected - optimized_projected) if (current_projected and optimized_projected) else 0
-        optimized_goals.append({
-            "goal": g.get("goal", "Goal"),
-            "currentProjected": current_projected,
-            "optimizedProjected": optimized_projected,
-            "timeSaved": max(0, time_saved),
-        })
+    for g in (goals.get("goals", []) or []):
+        remaining = _calculate_goal_remaining(g, current_savings)
+        optimized_goals.append(_optimize_goal_projection(g, remaining, optimized_savings))
 
     return {
         "agent": "GoalOptimization",
@@ -360,119 +430,36 @@ def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) ->
     """Use Azure OpenAI GPT-4o-mini to generate personalized optimization actions and timeline impact."""
     api_key = get_secret("openai-key", "AZURE_OPENAI_KEY")
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
-    deployment = os.getenv("AZURE_OPENAI_GOAL_DEPLOYMENT", os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini"))
-
     if not api_key or not endpoint:
         return None
+
+    deployment = os.getenv("AZURE_OPENAI_GOAL_DEPLOYMENT", os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini"))
 
     try:
         from openai import AzureOpenAI
 
         current_savings = round(_get_monthly_savings(doc), 2)
-        payload = {
-            "currency": "EUR",
-            "financial": {
-                "totalIncome": doc.get("totalIncome", 0),
-                "totalExpenses": doc.get("totalExpenses", 0),
-                "netCashFlow": doc.get("netCashFlow", 0),
-                "byCategory": doc.get("byCategory", {}),
-            },
-            "behavior": {
-                "dominantPattern": emotional.get("dominantPattern", "none"),
-                "emotionalSpendScores": emotional.get("emotionalSpendScores", {}),
-                "weekendSpend": emotional.get("weekendSpend", 0),
-                "surveyStressScore": emotional.get("surveyStressScore", 0),
-                "fsiLevel": fsi.get("fsiLevel", "Medium"),
-                "fsi": fsi.get("fsi", 0),
-            },
-            "goals": goals.get("goals", []),
-            "currentMonthlySavings": current_savings,
-        }
-
-        prompt = (
-            "You are a financial optimization advisor. Analyze the user data and produce an actionable plan to achieve goals faster. "
-            "Prioritize realistic, behavior-aware actions from both transactions and behavioral survey signals. "
-            "Return ONLY valid JSON with this schema: "
-            "{"
-            "\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Low\"|\"Medium\"|\"High\", \"implementation\": str}],"
-            "\"totalPotentialSavings\": number,"
-            "\"currentMonthlySavings\": number,"
-            "\"optimizedMonthlySavings\": number,"
-            "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]"
-            "}. "
-            "Rules: 1) max 4 actions, sorted by impact. 2) potentialSavings must be monthly EUR values. "
-            "3) If data quality is limited, still return at least 1 safe action. 4) Do not add markdown or explanation outside JSON.\n\n"
-            f"UserData:\n{json.dumps(payload, ensure_ascii=True)}"
-        )
+        payload = _build_optimization_payload(doc, emotional, fsi, goals, current_savings)
+        prompt = _build_optimization_prompt(payload)
 
         client = AzureOpenAI(api_key=api_key, azure_endpoint=endpoint, api_version="2024-02-01")
-        resp = client.chat.completions.create(
-            model=deployment,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.35,
-            max_tokens=900,
-            response_format={"type": "json_object"},
-        )
-
-        raw = (resp.choices[0].message.content or "").strip() if resp.choices else ""
-        # Safe cleanup: avoid regex backtracking vulnerability
-        if raw.startswith("```json"):
-            raw = raw[7:].lstrip()
-        if raw.endswith("```"):
-            raw = raw[:-3].rstrip()
-        parsed = json.loads(raw)
-
-        actions = parsed.get("actions", []) if isinstance(parsed, dict) else []
-        if not isinstance(actions, list) or len(actions) == 0:
+        raw_response = _call_openai_api(client, deployment, prompt)
+        if not raw_response:
             return None
 
-        normalized_actions = []
-        for action in actions[:4]:
-            if not isinstance(action, dict):
-                continue
-            normalized_actions.append({
-                "title": str(action.get("title") or "Optimization action"),
-                "description": str(action.get("description") or ""),
-                "category": str(action.get("category") or "Planning"),
-                "potentialSavings": round(max(0.0, float(action.get("potentialSavings") or 0.0)), 2),
-                "effort": str(action.get("effort") or "Medium"),
-                "implementation": str(action.get("implementation") or "Apply this action for the next 30 days."),
-            })
+        parsed = _parse_ai_response(raw_response)
+        if not parsed:
+            return None
 
+        normalized_actions = _extract_and_normalize_actions(parsed)
         if not normalized_actions:
             return None
 
-        total_potential_savings = round(
-            float(parsed.get("totalPotentialSavings") or 0) or
-            sum(a["potentialSavings"] for a in normalized_actions),
-            2
-        )
+        total_potential_savings = _calculate_action_savings(parsed, normalized_actions)
         current_monthly_savings = round(float(parsed.get("currentMonthlySavings") or current_savings), 2)
         optimized_monthly_savings = round(float(parsed.get("optimizedMonthlySavings") or (current_monthly_savings + total_potential_savings)), 2)
 
-        optimized_goals = parsed.get("optimizedGoals", []) if isinstance(parsed.get("optimizedGoals", []), list) else []
-        if not optimized_goals and goals.get("goals"):
-            for g in goals.get("goals", []):
-                current_projected = g.get("projectedMonths")
-                current_goal_savings = float(g.get("currentSavings") or current_monthly_savings or 0)
-                monthly_needed = float(g.get("monthlyNeeded") or 0)
-                if current_projected and current_goal_savings > 0:
-                    remaining = current_goal_savings * float(current_projected)
-                elif current_projected and monthly_needed > 0:
-                    remaining = monthly_needed * float(current_projected)
-                else:
-                    remaining = monthly_needed * 12
-
-                opt_projected = math.ceil(remaining / optimized_monthly_savings) if optimized_monthly_savings > 0 else None
-                if current_projected and opt_projected:
-                    opt_projected = min(int(current_projected), int(opt_projected))
-                time_saved = (current_projected - opt_projected) if (current_projected and opt_projected) else 0
-                optimized_goals.append({
-                    "goal": g.get("goal", "Goal"),
-                    "currentProjected": current_projected,
-                    "optimizedProjected": opt_projected,
-                    "timeSaved": max(0, time_saved),
-                })
+        optimized_goals = _extract_optimized_goals(parsed, goals, current_monthly_savings, optimized_monthly_savings)
 
         return {
             "agent": "GoalOptimization",
@@ -483,9 +470,164 @@ def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) ->
             "optimizedMonthlySavings": optimized_monthly_savings,
             "optimizedGoals": optimized_goals,
         }
+
     except Exception as exc:
         logger.warning("Goal optimization with Azure OpenAI failed (%s) — static fallback", exc)
         return None
+
+
+def _build_optimization_payload(doc: dict, emotional: dict, fsi: dict, goals: dict, current_savings: float) -> dict:
+    """Build the user data payload for optimization prompt."""
+    return {
+        "currency": "EUR",
+        "financial": {
+            "totalIncome": doc.get("totalIncome", 0),
+            "totalExpenses": doc.get("totalExpenses", 0),
+            "netCashFlow": doc.get("netCashFlow", 0),
+            "byCategory": doc.get("byCategory", {}),
+        },
+        "behavior": {
+            "dominantPattern": emotional.get("dominantPattern", "none"),
+            "emotionalSpendScores": emotional.get("emotionalSpendScores", {}),
+            "weekendSpend": emotional.get("weekendSpend", 0),
+            "surveyStressScore": emotional.get("surveyStressScore", 0),
+            "fsiLevel": fsi.get("fsiLevel", "Medium"),
+            "fsi": fsi.get("fsi", 0),
+        },
+        "goals": goals.get("goals", []),
+        "currentMonthlySavings": current_savings,
+    }
+
+
+def _build_optimization_prompt(payload: dict) -> str:
+    """Build the optimization prompt for Azure OpenAI."""
+    return (
+        "You are a financial optimization advisor. Analyze the user data and produce an actionable plan to achieve goals faster. "
+        "Prioritize realistic, behavior-aware actions from both transactions and behavioral survey signals. "
+        "Return ONLY valid JSON with this schema: "
+        "{"
+        "\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Low\"|\"Medium\"|\"High\", \"implementation\": str}],"
+        "\"totalPotentialSavings\": number,"
+        "\"currentMonthlySavings\": number,"
+        "\"optimizedMonthlySavings\": number,"
+        "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]"
+        "}. "
+        "Rules: 1) max 4 actions, sorted by impact. 2) potentialSavings must be monthly EUR values. "
+        "3) If data quality is limited, still return at least 1 safe action. 4) Do not add markdown or explanation outside JSON.\n\n"
+        f"UserData:\n{json.dumps(payload, ensure_ascii=True)}"
+    )
+
+
+def _call_openai_api(client, deployment: str, prompt: str) -> str | None:
+    """Call Azure OpenAI API and return raw response or None."""
+    resp = client.chat.completions.create(
+        model=deployment,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.35,
+        max_tokens=900,
+        response_format={"type": "json_object"},
+    )
+    return (resp.choices[0].message.content or "").strip() if resp.choices else None
+
+
+def _clean_json_response(raw: str) -> str:
+    """Clean markdown-wrapped JSON response."""
+    if raw.startswith("```json"):
+        raw = raw[7:].lstrip()
+    if raw.endswith("```"):
+        raw = raw[:-3].rstrip()
+    return raw
+
+
+def _parse_ai_response(raw: str) -> dict | None:
+    """Parse and validate JSON from AI response."""
+    try:
+        raw = _clean_json_response(raw)
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        return None
+
+
+def _normalize_action(action: dict) -> dict | None:
+    """Normalize a single action or return None if invalid."""
+    if not isinstance(action, dict):
+        return None
+    return {
+        "title": str(action.get("title") or "Optimization action"),
+        "description": str(action.get("description") or ""),
+        "category": str(action.get("category") or "Planning"),
+        "potentialSavings": round(max(0.0, float(action.get("potentialSavings") or 0.0)), 2),
+        "effort": str(action.get("effort") or "Medium"),
+        "implementation": str(action.get("implementation") or "Apply this action for the next 30 days."),
+    }
+
+
+def _extract_and_normalize_actions(parsed: dict) -> list[dict]:
+    """Extract, normalize, and validate actions from parsed response."""
+    actions = parsed.get("actions", []) if isinstance(parsed, dict) else []
+    if not isinstance(actions, list) or len(actions) == 0:
+        return []
+    
+    normalized = []
+    for action in actions[:4]:
+        normalized_action = _normalize_action(action)
+        if normalized_action:
+            normalized.append(normalized_action)
+    return normalized
+
+
+def _calculate_action_savings(parsed: dict, normalized_actions: list[dict]) -> float:
+    """Calculate total potential savings from actions."""
+    return round(
+        float(parsed.get("totalPotentialSavings") or 0) or
+        sum(a["potentialSavings"] for a in normalized_actions),
+        2
+    )
+
+
+def _calculate_goal_remaining(goal: dict, current_monthly_savings: float) -> float:
+    """Calculate remaining amount needed for a goal."""
+    current_projected = goal.get("projectedMonths")
+    current_goal_savings = float(goal.get("currentSavings") or current_monthly_savings or 0)
+    monthly_needed = float(goal.get("monthlyNeeded") or 0)
+    
+    if current_projected and current_goal_savings > 0:
+        return current_goal_savings * float(current_projected)
+    if current_projected and monthly_needed > 0:
+        return monthly_needed * float(current_projected)
+    return monthly_needed * 12
+
+
+def _optimize_goal_projection(goal: dict, remaining: float, optimized_monthly_savings: float) -> dict:
+    """Compute optimized projection for a goal."""
+    current_projected = goal.get("projectedMonths")
+    opt_projected = math.ceil(remaining / optimized_monthly_savings) if optimized_monthly_savings > 0 else None
+    if current_projected and opt_projected:
+        opt_projected = min(int(current_projected), int(opt_projected))
+    time_saved = (current_projected - opt_projected) if (current_projected and opt_projected) else 0
+    
+    return {
+        "goal": goal.get("goal", "Goal"),
+        "currentProjected": current_projected,
+        "optimizedProjected": opt_projected,
+        "timeSaved": max(0, time_saved),
+    }
+
+
+def _extract_optimized_goals(parsed: dict, goals: dict, current_monthly_savings: float, optimized_monthly_savings: float) -> list[dict]:
+    """Extract optimized goals from response or compute if missing."""
+    optimized_goals = parsed.get("optimizedGoals", [])
+    if isinstance(optimized_goals, list) and optimized_goals:
+        return optimized_goals
+    
+    if not goals.get("goals"):
+        return []
+    
+    return [
+        _optimize_goal_projection(g, _calculate_goal_remaining(g, current_monthly_savings), optimized_monthly_savings)
+        for g in goals.get("goals", [])
+    ]
 
 
 def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) -> dict:
@@ -816,7 +958,12 @@ def health():
 def root():
     return {"message": "Welcome to the HabitWealth Enrichment Agent API", "version": "2.0.0"}
 
-@app.post("/enrich")
+@app.post(
+    "/enrich",
+    responses={
+        400: {"description": "No transactions provided"}
+    }
+)
 def enrich(request: EnrichRequest):
     """Main pipeline entry point – called by the Azure Function event handler."""
     if not request.transactions:
