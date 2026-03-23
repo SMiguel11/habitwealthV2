@@ -465,6 +465,107 @@ async function generateGoalOptimization(summaryData) {
   }
 }
 
+/**
+ * Extract month number from filename using pattern matching.
+ * Try: numeric patterns → Spanish month names → English month names → analyzedAt date → null
+ */
+function _extractMonthFromFilename(filename, analyzedAt) {
+  const fn = (filename || '').toLowerCase()
+  
+  // Try numeric pattern: _MM_
+  const numMatch = fn.match(/_(\d{1,2})_/)
+  if (numMatch) return Number.parseInt(numMatch[1], 10)
+  
+  // Try Spanish month names
+  const spanishMonths = {
+    diciembre: 12, enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5,
+    junio: 6, julio: 7, agosto: 8, setiembre: 9, septiembre: 9, octubre: 10, noviembre: 11
+  }
+  for (const [name, month] of Object.entries(spanishMonths)) {
+    if (fn.includes(name)) return month
+  }
+  
+  // Try English month names
+  const englishMonths = {
+    january: 1, jan: 1, february: 2, feb: 2, march: 3, mar: 3, april: 4, apr: 4,
+    may: 5, june: 6, jun: 6, july: 7, jul: 7, august: 8, aug: 8,
+    september: 9, sept: 9, october: 10, oct: 10, november: 11, nov: 11, december: 12, dec: 12
+  }
+  for (const [name, month] of Object.entries(englishMonths)) {
+    if (fn.includes(name)) return month
+  }
+  
+  // Fallback: parse analyzedAt date
+  if (analyzedAt) {
+    try {
+      return new Date(analyzedAt).getMonth() + 1
+    } catch { /* ignored */ }
+  }
+  
+  return null
+}
+
+/**
+ * Process a single transaction: extract category, amount, and merchant.
+ */
+function _processTransaction(tx) {
+  const amount = Math.abs(Number(tx.amount) || 0)
+  if (amount <= 0) return null
+  return { merchant: tx.merchant, amount: Math.round(amount * 100) / 100 }
+}
+
+/**
+ * Aggregate transactions for a single document: group by category, sort, keep top 5.
+ */
+function _aggregateDocumentTransactions(doc) {
+  const transactions = doc.transactions || []
+  const byCategory = {}
+  
+  for (const tx of transactions) {
+    const processed = _processTransaction(tx)
+    if (!processed) continue
+    const cat = tx.category || 'Other'
+    if (!byCategory[cat]) byCategory[cat] = []
+    byCategory[cat].push(processed)
+  }
+  
+  for (const [cat, txs] of Object.entries(byCategory)) {
+    byCategory[cat] = txs.sort((a, b) => b.amount - a.amount).slice(0, 5)
+  }
+  return byCategory
+}
+
+/**
+ * Accumulate category data across analysis documents (3-doc window).
+ */
+function _accumulateCategoryData(analysisDocs) {
+  const byCategory = {}
+  const byCategoryByMonth = {}
+  const transactionsByMonthAndCategory = {}
+  
+  for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
+    const doc = analysisDocs[docIdx]
+    const catMap = getDocumentCategoryTotals(doc)
+    const monthNum = _extractMonthFromFilename(doc.filename, doc.analyzedAt)
+    const txsByCategory = _aggregateDocumentTransactions(doc)
+    
+    // Accumulate transactions by category and month
+    for (const [cat, txs] of Object.entries(txsByCategory)) {
+      if (!transactionsByMonthAndCategory[cat]) transactionsByMonthAndCategory[cat] = []
+      transactionsByMonthAndCategory[cat].push({ month: monthNum, transactions: txs })
+    }
+    
+    // Accumulate category totals
+    for (const [cat, amt] of Object.entries(catMap)) {
+      byCategory[cat] = (byCategory[cat] || 0) + amt
+      if (!byCategoryByMonth[cat]) byCategoryByMonth[cat] = []
+      byCategoryByMonth[cat][docIdx] = Math.round(amt * 100) / 100
+    }
+  }
+  
+  return { byCategory, byCategoryByMonth, transactionsByMonthAndCategory }
+}
+
 module.exports = async function (context, req) {
   const userId = req.query.userId || 'local-user'
   const lang   = req.query.lang   || 'en'
@@ -502,100 +603,9 @@ module.exports = async function (context, req) {
   const twin      = latestDoc.agentResult?.agents?.digitalTwin
   const latestByCategory = getDocumentCategoryTotals(latestDoc)
 
-  // Aggregate spending by category across the analysis window (latest 3 docs)
+  // Aggregate spending by category and transactions across the analysis window (latest 3 docs)
   // Fallback: compute directly from transactions if agent didn't run
-  const byCategory = {}
-  const byCategoryByMonth = {}  // Monthly breakdown per category
-  const transactionsByMonthAndCategory = {}  // Detailed transactions: { "Utilities": [{ month: 2, txs: [...] }, ...] }
-  
-  for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
-    const doc = analysisDocs[docIdx]
-    const catMap = getDocumentCategoryTotals(doc)
-    const transactions = doc.transactions || []
-    
-    // Extract month from filename/analyzedAt (use same logic as frontend)
-    let monthNum = null
-    const filename = (doc.filename || '').toLowerCase()
-    
-    // Try filename patterns
-    const monthMatch = filename.match(/_(\d{1,2})_/)
-    if (monthMatch) monthNum = Number.parseInt(monthMatch[1], 10)
-    
-    // Try Spanish month names
-    if (!monthNum) {
-      if (filename.includes('diciembre')) monthNum = 12
-      else if (filename.includes('enero')) monthNum = 1
-      else if (filename.includes('febrero')) monthNum = 2
-      else if (filename.includes('marzo')) monthNum = 3
-      else if (filename.includes('abril')) monthNum = 4
-      else if (filename.includes('mayo')) monthNum = 5
-      else if (filename.includes('junio')) monthNum = 6
-      else if (filename.includes('julio')) monthNum = 7
-      else if (filename.includes('agosto')) monthNum = 8
-      else if (filename.includes('septiembre') || filename.includes('setiembre')) monthNum = 9
-      else if (filename.includes('octubre')) monthNum = 10
-      else if (filename.includes('noviembre')) monthNum = 11
-    }
-    
-    // Try English month names
-    if (!monthNum) {
-      if (filename.includes('january') || filename.includes('jan')) monthNum = 1
-      else if (filename.includes('february') || filename.includes('feb')) monthNum = 2
-      else if (filename.includes('march') || filename.includes('mar')) monthNum = 3
-      else if (filename.includes('april') || filename.includes('apr')) monthNum = 4
-      else if (filename.includes('may')) monthNum = 5
-      else if (filename.includes('june') || filename.includes('jun')) monthNum = 6
-      else if (filename.includes('july') || filename.includes('jul')) monthNum = 7
-      else if (filename.includes('august') || filename.includes('aug')) monthNum = 8
-      else if (filename.includes('september') || filename.includes('sept')) monthNum = 9
-      else if (filename.includes('october') || filename.includes('oct')) monthNum = 10
-      else if (filename.includes('november') || filename.includes('nov')) monthNum = 11
-      else if (filename.includes('december') || filename.includes('dec')) monthNum = 12
-    }
-    
-    // Fallback to analyzedAt month
-    if (!monthNum && doc.analyzedAt) {
-      try {
-        const date = new Date(doc.analyzedAt)
-        monthNum = date.getMonth() + 1
-      } catch { /* use null */ }
-    }
-    
-    // Group transactions by category for this month
-    const txsByCategory = {}
-    for (const tx of transactions) {
-      const cat = tx.category || 'Other'
-      const amount = Math.abs(Number(tx.amount) || 0)
-      if (amount > 0) {  // only expenses (negative amounts)
-        if (!txsByCategory[cat]) txsByCategory[cat] = []
-        txsByCategory[cat].push({
-          merchant: tx.merchant,
-          amount: Math.round(amount * 100) / 100
-        })
-      }
-    }
-    
-    // Sort by amount desc and keep top 5 per category
-    for (const [cat, txs] of Object.entries(txsByCategory)) {
-      const sorted = txs.sort((a, b) => b.amount - a.amount).slice(0, 5)
-      if (!transactionsByMonthAndCategory[cat]) {
-        transactionsByMonthAndCategory[cat] = []
-      }
-      transactionsByMonthAndCategory[cat].push({
-        month: monthNum,
-        transactions: sorted
-      })
-    }
-    
-    if (Object.keys(catMap).length > 0) {
-      for (const [cat, amt] of Object.entries(catMap)) {
-        byCategory[cat] = (byCategory[cat] || 0) + amt
-        // Track monthly breakdown
-        if (!byCategoryByMonth[cat]) byCategoryByMonth[cat] = []
-        byCategoryByMonth[cat][docIdx] = Math.round(amt * 100) / 100
-      }
-    }
-  }
+  const { byCategory, byCategoryByMonth, transactionsByMonthAndCategory } = _accumulateCategoryData(analysisDocs)
 
   // Average habit score across the analysis window
   const scores = analysisDocs.map(d =>
@@ -693,52 +703,8 @@ module.exports = async function (context, req) {
         byCategory,
         byCategoryByMonth,  // Monthly breakdown: { "Utilities": [€950, €920, €891], ... }
         transactionsByMonthAndCategory,  // Top 5 transactions per category per month
-        // Extract month from filename, with fallback to analyzedAt date
-        documentMonths: analysisDocs.map(d => {
-          const filename = (d.filename || '').toLowerCase()
-          
-          // Try to extract month number from filename patterns like "_12_"
-          const monthMatch = filename.match(/_(\d{1,2})_/)
-          if (monthMatch) return Number.parseInt(monthMatch[1], 10)
-          
-          // Try Spanish month names in filename
-          if (filename.includes('diciembre')) return 12
-          if (filename.includes('enero')) return 1
-          if (filename.includes('febrero')) return 2
-          if (filename.includes('marzo')) return 3
-          if (filename.includes('abril')) return 4
-          if (filename.includes('mayo')) return 5
-          if (filename.includes('junio')) return 6
-          if (filename.includes('julio')) return 7
-          if (filename.includes('agosto')) return 8
-          if (filename.includes('septiembre') || filename.includes('setiembre')) return 9
-          if (filename.includes('octubre')) return 10
-          if (filename.includes('noviembre')) return 11
-          
-          // Try English month names in filename
-          if (filename.includes('january') || filename.includes('jan')) return 1
-          if (filename.includes('february') || filename.includes('feb')) return 2
-          if (filename.includes('march') || filename.includes('mar')) return 3
-          if (filename.includes('april') || filename.includes('apr')) return 4
-          if (filename.includes('may')) return 5
-          if (filename.includes('june') || filename.includes('jun')) return 6
-          if (filename.includes('july') || filename.includes('jul')) return 7
-          if (filename.includes('august') || filename.includes('aug')) return 8
-          if (filename.includes('september') || filename.includes('sept')) return 9
-          if (filename.includes('october') || filename.includes('oct')) return 10
-          if (filename.includes('november') || filename.includes('nov')) return 11
-          if (filename.includes('december') || filename.includes('dec')) return 12
-          
-          // Fallback: extract month from analyzedAt date (YYYY-MM-DDTHH:mm:ss.sssZ)
-          if (d.analyzedAt) {
-            try {
-              const date = new Date(d.analyzedAt)
-              return date.getMonth() + 1  // getMonth() returns 0-11, so add 1
-            } catch { /* fall through */ }
-          }
-          
-          return null  // Could not determine month
-        }),
+        // Extract month from filename or analyzedAt date
+        documentMonths: analysisDocs.map(d => _extractMonthFromFilename(d.filename, d.analyzedAt)),
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,
