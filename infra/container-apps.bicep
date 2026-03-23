@@ -66,10 +66,10 @@ var registryName = toLower('${take(replace(baseName, '-', ''), 42)}${uniqueSuffi
 resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
   name:     registryName
   location: location
-  tags:     tags
   sku: {
     name: 'Basic'
   }
+  tags:     tags
   properties: {
     adminUserEnabled:    false      // Disabled — Container Apps uses Managed Identity via RBAC
     publicNetworkAccess: 'Disabled' // Internal-only registry; Container Apps accesses via VNet
@@ -78,8 +78,8 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = 
 
 // ─── Grant Managed Identity AcrPull role on registry ────────────────────────────
 resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(registry.id, managedIdentityId, '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-40881f42e221')
   scope: registry
+  name: guid(registry.id, managedIdentityId, '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-40881f42e221')
   properties: {
     roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-40881f42e221'
     principalId: reference(managedIdentityId, '2023-01-31', 'Full').properties.principalId
@@ -109,11 +109,11 @@ resource cae 'Microsoft.App/managedEnvironments@2024-03-01' = {
 resource enrichmentAgent 'Microsoft.App/containerApps@2024-03-01' = {
   name:     '${baseName}-agent-${uniqueSuffix}'
   location: location
-  tags:     tags
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: { '${managedIdentityId}': {} }
   }
+  tags:     tags
   properties: {
     environmentId: cae.id
     configuration: {

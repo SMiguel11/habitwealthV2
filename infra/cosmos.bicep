@@ -32,11 +32,11 @@ var userIdPartitionKey = '/userId'
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name:     accountName
   location: location
-  tags:     tags
   kind:     'GlobalDocumentDB'
   identity: {
     type: 'SystemAssigned'  // Enable Managed Identity for credential-free authentication
   }
+  tags:     tags
   properties: {
     databaseAccountOfferType: 'Standard'
     enableFreeTier:           enableFreeOffer

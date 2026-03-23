@@ -52,6 +52,20 @@ param enrichmentAgentUrl string = 'http://placeholder-update-after-deploy'
 @description('Tags applied to all resources')
 param tags object = {}
 
+// ─── App settings shared by both function apps ────────────────────────────────
+var commonSettings = [
+  { name: 'AzureWebJobsStorage',                  value: storageConnectionString }
+  { name: 'FUNCTIONS_EXTENSION_VERSION',           value: '~4' }
+  { name: 'FUNCTIONS_WORKER_RUNTIME',              value: 'node' }
+  { name: 'WEBSITE_NODE_DEFAULT_VERSION',          value: '~20' }
+  { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
+  { name: 'AZURE_KEY_VAULT_URI',                   value: keyVaultUri }
+  { name: 'AZURE_CLIENT_ID',                       value: managedIdentityClientId }
+  { name: 'AZURE_STORAGE_ACCOUNT_NAME',            value: storageAccountName }
+  { name: 'AZURE_STORAGE_ACCOUNT_KEY',             value: storageAccountKey }
+  { name: 'ENRICHMENT_AGENT_URL',                  value: enrichmentAgentUrl }
+]
+
 // ─── Log Analytics Workspace (shared — also used by Container Apps) ────────────
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name:     '${baseName}-logs-${uniqueSuffix}'
@@ -89,20 +103,6 @@ resource consumptionPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
     reserved: true  // Required for Linux-based function apps
   }
 }
-
-// ─── App settings shared by both function apps ────────────────────────────────
-var commonSettings = [
-  { name: 'AzureWebJobsStorage',                  value: storageConnectionString }
-  { name: 'FUNCTIONS_EXTENSION_VERSION',           value: '~4' }
-  { name: 'FUNCTIONS_WORKER_RUNTIME',              value: 'node' }
-  { name: 'WEBSITE_NODE_DEFAULT_VERSION',          value: '~20' }
-  { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
-  { name: 'AZURE_KEY_VAULT_URI',                   value: keyVaultUri }
-  { name: 'AZURE_CLIENT_ID',                       value: managedIdentityClientId }
-  { name: 'AZURE_STORAGE_ACCOUNT_NAME',            value: storageAccountName }
-  { name: 'AZURE_STORAGE_ACCOUNT_KEY',             value: storageAccountKey }
-  { name: 'ENRICHMENT_AGENT_URL',                  value: enrichmentAgentUrl }
-]
 
 // ─── SAS Function App (sas-function + insights-api + mock-analyze) ────────────
 resource sasFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
