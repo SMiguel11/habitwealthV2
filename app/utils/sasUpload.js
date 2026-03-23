@@ -3,7 +3,7 @@
 //        await uploadWithSas(uploadUrl, file)
 
 export async function getSasToken(apiUrl, filename) {
-  const url = new URL(apiUrl, window.location.origin)
+  const url = new URL(apiUrl, globalThis.location.origin)
   url.searchParams.set('filename', filename)
   
   const res = await fetch(url.toString(), {

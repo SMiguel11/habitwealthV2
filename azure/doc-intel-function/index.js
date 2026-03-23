@@ -1,6 +1,6 @@
 const { BlobServiceClient, generateBlobSASQueryParameters, StorageSharedKeyCredential } = require("@azure/storage-blob");
 
-module.exports = async function (context, req) {
+module.exports = async function generateDocumentSasToken(context, req) {
     const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
     const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
     const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
@@ -28,7 +28,7 @@ module.exports = async function (context, req) {
             blobName,
             permissions: "w",
             startsOn: new Date(),
-            expiresOn: new Date(new Date().valueOf() + 3600 * 1000), // 1 hour
+            expiresOn: new Date(Date.now() + 3600 * 1000), // 1 hour
         },
         blobServiceClient.credential
     ).toString();
