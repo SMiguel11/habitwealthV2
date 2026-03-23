@@ -19,6 +19,10 @@ param tags object = {
   environment: 'production'
 }
 
+// ─── Variable definitions ─────────────────────────────────────────────────────
+var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
+var kvSecretsOfficerRoleId = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
+
 // ─── User-Assigned Managed Identity ──────────────────────────────────────────
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name:     '${baseName}-identity'
@@ -50,8 +54,6 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 }
 
 // ─── RBAC: Managed Identity → Key Vault Secrets User ─────────────────────────
-var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
-
 resource miKvSecretUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: keyVault
   name:  guid(keyVault.id, managedIdentity.id, kvSecretsUserRoleId)
@@ -64,8 +66,6 @@ resource miKvSecretUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 // ─── RBAC: Deployer → Key Vault Secrets Officer (for initial secret seeding) ─
-var kvSecretsOfficerRoleId = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
-
 resource deployerKvOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: keyVault
   name:  guid(keyVault.id, deployerObjectId, kvSecretsOfficerRoleId)

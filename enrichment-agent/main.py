@@ -79,7 +79,7 @@ class Transaction(BaseModel):
     date: str
     merchant: str
     category: str
-    amount: float          # negative = expense
+    amount: float
     currency: str = "EUR"
 
 class UserGoal(BaseModel):
@@ -147,7 +147,7 @@ EMOTIONAL_KEYWORDS = {
     "social":   ["restaurant", "bar", "club", "cinema", "concert"],
 }
 
-WEEKEND_DAYS = {5, 6}  # Saturday=5, Sunday=6
+WEEKEND_DAYS = {5, 6}
 
 def _score_transaction_patterns(transaction: dict, scores: dict) -> None:
     """Update emotional pattern scores for a single transaction."""
@@ -765,7 +765,12 @@ def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None) 
         nudges_en = nudges_result
         nudges_es = []
     level = fsi["fsiLevel"]
-    urgency = "immediate" if level == "High" else "suggested" if level == "Medium" else "preventive"
+    if level == "High":
+        urgency = "immediate"
+    elif level == "Medium":
+        urgency = "suggested"
+    else:
+        urgency = "preventive"
     return {
         "agent": "CBTIntervention",
         "interventionUrgency": urgency,

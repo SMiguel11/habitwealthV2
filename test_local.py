@@ -211,7 +211,12 @@ if __name__ == "__main__":
     section("Summary")
     all_ok = True
     for name, ok in results.items():
-        icon = PASS if ok else (SKIP if ok is False else FAIL)
+        if ok:
+            icon = PASS
+        elif ok is False:
+            icon = SKIP
+        else:
+            icon = FAIL
         print(f"  {icon}  {name}")
         if not ok: all_ok = False
 
