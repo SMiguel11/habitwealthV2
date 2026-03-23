@@ -138,162 +138,218 @@ function parseAmount(str) {
 // Rows that are balance/summary lines — not real transactions
 const SKIP_DESC_PREFIXES = ['saldo', 'total', 'balance', 'subtotal', 'resumen']
 
-function parseTransactionsFromDI(analyzeResult) {
+/**
+ * Build header map from first row of a table.
+ */
+function _buildHeaderMap(table) {
+  const headers = {}
+  let maxCol = 0
+  for (const cell of table.cells) {
+    if (cell.columnIndex > maxCol) maxCol = cell.columnIndex
+    if (cell.rowIndex === 0) headers[cell.columnIndex] = cell.content.toLowerCase()
+  }
+  return { headers, colCount: maxCol + 1 }
+}
+
+/**
+ * Determine which headers to use (new or continuation) and whether to skip row 0.
+ */
+function _determineActiveHeaders(headers, hasDate, lastHeaders, colCount, lastColCount) {
+  if (hasDate) {
+    return { activeHeaders: headers, skipRow0: true, shouldProcess: true }
+  }
+  if (lastHeaders && colCount >= lastColCount - 1) {
+    return { activeHeaders: lastHeaders, skipRow0: false, shouldProcess: true }
+  }
+  return { activeHeaders: null, skipRow0: false, shouldProcess: false }
+}
+
+/**
+ * Find a column index by matching header content against search terms.
+ */
+function _findColumnIndex(activeHeaders, searchTerms) {
+  const idx = Object.keys(activeHeaders).find(i => 
+    searchTerms.some(term => activeHeaders[i].includes(term))
+  )
+  return idx ? +idx : NaN
+}
+
+/**
+ * Collect all rows from a table, skipping row 0 if needed.
+ */
+function _collectTableRows(table, skipRow0) {
+  const rows = {}
+  for (const cell of table.cells) {
+    if (skipRow0 && cell.rowIndex === 0) continue
+    if (!rows[cell.rowIndex]) rows[cell.rowIndex] = {}
+    rows[cell.rowIndex][cell.columnIndex] = cell.content
+  }
+  return rows
+}
+
+/**
+ * Normalize amount sign based on category (Income positive, others negative).
+ */
+function _normalizeAmountSign(amount, category) {
+  if (category === 'Income') {
+    return amount < 0 ? Math.abs(amount) : amount
+  }
+  // Savings transfers (ahorro, ETF) are debits — keep them negative
+  return amount > 0 ? -amount : amount
+}
+
+/**
+ * Parse a single table row into a transaction.
+ */
+function _parseRowTransaction(row, dateCol, descCol, catCol, amtCol) {
+  const desc = (row[descCol] || '').trim()
+  if (!desc) return null
+
+  // Skip balance/summary rows
+  const descLower = desc.toLowerCase()
+  if (SKIP_DESC_PREFIXES.some(p => descLower.startsWith(p))) return null
+
+  const dateRaw = row[dateCol] || ''
+  // Skip rows without recognizable date
+  if (!dateRaw.match(/\d{1,2}[\/ \-]\d{1,2}[\/ \-]\d{4}/)) return null
+
+  const dateParts = dateRaw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
+  const date = dateParts
+    ? `${dateParts[3]}-${dateParts[2].padStart(2,'0')}-${dateParts[1].padStart(2,'0')}`
+    : dateRaw
+
+  let amount = parseAmount(row[amtCol] || '0')
+  const category = mapCategory(row[catCol] || desc)
+  amount = _normalizeAmountSign(amount, category)
+
+  return { date, merchant: desc, category, amount, currency: 'EUR' }
+}
+
+/**
+ * Process all table-based transactions.
+ */
+function _processTableTransactions(analyzeResult) {
   const transactions = []
-  let lastHeaders  = null  // headers from the previous valid table (for page-spanning tables)
+  let lastHeaders = null
   let lastColCount = 0
 
   for (const table of (analyzeResult.tables || [])) {
-    // ── Build header map from row 0 ──────────────────────────────────────────
-    const headers = {}
-    let maxCol = 0
-    for (const cell of table.cells) {
-      if (cell.columnIndex > maxCol) maxCol = cell.columnIndex
-      if (cell.rowIndex === 0) headers[cell.columnIndex] = cell.content.toLowerCase()
-    }
-    const colCount = maxCol + 1
-    const hasDate  = Object.values(headers).some(h => h.includes('fecha') || h === 'date')
+    const { headers, colCount } = _buildHeaderMap(table)
+    const hasDate = Object.values(headers).some(h => h.includes('fecha') || h === 'date')
 
-    // ── Determine active headers & whether to skip row 0 ────────────────────
-    let activeHeaders
-    let skipRow0
-    if (hasDate) {
-      // Normal table with header row
-      activeHeaders = headers
-      lastHeaders   = headers
-      lastColCount  = colCount
-      skipRow0      = true
-    } else if (lastHeaders && colCount >= lastColCount - 1) {
-      // Continuation of a multi-page table: same column structure, no new header row
-      // DI splits the table at each page boundary; the continued section has no header.
-      activeHeaders = lastHeaders
-      skipRow0      = false  // row 0 is data, not a header
-    } else {
-      continue  // unrelated table, skip
-    }
-
-    const dateCol = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('fecha') || activeHeaders[i] === 'date')
-    const descCol = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('descripci') || activeHeaders[i].includes('desc') || activeHeaders[i].includes('concepto'))
-    const catCol  = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('categor'))
-    const amtCol  = +Object.keys(activeHeaders).find(i => activeHeaders[i].includes('importe') || activeHeaders[i].includes('amount'))
-
-    // ── Collect rows ─────────────────────────────────────────────────────────
-    const rows = {}
-    for (const cell of table.cells) {
-      if (skipRow0 && cell.rowIndex === 0) continue
-      if (!rows[cell.rowIndex]) rows[cell.rowIndex] = {}
-      rows[cell.rowIndex][cell.columnIndex] = cell.content
-    }
-
-    // ── Parse each row into a transaction ────────────────────────────────────
-    for (const row of Object.values(rows)) {
-      const desc = (row[descCol] || '').trim()
-      if (!desc) continue
-
-      // Skip balance/summary rows (Saldo inicial, Saldo final, Total gastos, etc.)
-      const descLower = desc.toLowerCase()
-      if (SKIP_DESC_PREFIXES.some(p => descLower.startsWith(p))) continue
-
-      const dateRaw = row[dateCol] || ''
-      // Skip rows without a recognisable date
-      if (!dateRaw.match(/\d{1,2}[\/ \-]\d{1,2}[\/ \-]\d{4}/)) continue
-
-      const dateParts = dateRaw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
-      const date = dateParts
-        ? `${dateParts[3]}-${dateParts[2].padStart(2,'0')}-${dateParts[1].padStart(2,'0')}`
-        : dateRaw
-
-      let amount     = parseAmount(row[amtCol] || '0')
-      const category = mapCategory(row[catCol] || desc)
-
-      if (category === 'Income') {
-        if (amount < 0) amount = Math.abs(amount)  // income always positive
-      } else {
-        // Savings transfers (ahorro, ETF) are debits — keep them negative
-        if (amount > 0) amount = -amount  // all outflows always negative
-      }
-
-      transactions.push({ date, merchant: desc, category, amount, currency: 'EUR' })
-    }
-  }
-
-  // ── Deduplicates transactions on a normalized key (date + normalized desc + abs amount)
-  // ── This handles variations in merchant naming from table vs fallback extraction
-  function normalizeForDedup(desc) {
-    return (desc || '')
-      .toLowerCase()
-      .trim()
-      .replaceAll(/\s+/g, ' ')  // collapse multiple spaces
-      .replaceAll(/[.,]/g, '')  // remove punctuation that might vary
-  }
-
-  // ── Fallback: scan raw page lines for transactions DI didn't put in a table ─
-  // (e.g. a single-row continuation on page 2 that DI emits as paragraphs)
-  const known = new Set(
-    transactions.map(t => 
-      `${t.date}|${normalizeForDedup(t.merchant)}|${Math.abs(t.amount).toFixed(2)}`
+    const { activeHeaders, skipRow0, shouldProcess } = _determineActiveHeaders(
+      headers, hasDate, lastHeaders, colCount, lastColCount
     )
-  )
-  const DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/
-  const AMT_RE  = /^[+\-−]?\d/
+    if (!shouldProcess) continue
 
+    if (hasDate) {
+      lastHeaders = headers
+      lastColCount = colCount
+    }
+
+    const dateCol = _findColumnIndex(activeHeaders, ['fecha', 'date'])
+    const descCol = _findColumnIndex(activeHeaders, ['descripci', 'desc', 'concepto'])
+    const catCol = _findColumnIndex(activeHeaders, ['categor'])
+    const amtCol = _findColumnIndex(activeHeaders, ['importe', 'amount'])
+
+    const rows = _collectTableRows(table, skipRow0)
+    for (const row of Object.values(rows)) {
+      const tx = _parseRowTransaction(row, dateCol, descCol, catCol, amtCol)
+      if (tx) transactions.push(tx)
+    }
+  }
+
+  return transactions
+}
+
+/**
+ * Extract all lines from all pages.
+ */
+function _extractPageLines(analyzeResult) {
   const allLines = []
   for (const page of (analyzeResult.pages || [])) {
     for (const line of (page.lines || [])) {
       allLines.push((line.content || '').trim())
     }
   }
+  return allLines
+}
 
-  for (let i = 0; i < allLines.length - 2; i++) {
-    const dm = allLines[i].match(DATE_RE)
-    if (!dm) continue
+/**
+ * Parse a single line-based transaction.
+ */
+function _parseLineTransaction(i, allLines, known, normalizeFunc) {
+  const DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/
+  const AMT_RE = /^[+\-−]?\d/
 
-    const desc   = allLines[i + 1] || ''
-    const catRaw = allLines[i + 2] || ''
-    // Amount may be at i+3 or fused onto i+2 (e.g. "Compras-22.08")
-    let amtStr = allLines[i + 3] || ''
-    let skip   = 4
+  const dm = allLines[i].match(DATE_RE)
+  if (!dm) return { tx: null, skip: 0 }
 
-    if (!AMT_RE.test(amtStr)) {
-      // Try extracting amount fused into catRaw: "Compras-22.08"
-      const fused = catRaw.match(/([+\-−]\d[\d.,]*)/)
-      if (fused) { amtStr = fused[1]; skip = 3 }
-      else { continue }
-    }
+  const desc = allLines[i + 1] || ''
+  const catRaw = allLines[i + 2] || ''
 
-    const descLower = desc.toLowerCase()
-    if (SKIP_DESC_PREFIXES.some(p => descLower.startsWith(p))) { i += skip - 1; continue }
+  // Try amount at i+3 or fused into catRaw
+  let amtStr = allLines[i + 3] || ''
+  let skip = 4
 
-    const date = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`
-    let amount  = parseAmount(amtStr)
-    if (amount === 0) continue
-
-    const category = mapCategory(catRaw.replaceAll(/[+\-−][\d.,]+.*/, '').trim() || desc)
-    // Use normalized key to match against table-extracted transactions
-    const key = `${date}|${normalizeForDedup(desc)}|${Math.abs(amount).toFixed(2)}`
-    if (known.has(key)) { i += skip - 1; continue }
-    known.add(key)
-
-    if (category === 'Income') {
-      if (amount < 0) amount = Math.abs(amount)
+  if (!AMT_RE.test(amtStr)) {
+    const fused = catRaw.match(/([+\-−]\d[\d.,]*)/)
+    if (fused) {
+      amtStr = fused[1]
+      skip = 3
     } else {
-      if (amount > 0) amount = -amount
+      return { tx: null, skip: 0 }
     }
-    transactions.push({ date, merchant: desc, category, amount, currency: 'EUR' })
-    i += skip - 1
   }
 
-  // ── FINAL DEDUP PASS: Eliminate duplicate salary entries
-  // If we see multiple "nómina" / "salary" entries on the same date with same amount,
-  // keep only one per date per amount for Income category.
+  // Skip summary rows
+  const descLower = desc.toLowerCase()
+  if (SKIP_DESC_PREFIXES.some(p => descLower.startsWith(p))) {
+    return { tx: null, skip }
+  }
+
+  const date = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`
+  let amount = parseAmount(amtStr)
+  if (amount === 0) return { tx: null, skip }
+
+  const category = mapCategory(catRaw.replaceAll(/[+\-−][\d.,]+.*/, '').trim() || desc)
+  const key = `${date}|${normalizeFunc(desc)}|${Math.abs(amount).toFixed(2)}`
+  
+  if (known.has(key)) return { tx: null, skip }
+  known.add(key)
+
+  amount = _normalizeAmountSign(amount, category)
+  return { tx: { date, merchant: desc, category, amount, currency: 'EUR' }, skip }
+}
+
+/**
+ * Process all line-based transactions (fallback for lines not in tables).
+ */
+function _processLineTransactions(analyzeResult, knownTransactions, normalizeFunc) {
+  const transactions = []
+  const known = new Set(knownTransactions)
+  const allLines = _extractPageLines(analyzeResult)
+
+  for (let i = 0; i < allLines.length - 2; i++) {
+    const { tx, skip } = _parseLineTransaction(i, allLines, known, normalizeFunc)
+    if (tx) transactions.push(tx)
+    if (skip > 0) i += skip - 1
+  }
+
+  return transactions
+}
+
+/**
+ * Deduplicate salary entries: keep only one per date+amount.
+ */
+function _deduplicateSalaryEntries(transactions) {
   const incomeByDate = {}
   const finalTransactions = []
-  
+
   for (const tx of transactions) {
     if (tx.category === 'Income' && (tx.merchant.toLowerCase().includes('nómin') || tx.merchant.toLowerCase().includes('salario'))) {
       const dateAmtKey = `${tx.date}|${tx.amount}`
       if (incomeByDate[dateAmtKey]) {
-        // Duplicate salary entry — skip it
         console.log(`[DeduP] Filtered duplicate salary: ${tx.date} ${tx.merchant} €${tx.amount}`)
         continue
       }
@@ -303,6 +359,32 @@ function parseTransactionsFromDI(analyzeResult) {
   }
 
   return finalTransactions
+}
+
+function parseTransactionsFromDI(analyzeResult) {
+  // ── Helper for dedup key normalization
+  function normalizeForDedup(desc) {
+    return (desc || '')
+      .toLowerCase()
+      .trim()
+      .replaceAll(/\s+/g, ' ')
+      .replaceAll(/[.,]/g, '')
+  }
+
+  // ── Process tables first
+  const transactions = _processTableTransactions(analyzeResult)
+
+  // ── Dedup key from table transactions
+  const knownKeys = transactions.map(t => 
+    `${t.date}|${normalizeForDedup(t.merchant)}|${Math.abs(t.amount).toFixed(2)}`
+  )
+
+  // ── Process page lines (fallback for missed transactions)
+  const lineTransactions = _processLineTransactions(analyzeResult, knownKeys, normalizeForDedup)
+  transactions.push(...lineTransactions)
+
+  // ── Final dedup pass for salary entries
+  return _deduplicateSalaryEntries(transactions)
 }
 
 // ── Fallback: random mock transactions ────────────────────────────────────────
@@ -358,6 +440,44 @@ function callEnrichmentAgent(payload) {
   })
 }
 
+/**
+ * Check if Document Intelligence can be used.
+ */
+function _canUseDI(blobUrl) {
+  return !!(blobUrl && process.env.DOCUMENT_INTELLIGENCE_ENDPOINT && process.env.DOCUMENT_INTELLIGENCE_KEY)
+}
+
+/**
+ * Extract transactions via Document Intelligence (or return null).
+ */
+async function _extractWithDI(blobUrl, context) {
+  try {
+    context.log('[mock-analyze] Downloading blob for DI analysis: ' + blobUrl)
+    const pdfBuffer = await downloadBlobBuffer(blobUrl)
+    const analyzeResult = await analyzeWithDocumentIntelligence(pdfBuffer, context)
+    if (analyzeResult) {
+      const txs = parseTransactionsFromDI(analyzeResult)
+      context.log('[mock-analyze] DI extracted ' + txs.length + ' transactions')
+      return txs
+    }
+  } catch (err) {
+    context.log.warn('[mock-analyze] DI failed: ' + err.message)
+  }
+  return null
+}
+
+/**
+ * Run enrichment agent (optional). Returns null if unavailable.
+ */
+async function _enrichWithAgent(userId, filename, blobUrl, transactions, goals, surveyAnswers, context) {
+  try {
+    return await callEnrichmentAgent({ userId, filename, blobUrl, transactions, goals, surveyAnswers })
+  } catch (err) {
+    context.log.warn('[mock-analyze] Enrichment Agent unavailable: ' + err.message)
+    return null
+  }
+}
+
 module.exports = async function (context, req) {
   const body = req.body || {}
   const blobUrl       = body.blobUrl || null
@@ -372,32 +492,20 @@ module.exports = async function (context, req) {
   }
 
   // Try Document Intelligence first; fall back to fake transactions
-  let transactions = null
-  if (blobUrl && process.env.DOCUMENT_INTELLIGENCE_ENDPOINT && process.env.DOCUMENT_INTELLIGENCE_KEY) {
-    try {
-      context.log('[mock-analyze] Downloading blob for DI analysis: ' + blobUrl)
-      const pdfBuffer    = await downloadBlobBuffer(blobUrl)
-      const analyzeResult = await analyzeWithDocumentIntelligence(pdfBuffer, context)
-      if (analyzeResult) {
-        transactions = parseTransactionsFromDI(analyzeResult)
-        context.log('[mock-analyze] DI extracted ' + transactions.length + ' transactions')
-      }
-    } catch (err) {
-      context.log.warn('[mock-analyze] DI failed, using fake data: ' + err.message)
-    }
-  }
-  if (!transactions || transactions.length === 0) {
+  let transactions = _canUseDI(blobUrl)
+    ? await _extractWithDI(blobUrl, context)
+    : null
+
+  if (!transactions?.length) {
     transactions = generateFakeTransactions(filename || blobUrl)
     context.log('[mock-analyze] Using fake transactions (' + transactions.length + ')')
   }
 
-  let agentResult = null
-  try {
-    agentResult = await callEnrichmentAgent({ userId, filename, blobUrl, transactions, goals, surveyAnswers })
-    context.log('[mock-analyze] Agent score: ' + (agentResult && agentResult.summary ? agentResult.summary.habitWealthScore : 'n/a'))
-  } catch (err) {
-    context.log.warn('[mock-analyze] Enrichment Agent unavailable: ' + err.message)
-  }
+  // Try enrichment agent (optional)
+  const agentResult = await _enrichWithAgent(userId, filename, blobUrl, transactions, goals, surveyAnswers, context)
+  const insights = agentResult?.summary || { habitWealthScore: 50, fsiLevel: 'Medium', byCategory: {} }
+  
+  context.log('[mock-analyze] Agent score: ' + (agentResult?.summary?.habitWealthScore || 'n/a'))
 
   const docFilename = filename || blobUrl
   await upsertDocument(userId, docFilename, {
@@ -405,7 +513,7 @@ module.exports = async function (context, req) {
     transactions,
     goals,
     agentResult: agentResult || null,
-    insights: (agentResult && agentResult.summary) ? agentResult.summary : { habitWealthScore: 50, fsiLevel: 'Medium', byCategory: {} }
+    insights
   })
   context.log('[mock-analyze] Document saved for ' + docFilename)
 
@@ -416,7 +524,7 @@ module.exports = async function (context, req) {
       filename,
       transactions,
       agentPipeline: agentResult || null,
-      insights:      (agentResult && agentResult.summary) ? agentResult.summary : null
+      insights:      agentResult?.summary || null
     }
   }
 }
