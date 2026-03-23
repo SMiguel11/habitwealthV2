@@ -5,7 +5,7 @@
  */
 const { BlobServiceClient } = require('@azure/storage-blob')
 
-module.exports = async function (context, req) {
+module.exports = async function uploadBlobStorage(context, req) {
   try {
     context.log('[Upload] Received file upload request')
 

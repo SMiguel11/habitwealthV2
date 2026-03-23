@@ -3,8 +3,8 @@
  * Extracts transactions from uploaded PDF via Azure Document Intelligence.
  * Falls back to generated mock data if DI credentials are not configured.
  */
-const http = require('http')
-const https = require('https')
+const http = require('node:http')
+const https = require('node:https')
 const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob')
 const { upsertDocument } = require('../shared/cosmos-db')
 
@@ -132,7 +132,8 @@ function parseAmount(str) {
   // Only dot: already valid JS float (e.g. 22.08 or 1234.56)
 
   const num = Number.parseFloat(numStr)
-  return Number.isNaN(num) ? 0 : (negative ? -num : num)
+  const signedNum = negative ? -num : num
+  return Number.isNaN(num) ? 0 : signedNum
 }
 
 // Rows that are balance/summary lines — not real transactions
@@ -171,7 +172,7 @@ function _findColumnIndex(activeHeaders, searchTerms) {
   const idx = Object.keys(activeHeaders).find(i => 
     searchTerms.some(term => activeHeaders[i].includes(term))
   )
-  return idx ? +idx : NaN
+  return idx ? +idx : Number.NaN
 }
 
 /**
@@ -211,9 +212,9 @@ function _parseRowTransaction(row, dateCol, descCol, catCol, amtCol) {
 
   const dateRaw = row[dateCol] || ''
   // Skip rows without recognizable date
-  if (!dateRaw.match(/\d{1,2}[\/ \-]\d{1,2}[\/ \-]\d{4}/)) return null
+  if (!dateRaw.match(/\d{1,2}[/ -]\d{1,2}[/ -]\d{4}/)) return null
 
-  const dateParts = dateRaw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
+  const dateParts = dateRaw.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/)
   const date = dateParts
     ? `${dateParts[3]}-${dateParts[2].padStart(2,'0')}-${dateParts[1].padStart(2,'0')}`
     : dateRaw
@@ -279,7 +280,7 @@ function _extractPageLines(analyzeResult) {
  * Parse a single line-based transaction.
  */
 function _parseLineTransaction(i, allLines, known, normalizeFunc) {
-  const DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/
+  const DATE_RE = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/
   const AMT_RE = /^[+\-−]?\d/
 
   const dm = allLines[i].match(DATE_RE)
@@ -361,16 +362,18 @@ function _deduplicateSalaryEntries(transactions) {
   return finalTransactions
 }
 
-function parseTransactionsFromDI(analyzeResult) {
-  // ── Helper for dedup key normalization
-  function normalizeForDedup(desc) {
-    return (desc || '')
-      .toLowerCase()
-      .trim()
-      .replaceAll(/\s+/g, ' ')
-      .replaceAll(/[.,]/g, '')
-  }
+/**
+ * Normalize description for deduplication key generation.
+ */
+function normalizeForDedup(desc) {
+  return (desc || '')
+    .toLowerCase()
+    .trim()
+    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/[.,]/g, '')
+}
 
+function parseTransactionsFromDI(analyzeResult) {
   // ── Process tables first
   const transactions = _processTableTransactions(analyzeResult)
 
@@ -430,7 +433,10 @@ function callEnrichmentAgent(payload) {
       res.on('data', chunk => { data += chunk })
       res.on('end', () => {
         try { resolve(JSON.parse(data)) }
-        catch (e) { reject(new Error('Invalid JSON from agent: ' + data.slice(0, 200))) }
+        catch (e) {
+          console.error('[callEnrichmentAgent] JSON parse error:', e.message)
+          reject(new Error('Invalid JSON from agent: ' + data.slice(0, 200)))
+        }
       })
     })
     req.on('error', reject)
@@ -478,7 +484,7 @@ async function _enrichWithAgent(userId, filename, blobUrl, transactions, goals, 
   }
 }
 
-module.exports = async function (context, req) {
+module.exports = async function analyzeMockTransactions(context, req) {
   const body = req.body || {}
   const blobUrl       = body.blobUrl || null
   const filename      = body.filename || null
