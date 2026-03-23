@@ -72,7 +72,7 @@ async def startup_event() -> None:
     logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
     _load_keyvault_secrets()
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Schemas
 # ──────────────────────────────────────────────────────────────────────────────
 class Transaction(BaseModel):
@@ -104,7 +104,7 @@ class ExplainScoreRequest(BaseModel):
     dominantPattern: str = "none"
     weekendSpendAlert: bool = False
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Agent 1 – Document Intelligence Parser
 # ──────────────────────────────────────────────────────────────────────────────
 def agent_document_intelligence(transactions: list[dict]) -> dict:
@@ -137,7 +137,7 @@ def _top_merchants(txs: list[dict], n: int = 5) -> list[dict]:
     return sorted([{"merchant": k, "total": round(v, 2)} for k, v in m.items()],
                   key=lambda x: -x["total"])[:n]
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Agent 2 – Emotional Pattern Agent
 # ──────────────────────────────────────────────────────────────────────────────
 EMOTIONAL_KEYWORDS = {
@@ -210,7 +210,7 @@ def _get_monthly_savings(doc: dict) -> float:
             return round(abs(float(value or 0)), 2)
     return 0.0
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Agent 3 – Financial Stress Index
 # ──────────────────────────────────────────────────────────────────────────────
 def agent_financial_stress(doc: dict, emotional: dict) -> dict:
@@ -244,7 +244,7 @@ def agent_financial_stress(doc: dict, emotional: dict) -> dict:
         "fsiLevel": band,
     }
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Agent 4 – Goal Alignment Agent
 # ──────────────────────────────────────────────────────────────────────────────
 def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
@@ -276,7 +276,7 @@ def agent_goal_alignment(doc: dict, goals: list[dict]) -> dict:
         "overallAlignmentScore": round(overall_alignment * 100, 1),
     }
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Agent 4b – Goal Optimization Agent (NEW)
 # Detects patterns + recommends actions + simulates impact
 # ──────────────────────────────────────────────────────────────────────────────
@@ -642,7 +642,7 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
         return ai_result
     return _static_goal_optimization(doc, emotional, fsi, goals)
     
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Agent 5 – CBT Intervention Agent  (Azure OpenAI GPT-4o-mini + static fallback)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -776,7 +776,7 @@ def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None) 
         "weekendSpendAlert": emotional["weekendSpend"] > 200,
     }
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Agent 6 – Digital Twin Agent
 # ──────────────────────────────────────────────────────────────────────────────
 def agent_digital_twin(user_id: str, doc: dict, emotional: dict,
@@ -822,7 +822,6 @@ def _classify_persona(dominant: str, fsi_level: str) -> str:
     }
     return mapping.get((dominant, fsi_level), "Conscious Spender")
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Score Explanation helpers
 # ──────────────────────────────────────────────────────────────────────────────
 def _static_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi_level: str) -> dict:
@@ -912,7 +911,6 @@ def _ai_score_explanation(habit_score: int, doc: dict, emotional: dict, fsi: dic
         logger.warning("Score explanation GPT failed (%s) — static fallback", exc)
         return fallback
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Pipeline orchestrator
 # ──────────────────────────────────────────────────────────────────────────────
 def run_pipeline(request: EnrichRequest) -> dict:
@@ -952,7 +950,6 @@ def run_pipeline(request: EnrichRequest) -> dict:
         },
     }
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Routes
 # ──────────────────────────────────────────────────────────────────────────────
 @app.get("/health")
