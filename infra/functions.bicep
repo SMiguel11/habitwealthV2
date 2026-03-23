@@ -67,8 +67,8 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   name:     '${baseName}-ai-${uniqueSuffix}'
   location: location
-  tags:     tags
   kind:     'web'
+  tags:     tags
   properties: {
     Application_Type:    'web'
     WorkspaceResourceId: logAnalytics.id
@@ -79,12 +79,12 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 resource consumptionPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name:     '${baseName}-plan-${uniqueSuffix}'
   location: location
-  tags:     tags
-  kind:     'functionapp'
   sku: {
     name: 'Y1'
     tier: 'Dynamic'
   }
+  kind:     'functionapp'
+  tags:     tags
   properties: {
     reserved: true  // Required for Linux-based function apps
   }
@@ -108,12 +108,12 @@ var commonSettings = [
 resource sasFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
   name:     '${baseName}-fn-sas-${uniqueSuffix}'
   location: location
-  tags:     tags
   kind:     'functionapp,linux'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: { '${managedIdentityId}': {} }
   }
+  tags:     tags
   properties: {
     serverFarmId:       consumptionPlan.id
     httpsOnly:          true
@@ -151,12 +151,12 @@ resource sasFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
 resource docIntelFunctionApp 'Microsoft.Web/sites@2023-12-01' = {
   name:     '${baseName}-fn-di-${uniqueSuffix}'
   location: location
-  tags:     tags
   kind:     'functionapp,linux'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: { '${managedIdentityId}': {} }
   }
+  tags:     tags
   properties: {
     serverFarmId:       consumptionPlan.id
     httpsOnly:          true

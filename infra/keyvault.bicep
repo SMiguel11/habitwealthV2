@@ -53,8 +53,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 
 resource miKvSecretUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name:  guid(keyVault.id, managedIdentity.id, kvSecretsUserRoleId)
   scope: keyVault
+  name:  guid(keyVault.id, managedIdentity.id, kvSecretsUserRoleId)
 
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', kvSecretsUserRoleId)
@@ -67,8 +67,8 @@ resource miKvSecretUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 var kvSecretsOfficerRoleId = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
 
 resource deployerKvOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name:  guid(keyVault.id, deployerObjectId, kvSecretsOfficerRoleId)
   scope: keyVault
+  name:  guid(keyVault.id, deployerObjectId, kvSecretsOfficerRoleId)
 
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', kvSecretsOfficerRoleId)

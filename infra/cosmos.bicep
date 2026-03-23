@@ -21,6 +21,14 @@ param tags object = {}
 
 var accountName = '${baseName}-cosmos-${uniqueSuffix}'
 
+var defaultIndexingPolicy = {
+  indexingMode:  'consistent'
+  includedPaths: [ { path: '/*' } ]
+  excludedPaths: [ { path: '/_etag/?' } ]
+}
+
+var userIdPartitionKey = '/userId'
+
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name:     accountName
   location: location
@@ -64,14 +72,6 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
     options:  { throughput: 1000 }
   }
 }
-
-var defaultIndexingPolicy = {
-  indexingMode:  'consistent'
-  includedPaths: [ { path: '/*' } ]
-  excludedPaths: [ { path: '/_etag/?' } ]
-}
-
-var userIdPartitionKey = '/userId'
 
 // ─── users container ──────────────────────────────────────────────────────────
 resource usersContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {

@@ -20,14 +20,14 @@ param tags object = {}
 resource docIntel 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
   name:     '${baseName}-di-${uniqueSuffix}'
   location: location
-  tags:     tags
+  sku: {
+    name: 'S0'  // Paid tier — costs only ~$1.50 per 1,000 pages. No "one free per subscription" limit.
+  }
   kind:     'FormRecognizer'
   identity: {
     type: 'SystemAssigned'  // Enable Managed Identity for future credential-free scenarios
   }
-  sku: {
-    name: 'S0'  // Paid tier — costs only ~$1.50 per 1,000 pages. No "one free per subscription" limit.
-  }
+  tags:     tags
   properties: {
     publicNetworkAccess: 'Disabled'  // Only accessed via API key from internal Function Apps
     networkAcls: {

@@ -22,14 +22,14 @@ var accountName = toLower('${take(replace(baseName, '-', ''), 16)}${uniqueSuffix
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name:     accountName
   location: location
-  tags:     tags
-  kind:     'StorageV2'
   sku: {
     name: 'Standard_LRS'
   }
+  kind:     'StorageV2'
   identity: {
     type: 'SystemAssigned'  // Enable Managed Identity for future credential-free scenarios
   }
+  tags:     tags
   properties: {
     accessTier:               'Hot'
     supportsHttpsTrafficOnly: true
