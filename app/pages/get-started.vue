@@ -503,63 +503,67 @@ function clearAll() {
   uploadedFiles.value = []
 }
 
-async function uploadAll() {
-  if (!uploadedFiles.value.length) return
-  uploading.value = true
-  errorMessage.value = ''
-  let allSuccess = true
-  
-  for (let i = 0; i < uploadedFiles.value.length; i++) {
-    const item = uploadedFiles.value[i]
-    if (item.status === 'ready') continue
-    if (item.status === 'failed' && !item._file) continue
-    try {
-      item.status = 'uploading'
-      console.log(`[Upload] Uploading file: ${item.name} (${item.size} bytes)`)
-      
-      // Use direct Function App URL in production, vite proxy in local dev
-      const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+/** Check if file should be skipped (already ready or invalid) */
+function shouldSkipFile(item) {
+  return item.status === 'ready' || (item.status === 'failed' && !item._file)
+}
 
-      // Read file as base64 to avoid multipart/busboy issues in Azure Functions
-      const fileBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result)
-        reader.onerror = reject
-        reader.readAsDataURL(item._file)
-      })
+/** Get Function App base URL (production or local dev) */
+function getFunctionAppUrl() {
+  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  return isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+}
 
-      const res = await fetch(`${functionBase}/api/sas-function-upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileBase64, filename: item.name, userId: 'local-user' })
-      })
-      
-      if (!res.ok) {
-        const error = await res.text()
-        throw new Error(`Upload failed (${res.status}): ${error}`)
-      }
-      
-      const result = await res.json()
-      const blobUrl = result.blobUrl
-      
-      console.log(`[Upload] File uploaded successfully: ${blobUrl}`)
-      item.url = blobUrl
-      item.status = 'ready'
-      uploadResults.value.push({ blobUrl, filename: item.name })
-    } catch (err) {
-      console.error(`[Upload Error] ${item.name}:`, err)
-      allSuccess = false
-      item.status = 'failed'
-      item.error = err.message || String(err)
-      errorMessage.value = `Upload failed: ${item.error}`
-    }
-    delete item._file
-    uploadedFiles.value.splice(i, 1, { ...item })
+/** Read file as base64 data URL */
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+/** Perform the HTTP upload request */
+async function performFileUpload(baseUrl, fileBase64, filename) {
+  const res = await fetch(`${baseUrl}/api/sas-function-upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileBase64, filename, userId: 'local-user' })
+  })
+
+  if (!res.ok) {
+    const error = await res.text()
+    throw new Error(`Upload failed (${res.status}): ${error}`)
   }
-  
-  uploading.value = false
-  
+
+  return res.json()
+}
+
+/** Upload a single file item and update its status */
+async function uploadSingleFile(item, functionBase) {
+  item.status = 'uploading'
+  console.log(`[Upload] Uploading file: ${item.name} (${item.size} bytes)`)
+
+  const fileBase64 = await readFileAsBase64(item._file)
+  const result = await performFileUpload(functionBase, fileBase64, item.name)
+
+  console.log(`[Upload] File uploaded successfully: ${result.blobUrl}`)
+  item.url = result.blobUrl
+  item.status = 'ready'
+  uploadResults.value.push({ blobUrl: result.blobUrl, filename: item.name })
+}
+
+/** Handle error for a single file upload */
+function handleUploadFileError(item, err) {
+  console.error(`[Upload Error] ${item.name}:`, err)
+  item.status = 'failed'
+  item.error = err.message || String(err)
+  errorMessage.value = `Upload failed: ${item.error}`
+}
+
+/** Finalize upload process and show success message if all succeeded */
+function finalizeUpload(allSuccess) {
   if (allSuccess && uploadedFiles.value.every(f => f.status === 'ready')) {
     uploadCompleted.value = true
     successMessage.value = '✓ Files uploaded successfully! Proceeding to Step 2...'
@@ -568,6 +572,33 @@ async function uploadAll() {
       successMessage.value = ''
     }, 1500)
   }
+}
+
+async function uploadAll() {
+  if (!uploadedFiles.value.length) return
+  uploading.value = true
+  errorMessage.value = ''
+  let allSuccess = true
+  const functionBase = getFunctionAppUrl()
+
+  for (let i = 0; i < uploadedFiles.value.length; i++) {
+    const item = uploadedFiles.value[i]
+
+    if (shouldSkipFile(item)) continue
+
+    try {
+      await uploadSingleFile(item, functionBase)
+    } catch (err) {
+      allSuccess = false
+      handleUploadFileError(item, err)
+    }
+
+    delete item._file
+    uploadedFiles.value.splice(i, 1, { ...item })
+  }
+
+  uploading.value = false
+  finalizeUpload(allSuccess)
 }
 
 function openSurvey() {
