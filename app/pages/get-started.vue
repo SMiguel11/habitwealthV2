@@ -54,10 +54,10 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
 
         <!-- Step 1: Upload -->
-        <div
+        <button
           @click="openUpload"
-          role="button" tabindex="0" @keydown.enter="openUpload" @keydown.space.prevent="openUpload"
-          :class="['relative rounded-2xl border p-6 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 cursor-pointer',
+          @keydown.enter="openUpload" @keydown.space.prevent="openUpload"
+          :class="['relative rounded-2xl border p-6 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 cursor-pointer text-left',
             uploadCompleted
               ? 'bg-emerald-500/[0.06] border-emerald-500/30 hover:border-emerald-500/50'
               : 'bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] hover:border-white/[0.14] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50']"
@@ -88,13 +88,13 @@
             <span>{{ uploadCompleted ? t('gs_step1_done_cta') : t('gs_step1_cta') }}</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
           </div>
-        </div>
+        </button>
 
         <!-- Step 2: Survey -->
-        <div
+        <button
           @click="openSurvey"
-          role="button" tabindex="0" @keydown.enter="openSurvey" @keydown.space.prevent="openSurvey"
-          :class="['relative rounded-2xl border p-6 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
+          @keydown.enter="openSurvey" @keydown.space.prevent="openSurvey"
+          :class="['relative rounded-2xl border p-6 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 text-left',
             !uploadCompleted ? 'opacity-40 cursor-not-allowed bg-white/[0.02] border-white/[0.05]' :
             surveyCompleted ? 'bg-emerald-500/[0.06] border-emerald-500/30 cursor-pointer hover:border-emerald-500/50' :
             'bg-white/[0.03] border-white/[0.08] cursor-pointer hover:bg-white/[0.06] hover:border-white/[0.14] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50']"
@@ -128,13 +128,13 @@
             <span>{{ surveyCompleted ? t('gs_step2_done_cta') : t('gs_step2_cta') }}</span>
             <svg v-if="uploadCompleted" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
           </div>
-        </div>
+        </button>
 
         <!-- Step 3: Goals -->
-        <div
+        <button
           @click="openGoals"
-          role="button" tabindex="0" @keydown.enter="openGoals" @keydown.space.prevent="openGoals"
-          :class="['relative rounded-2xl border p-6 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
+          @keydown.enter="openGoals" @keydown.space.prevent="openGoals"
+          :class="['relative rounded-2xl border p-6 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 text-left',
             !surveyCompleted ? 'opacity-40 cursor-not-allowed bg-white/[0.02] border-white/[0.05]' :
             goalsCompleted ? 'bg-emerald-500/[0.06] border-emerald-500/30 cursor-pointer hover:border-emerald-500/50' :
             'bg-white/[0.03] border-white/[0.08] cursor-pointer hover:bg-white/[0.06] hover:border-white/[0.14] hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/50']"
@@ -171,7 +171,7 @@
             <span>{{ goalsCompleted ? t('gs_step3_done_cta') : t('gs_step3_cta') }}</span>
             <svg v-if="surveyCompleted" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
           </div>
-        </div>
+        </button>
 
       </div>
 
@@ -326,7 +326,7 @@
     </div>
 
     <!-- ======= GOALS MODAL ======= -->
-    <div v-if="showGoalsModal" @click.self="closeGoals" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" role="dialog" aria-modal="true" aria-labelledby="goals-title">
+    <dialog v-if="showGoalsModal" @click.self="closeGoals" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" aria-labelledby="goals-title">
       <div class="relative w-full max-w-[540px] max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-slate-900 shadow-2xl shadow-black/70">
         <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-amber-400/50 to-transparent"></div>
         <div class="p-6">
@@ -397,7 +397,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
 
   </div>
 </template>
@@ -510,7 +510,7 @@ function shouldSkipFile(item) {
 
 /** Get Function App base URL (production or local dev) */
 function getFunctionAppUrl() {
-  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  const isProduction = globalThis.location !== undefined && globalThis.location.hostname !== 'localhost'
   return isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
 }
 
@@ -652,10 +652,10 @@ function saveGoals() {
   if (!parsedGoals.length) return
   goalsCompleted.value = true
 
-  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  const isProduction = globalThis.location !== undefined && globalThis.location.hostname !== 'localhost'
   const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
 
-  // Ahora sí tenemos todo: archivos subidos + survey + metas → lanzar análisis
+  // Launch analysis for each uploaded document with survey answers and goals
   for (const uploaded of uploadResults.value) {
     fetch(`${functionBase}/api/mock-analyze`, {
       method: 'POST',

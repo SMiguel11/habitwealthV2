@@ -141,7 +141,7 @@ const steps = computed(() => [
 ])
 
 async function pollAndRedirect() {
-  const isProduction = typeof globalThis.location !== 'undefined' && globalThis.location.hostname !== 'localhost'
+  const isProduction = globalThis.location !== undefined && globalThis.location.hostname !== 'localhost'
   const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
 
   let hasData = false
