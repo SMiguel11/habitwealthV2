@@ -521,7 +521,7 @@ const documentCount = ref(0)
 const recentTransactions = ref([])
 
 async function fetchInsights() {
-  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  const isProduction = globalThis.location !== undefined && globalThis.location.hostname !== 'localhost'
   const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
   const res = await fetch(`${functionBase}/api/insights-api?userId=local-user&lang=${locale.value}`)
   const data = await res.json()
