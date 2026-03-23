@@ -26,6 +26,9 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   location: location
   tags:     tags
   kind:     'GlobalDocumentDB'
+  identity: {
+    type: 'SystemAssigned'  // Enable Managed Identity for credential-free authentication
+  }
   properties: {
     databaseAccountOfferType: 'Standard'
     enableFreeTier:           enableFreeOffer
@@ -45,7 +48,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
       type: 'Periodic'
       periodicModeProperties: {
         backupIntervalInMinutes:        240
-        backupRetentionIntervalInHours: 8
+        backupRetentionIntervalInHours: 192  // 8 days retention for disaster recovery
         backupStorageRedundancy:        'Local'
       }
     }

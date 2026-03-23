@@ -59,6 +59,9 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
   name:       '${baseName}-swa-${uniqueSuffix}'
   location:   location
   tags:       tags
+  identity: {
+    type: 'SystemAssigned'  // Enable Managed Identity for secure authentication
+  }
   sku: {
     name: 'Free'
     tier: 'Free'

@@ -27,6 +27,9 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   sku: {
     name: 'Standard_LRS'
   }
+  identity: {
+    type: 'SystemAssigned'  // Enable Managed Identity for future credential-free scenarios
+  }
   properties: {
     accessTier:               'Hot'
     supportsHttpsTrafficOnly: true
