@@ -227,7 +227,12 @@ def agent_financial_stress(doc: dict, emotional: dict) -> dict:
     survey_contrib  = emotional["surveyStressScore"] / 4 * 30  # max 30 pts
 
     fsi = round(cash_pressure + impulse_score + survey_contrib, 1)
-    band = "Low" if fsi < 30 else "Medium" if fsi < 60 else "High"
+    if fsi < 30:
+        band = "Low"
+    elif fsi < 60:
+        band = "Medium"
+    else:
+        band = "High"
     return {
         "agent": "FinancialStress",
         "fsi": fsi,
@@ -998,9 +1003,13 @@ def explain_score(req: ExplainScoreRequest):
     Called by the insights-api when a Cosmos document predates the scoreExplanation field.
     Falls back to rule-based explanation if Azure OpenAI is not configured.
     """
+    # Fallback byCategory if not provided
+    default_by_category = {"Savings": 1.0} if req.hasSavings else {}
+    by_category = req.byCategory or default_by_category
+    
     doc = {
         "netCashFlow": req.netCashFlow,
-        "byCategory": req.byCategory if req.byCategory else ({"Savings": 1.0} if req.hasSavings else {}),
+        "byCategory": by_category,
     }
     emotional = {
         "dominantPattern": req.dominantPattern,

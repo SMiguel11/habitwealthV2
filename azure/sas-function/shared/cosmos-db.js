@@ -3,9 +3,9 @@
  * Cosmos DB helper — used by mock-analyze (write) and insights-api (read).
  * Falls back to /tmp JSON file when COSMOS_ENDPOINT is not set (local dev).
  */
-const fs   = require('fs')
-const path = require('path')
-const os   = require('os')
+const fs   = require('node:fs')
+const path = require('node:path')
+const os   = require('node:os')
 
 const DB_PATH = path.join(os.tmpdir(), 'habitwealth-db.json')
 
