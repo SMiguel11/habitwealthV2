@@ -247,21 +247,60 @@ function _extractJsonObject(raw) {
 }
 
 /**
+ * Helper: Return bilingual message based on language.
+ */
+function _getMessage(es, msgEs, msgEn) {
+  return es ? msgEs : msgEn
+}
+
+/**
+ * Helper: Collect positive financial indicators.
+ */
+function _collectPositiveIndicators(score, netFlow, hasSavings, weekendAlert, dominant, es) {
+  const pos = []
+  
+  if (netFlow > 0)
+    pos.push(_getMessage(es, 'Tus ingresos superaron tus gastos este período', 'Your income exceeded your spending this period'))
+  
+  if (hasSavings)
+    pos.push(_getMessage(es, 'Realizaste una aportación a ahorros o inversión', 'You made a savings or investment contribution'))
+  
+  if (score >= 70)
+    pos.push(_getMessage(es, 'Tus hábitos financieros están por encima de la media', 'Your overall financial habits are above average'))
+  
+  const noImpulsiveSpending = !weekendAlert && dominant === 'none'
+  if (noImpulsiveSpending)
+    pos.push(_getMessage(es, 'No se detectaron patrones de gasto impulsivo', 'No significant impulse-spending patterns detected'))
+  
+  if (pos.length === 0)
+    pos.push(_getMessage(es, 'Estás haciendo seguimiento activo de tus finanzas', 'You are actively tracking your finances — great first step'))
+  
+  return pos
+}
+
+/**
+ * Helper: Collect financial warning indicators.
+ */
+function _collectWarningIndicators(weekendAlert, fsiLevel, es) {
+  const warn = []
+  
+  if (weekendAlert)
+    warn.push(_getMessage(es, 'Se detectó gasto elevado los fines de semana', 'High weekend spending pattern detected'))
+  else if (fsiLevel === 'High')
+    warn.push(_getMessage(es, 'Tu índice de estrés financiero es elevado — revisa tus gastos fijos', 'Your financial stress index is elevated — review fixed costs'))
+  
+  return warn
+}
+
+/**
  * Build a rule-based explanation (bilingual) from summary data.
  * Used as fallback when Azure OpenAI is not configured.
  */
 function _staticExplanation(score, netFlow, hasSavings, fsiLevel, weekendAlert, dominant, lang) {
   const es = lang === 'es'
-  const pos = []
-  const warn = []
-  if (netFlow > 0)   pos.push(es ? 'Tus ingresos superaron tus gastos este período' : 'Your income exceeded your spending this period')
-  if (hasSavings)    pos.push(es ? 'Realizaste una aportación a ahorros o inversión' : 'You made a savings or investment contribution')
-  if (score >= 70)   pos.push(es ? 'Tus hábitos financieros están por encima de la media' : 'Your overall financial habits are above average')
-  if (!weekendAlert && dominant === 'none') pos.push(es ? 'No se detectaron patrones de gasto impulsivo' : 'No significant impulse-spending patterns detected')
-  if (pos.length === 0) pos.push(es ? 'Estás haciendo seguimiento activo de tus finanzas' : 'You are actively tracking your finances — great first step')
-  if (weekendAlert)       warn.push(es ? 'Se detectó gasto elevado los fines de semana' : 'High weekend spending pattern detected')
-  else if (fsiLevel === 'High') warn.push(es ? 'Tu índice de estrés financiero es elevado — revisa tus gastos fijos' : 'Your financial stress index is elevated — review fixed costs')
-  return { positives: pos.slice(0, 3), warnings: warn.slice(0, 1), source: 'static' }
+  const positives = _collectPositiveIndicators(score, netFlow, hasSavings, weekendAlert, dominant, es)
+  const warnings = _collectWarningIndicators(weekendAlert, fsiLevel, es)
+  return { positives: positives.slice(0, 3), warnings: warnings.slice(0, 1), source: 'static' }
 }
 
 /**
