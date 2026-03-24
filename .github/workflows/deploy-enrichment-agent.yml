@@ -24,10 +24,10 @@ jobs:
     steps:
 
       - name: Checkout code
-        uses: actions/checkout@8fa39a3ceacb2a7d3c94b6c8e6b2e4c9c9e9e9e9
+        uses: actions/checkout@8e5e7e4e2e8e3e2b7e2e8e3e2b7e2e8e3e2b7e2e
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8a0c8a5e6e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e
+        uses: docker/setup-buildx-action@9f6a9a562b6e6e8e8e8e8e8e8e8e8e8e8e8e8e8e
 
       - name: Log in to Azure Container Registry
         uses: docker/login-action@c8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8
