@@ -7,28 +7,7 @@ const { getDocuments } = require('../shared/cosmos-db')
 const https = require('https')
 
 function getMonthlySavings(byCategory = {}, transactions = [], fullDoc = {}) {
-  // First: check for explicit savings category
-  for (const [key, value] of Object.entries(byCategory || {})) {
-    const normalized = String(key || '').trim().toLowerCase()
-    if (normalized === 'savings' || normalized === 'saving' || normalized === 'ahorros' || normalized === 'ahorro' || normalized.includes('saving') || normalized.includes('ahorr') || normalized.includes('invers')) {
-      const savingsValue = Math.round(Math.abs(Number(value) || 0) * 100) / 100
-      if (savingsValue > 0) return savingsValue
-    }
-  }
-
-  // Second: check for savings transactions
-  const transactionsSavings = Math.round(
-    (transactions || []).reduce((sum, tx) => {
-      const amount = Number(tx?.amount) || 0
-      const category = String(tx?.category || '').toLowerCase()
-      const merchant = String(tx?.merchant || '').toLowerCase()
-      const looksLikeSavings = category.includes('saving') || category.includes('ahorr') || merchant.includes('ahorro') || merchant.includes('myinvestor') || merchant.includes('etf') || merchant.includes('investment')
-      return looksLikeSavings && amount < 0 ? sum + Math.abs(amount) : sum
-    }, 0) * 100
-  ) / 100
-  if (transactionsSavings > 0) return transactionsSavings
-
-  // Fallback: calculate as Income - Expenses
+  // Direct calculation: Income - Expenses
   const totalIncome = Number(fullDoc?.agentResult?.agents?.documentIntelligence?.totalIncome) || 
                       Number(fullDoc?.totalIncome) || 0
   const totalExpenses = Number(fullDoc?.agentResult?.agents?.documentIntelligence?.totalExpenses) || 
