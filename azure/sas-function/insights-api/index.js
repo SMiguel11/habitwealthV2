@@ -6,15 +6,18 @@
 const { getDocuments } = require('../shared/cosmos-db')
 const https = require('https')
 
-function getMonthlySavings(byCategory = {}, transactions = []) {
+function getMonthlySavings(byCategory = {}, transactions = [], fullDoc = {}) {
+  // First: check for explicit savings category
   for (const [key, value] of Object.entries(byCategory || {})) {
     const normalized = String(key || '').trim().toLowerCase()
     if (normalized === 'savings' || normalized === 'saving' || normalized === 'ahorros' || normalized === 'ahorro' || normalized.includes('saving') || normalized.includes('ahorr') || normalized.includes('invers')) {
-      return Math.round(Math.abs(Number(value) || 0) * 100) / 100
+      const savingsValue = Math.round(Math.abs(Number(value) || 0) * 100) / 100
+      if (savingsValue > 0) return savingsValue
     }
   }
 
-  return Math.round(
+  // Second: check for savings transactions
+  const transactionsSavings = Math.round(
     (transactions || []).reduce((sum, tx) => {
       const amount = Number(tx?.amount) || 0
       const category = String(tx?.category || '').toLowerCase()
@@ -23,6 +26,15 @@ function getMonthlySavings(byCategory = {}, transactions = []) {
       return looksLikeSavings && amount < 0 ? sum + Math.abs(amount) : sum
     }, 0) * 100
   ) / 100
+  if (transactionsSavings > 0) return transactionsSavings
+
+  // Fallback: calculate as Income - Expenses
+  const totalIncome = Number(fullDoc?.agentResult?.agents?.documentIntelligence?.totalIncome) || 
+                      Number(fullDoc?.totalIncome) || 0
+  const totalExpenses = Number(fullDoc?.agentResult?.agents?.documentIntelligence?.totalExpenses) || 
+                        Number(fullDoc?.totalExpenses) || 0
+  const availableSavings = Math.max(0, totalIncome - totalExpenses)
+  return Math.round(availableSavings * 100) / 100
 }
 
 function getGoalSavedAmount(goal = {}, fallback = 0) {
@@ -635,7 +647,7 @@ module.exports = async function (context, req) {
   // (not just the latest month, which would be unreliable)
   const totalSavingsAllMonths = analysisDocs.reduce((sum, doc) => {
     const docByCategory = getDocumentCategoryTotals(doc)
-    return sum + getMonthlySavings(docByCategory, doc.transactions || [])
+    return sum + getMonthlySavings(docByCategory, doc.transactions || [], doc)
   }, 0)
   const savingsMonthly = Math.round((totalSavingsAllMonths / analysisDocs.length) * 100) / 100
   const goalSummaries = buildGoalSummaries(
