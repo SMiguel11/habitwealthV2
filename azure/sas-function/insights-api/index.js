@@ -4,7 +4,7 @@
  * Uses Cosmos DB in production, falls back to /tmp JSON locally.
  */
 const { getDocuments } = require('../shared/cosmos-db')
-const https = require('node:https')
+const https = require('https')
 
 function getMonthlySavings(byCategory = {}, transactions = []) {
   for (const [key, value] of Object.entries(byCategory || {})) {
@@ -70,7 +70,7 @@ function buildGoalSummaries(rawGoals = [], goalAlignmentGoals = [], monthlySavin
         ...goal,
         currentSavings,
         monthlyNeeded,
-        progressPct: Number.isNaN(progressPct) ? undefined : progressPct,
+        progressPct: !Number.isNaN(progressPct) ? progressPct : undefined,
         onTrack: currentSavings >= monthlyNeeded,
         projectedMonths: goal?.projectedMonths ?? (currentSavings > 0 && monthlyNeeded > 0 ? Math.ceil(monthlyNeeded / currentSavings) : null),
       }
@@ -94,7 +94,7 @@ function deriveGoalAlignmentScore(_summaryScore, goalSummaries = []) {
 
 function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], savingsMonthly = 0, fsiLevel = 'Medium') {
   const rawActions = Array.isArray(goalOptimization?.actions) ? goalOptimization.actions : []
-  let actions = rawActions.filter(action => action?.title)
+  let actions = rawActions.filter(action => action && action.title)
   const source = goalOptimization?.source || (actions.length ? 'agent' : 'api-fallback')
 
   // Backward-compatible fallback for older analyzed docs where goalOptimization may be empty.
@@ -402,7 +402,7 @@ async function generateGoalOptimization(summaryData) {
     if (!parsed) return null
     const parsedActions = Array.isArray(parsed?.actions) ? parsed.actions : []
     const actions = parsedActions
-      .filter(a => a?.title)
+      .filter(a => a && a.title)
       .slice(0, 4)
       .map(a => ({
         title: String(a.title),
@@ -566,7 +566,7 @@ function _accumulateCategoryData(analysisDocs) {
   return { byCategory, byCategoryByMonth, transactionsByMonthAndCategory }
 }
 
-module.exports = async function generateInsights(context, req) {
+module.exports = async function (context, req) {
   const userId = req.query.userId || 'local-user'
   const lang   = req.query.lang   || 'en'
   let docs  // let so we can reassign after dedup
@@ -577,7 +577,7 @@ module.exports = async function generateInsights(context, req) {
     docs = []
   }
 
-  if (!docs?.length) {
+  if (!docs || !docs.length) {
     context.res = {
       status: 200,
       body: { documents: [], summary: null, documentCount: 0, message: 'No documents analyzed yet.' }
@@ -599,8 +599,9 @@ module.exports = async function generateInsights(context, req) {
   // Sort by analyzedAt ascending for timeline and focus dashboard on latest 3 statements
   docs.sort((a, b) => (a.analyzedAt || '').localeCompare(b.analyzedAt || ''))
   const analysisDocs = docs.slice(-3)
-  const latestDoc = analysisDocs.at(-1)
+  const latestDoc = analysisDocs[analysisDocs.length - 1]
   const twin      = latestDoc.agentResult?.agents?.digitalTwin
+  const latestByCategory = getDocumentCategoryTotals(latestDoc)
 
   // Aggregate spending by category and transactions across the analysis window (latest 3 docs)
   // Fallback: compute directly from transactions if agent didn't run
