@@ -53,7 +53,14 @@ function httpRaw(url, method, headers, body) {
 async function analyzeWithDocumentIntelligence(pdfBuffer, context) {
   const endpoint = (process.env.DOCUMENT_INTELLIGENCE_ENDPOINT || '').replace(/\/$/, '')
   const key      = process.env.DOCUMENT_INTELLIGENCE_KEY
-  if (!endpoint || !key) return null
+  if (!endpoint || !key) {
+    context.log('[DI] Skipped: endpoint or key not configured')
+    return null
+  }
+
+  context.log('[DI] Starting Document Intelligence analysis...')
+  context.log('[DI] Endpoint: ' + endpoint)
+  context.log('[DI] PDF Buffer size: ' + pdfBuffer.length + ' bytes')
 
   const submitUrl = new URL(`${endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`)
   const submitRes = await httpRaw(submitUrl, 'POST', {
@@ -66,15 +73,28 @@ async function analyzeWithDocumentIntelligence(pdfBuffer, context) {
     return null
   }
 
+  context.log('[DI] PDF submitted successfully, polling for results...')
   const operationUrl = new URL(submitRes.headers['operation-location'])
+  
   for (let i = 0; i < 20; i++) {
     await new Promise(r => setTimeout(r, 3000))
     const poll = await httpRaw(operationUrl, 'GET', { 'Ocp-Apim-Subscription-Key': key })
     const data = JSON.parse(poll.body)
-    if (data.status === 'succeeded') return data.analyzeResult
-    if (data.status === 'failed') { context.log.warn('[DI] Analysis failed'); return null }
+    context.log('[DI] Poll ' + (i+1) + '/20 — status: ' + data.status)
+    
+    if (data.status === 'succeeded') {
+      context.log('[DI] SUCCESS! Analysis complete')
+      context.log('[DI] Pages: ' + (data.analyzeResult?.pages?.length || 0))
+      context.log('[DI] Tables: ' + (data.analyzeResult?.tables?.length || 0))
+      context.log('[DI] Paragraphs: ' + (data.analyzeResult?.paragraphs?.length || 0))
+      return data.analyzeResult
+    }
+    if (data.status === 'failed') { 
+      context.log.warn('[DI] Analysis FAILED: ' + JSON.stringify(data.errors || []).slice(0, 300))
+      return null 
+    }
   }
-  context.log.warn('[DI] Analysis timed out')
+  context.log.warn('[DI] Analysis TIMED OUT after 60 seconds')
   return null
 }
 
@@ -233,15 +253,23 @@ function _processTableTransactions(analyzeResult) {
   const transactions = []
   let lastHeaders = null
   let lastColCount = 0
+  let tableCount = 0
 
   for (const table of (analyzeResult.tables || [])) {
+    tableCount++
     const { headers, colCount } = _buildHeaderMap(table)
     const hasDate = Object.values(headers).some(h => h.includes('fecha') || h === 'date')
+
+    console.log(`[TABLE ${tableCount}] Headers: ${JSON.stringify(headers).slice(0, 100)}`)
+    console.log(`[TABLE ${tableCount}] Has date? ${hasDate}, ColCount: ${colCount}`)
 
     const { activeHeaders, skipRow0, shouldProcess } = _determineActiveHeaders(
       headers, hasDate, lastHeaders, colCount, lastColCount
     )
-    if (!shouldProcess) continue
+    if (!shouldProcess) {
+      console.log(`[TABLE ${tableCount}] SKIPPED — no active headers`)
+      continue
+    }
 
     if (hasDate) {
       lastHeaders = headers
@@ -253,13 +281,22 @@ function _processTableTransactions(analyzeResult) {
     const catCol = _findColumnIndex(activeHeaders, ['categor'])
     const amtCol = _findColumnIndex(activeHeaders, ['importe', 'amount'])
 
+    console.log(`[TABLE ${tableCount}] Columns: dateCol=${dateCol} descCol=${descCol} catCol=${catCol} amtCol=${amtCol}`)
+
     const rows = _collectTableRows(table, skipRow0)
+    let txCount = 0
     for (const row of Object.values(rows)) {
       const tx = _parseRowTransaction(row, dateCol, descCol, catCol, amtCol)
-      if (tx) transactions.push(tx)
+      if (tx) {
+        transactions.push(tx)
+        txCount++
+        console.log(`[TABLE ${tableCount}] TX ${txCount}: ${tx.date} | ${tx.merchant.slice(0, 30)} | ${tx.category} | €${tx.amount}`)
+      }
     }
+    console.log(`[TABLE ${tableCount}] Extracted ${txCount} transactions`)
   }
 
+  console.log(`[TABLES] Total transactions extracted: ${transactions.length}`)
   return transactions
 }
 
@@ -375,7 +412,9 @@ function normalizeForDedup(desc) {
 
 function parseTransactionsFromDI(analyzeResult) {
   // ── Process tables first
+  console.log('[PARSE] Starting transaction parsing from DI result...')
   const transactions = _processTableTransactions(analyzeResult)
+  console.log(`[PARSE] Tables extraction complete: ${transactions.length} transactions`)
 
   // ── Dedup key from table transactions
   const knownKeys = transactions.map(t => 
@@ -384,10 +423,27 @@ function parseTransactionsFromDI(analyzeResult) {
 
   // ── Process page lines (fallback for missed transactions)
   const lineTransactions = _processLineTransactions(analyzeResult, knownKeys, normalizeForDedup)
+  console.log(`[PARSE] Lines extraction complete: ${lineTransactions.length} additional transactions`)
   transactions.push(...lineTransactions)
 
   // ── Final dedup pass for salary entries
-  return _deduplicateSalaryEntries(transactions)
+  const finalTransactions = _deduplicateSalaryEntries(transactions)
+  console.log(`[PARSE] After deduplication: ${finalTransactions.length} transactions`)
+  
+  // Log summary
+  let incomeCount = 0, expenseCount = 0, incomeTotal = 0, expenseTotal = 0
+  for (const tx of finalTransactions) {
+    if (tx.category === 'Income') {
+      incomeCount++
+      incomeTotal += tx.amount
+    } else {
+      expenseCount++
+      expenseTotal += Math.abs(tx.amount)
+    }
+  }
+  console.log(`[PARSE] SUMMARY: ${incomeCount} income txs (€${incomeTotal.toFixed(2)}) + ${expenseCount} expense txs (€${expenseTotal.toFixed(2)})`)
+  
+  return finalTransactions
 }
 
 // ── Fallback: random mock transactions ────────────────────────────────────────
@@ -492,25 +548,44 @@ module.exports = async function analyzeMockTransactions(context, req) {
   const goals         = body.goals || []
   const surveyAnswers = body.surveyAnswers || []
 
+  context.log('[mock-analyze] ═══════════════════════════════════════════════════')
+  context.log('[mock-analyze] TRANSACTION ANALYSIS START')
+  context.log('[mock-analyze] UserId: ' + userId)
+  context.log('[mock-analyze] Filename: ' + filename)
+  context.log('[mock-analyze] BlobUrl: ' + (blobUrl ? 'yes' : 'no'))
+
   if (!filename && !blobUrl) {
     context.res = { status: 400, body: { error: 'Provide filename or blobUrl' } }
     return
   }
 
   // Try Document Intelligence first; fall back to fake transactions
+  context.log('[mock-analyze] Checking if DI is available...')
   let transactions = _canUseDI(blobUrl)
     ? await _extractWithDI(blobUrl, context)
     : null
 
   if (!transactions?.length) {
+    context.log('[mock-analyze] ⚠️  DI extraction failed or not available, using FAKE transactions')
     transactions = generateFakeTransactions(filename || blobUrl)
-    context.log('[mock-analyze] Using fake transactions (' + transactions.length + ')')
+    context.log('[mock-analyze] Generated ' + transactions.length + ' fake transactions')
+  } else {
+    context.log('[mock-analyze] ✅ DI extracted ' + transactions.length + ' transactions')
   }
 
   // Try enrichment agent (optional)
+  context.log('[mock-analyze] Calling enrichment agent...')
   const agentResult = await _enrichWithAgent(userId, filename, blobUrl, transactions, goals, surveyAnswers, context)
   const insights = agentResult?.summary || { habitWealthScore: 50, fsiLevel: 'Medium', byCategory: {} }
   
+  if (agentResult?.agents?.documentIntelligence) {
+    const di = agentResult.agents.documentIntelligence
+    context.log('[mock-analyze] Agent Results:')
+    context.log('[mock-analyze]   Income: €' + di.totalIncome)
+    context.log('[mock-analyze]   Expenses: €' + di.totalExpenses)
+    context.log('[mock-analyze]   Net Cash Flow: €' + di.netCashFlow)
+    context.log('[mock-analyze]   Categories: ' + Object.keys(di.byCategory).join(', '))
+  }
   context.log('[mock-analyze] Agent score: ' + (agentResult?.summary?.habitWealthScore || 'n/a'))
 
   const docFilename = filename || blobUrl
@@ -521,7 +596,8 @@ module.exports = async function analyzeMockTransactions(context, req) {
     agentResult: agentResult || null,
     insights
   })
-  context.log('[mock-analyze] Document saved for ' + docFilename)
+  context.log('[mock-analyze] Document saved to Cosmos DB')
+  context.log('[mock-analyze] ═══════════════════════════════════════════════════')
 
   context.res = {
     status: 200,
