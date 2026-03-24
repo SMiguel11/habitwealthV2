@@ -350,7 +350,7 @@ function _parseLineTransaction(i, allLines, known, normalizeFunc) {
   let amount = parseAmount(amtStr)
   if (amount === 0) return { tx: null, skip }
 
-  const category = mapCategory(catRaw.replaceAll(/[+\-−][\d.,]+.*/, '').trim() || desc)
+  const category = mapCategory(catRaw.replaceAll(/[+\-−][\d.,]+.*/g, '').trim() || desc)
   const key = `${date}|${normalizeFunc(desc)}|${Math.abs(amount).toFixed(2)}`
   
   if (known.has(key)) return { tx: null, skip }
