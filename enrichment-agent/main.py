@@ -203,13 +203,11 @@ def agent_emotional_pattern(transactions: list[dict], survey_answers: list) -> d
     }
 
 def _get_monthly_savings(doc: dict) -> float:
-    # First, try to find explicit "Savings" category transactions
     by_category = doc.get("byCategory", {}) or {}
     for key, value in by_category.items():
         normalized = str(key).strip().lower()
         if normalized in {"savings", "saving", "ahorros", "ahorro"} or "saving" in normalized or "ahorr" in normalized or "invers" in normalized:
             return round(abs(float(value or 0)), 2)
-    
     # If no explicit savings category, calculate as: Income - Expenses
     total_in = float(doc.get("totalIncome") or 0)
     total_out = float(doc.get("totalExpenses") or 0)
