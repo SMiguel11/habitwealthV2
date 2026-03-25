@@ -259,6 +259,7 @@ function _parseRowTransaction(row, dateCol, descCol, catCol, amtCol) {
     }
     
     date = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+    console.log(`[DATE_PARSE] Input: ${dateRaw} | Parsed: ${date} | Month: ${year}-${String(month).padStart(2,'0')}`)
   }
 
   let amount = parseAmount(row[amtCol] || '0')
