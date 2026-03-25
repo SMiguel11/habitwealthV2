@@ -14,7 +14,7 @@ In production: triggered by Event Grid → Container App ingress.
 """
 import os, json, math, re, logging
 from datetime import datetime, date, timezone
-from typing import Any
+from typing import Any, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -94,6 +94,10 @@ class EnrichRequest(BaseModel):
     transactions: list[Transaction]
     goals: list[UserGoal] = []
     surveyAnswers: list[Any] = []
+    # Optional ISO date range to restrict which transactions are considered
+    # Format: YYYY-MM-DD (e.g. 2025-12-01)
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
 
 class ExplainScoreRequest(BaseModel):
     habitWealthScore: int
@@ -165,6 +169,58 @@ def _accumulate_weekend_spend(transaction: dict) -> float:
     except Exception:
         pass
     return 0.0
+
+
+def _parse_date_string(s: Optional[str]) -> date | None:
+    """Parse a date string into a date object. Accepts ISO or common formats.
+    Returns None if s is falsy or cannot be parsed.
+    """
+    if not s:
+        return None
+    s = s.strip()
+    # Try ISO first
+    try:
+        return datetime.fromisoformat(s).date()
+    except Exception:
+        pass
+    # Try common formats dd/MM/YYYY or dd-MM-YYYY or YYYY/MM/DD
+    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except Exception:
+            continue
+    return None
+
+
+def _filter_transactions_by_date(txs: list[dict], start: Optional[str], end: Optional[str]) -> list[dict]:
+    """Return transactions whose `date` lies between `start` and `end` (inclusive).
+    If a transaction's date cannot be parsed, it will be kept but a warning logged.
+    """
+    if not start and not end:
+        return txs
+    start_d = _parse_date_string(start) or date.min
+    end_d = _parse_date_string(end) or date.max
+    filtered: list[dict] = []
+    for t in txs:
+        dstr = t.get("date")
+        if not dstr:
+            logger.warning("Transaction without date kept: %s", t)
+            filtered.append(t)
+            continue
+        tx_date = None
+        try:
+            # prefer full ISO parse
+            tx_date = datetime.fromisoformat(str(dstr)).date()
+        except Exception:
+            tx_date = _parse_date_string(str(dstr))
+        if tx_date is None:
+            logger.warning("Could not parse transaction date '%s' — keeping transaction", dstr)
+            filtered.append(t)
+            continue
+        if start_d <= tx_date <= end_d:
+            filtered.append(t)
+    logger.info("Filtered transactions: kept %d of %d between %s and %s", len(filtered), len(txs), start, end)
+    return filtered
 
 def _calculate_survey_stress(survey_answers: list) -> float:
     """Calculate stress score from survey answers."""
@@ -926,6 +982,12 @@ def run_pipeline(request: EnrichRequest) -> dict:
     txs  = [t.model_dump() for t in request.transactions]
     gs   = [g.model_dump() for g in request.goals]
     sv   = request.surveyAnswers
+
+    # If the request includes a date range, filter transactions to that inclusive range
+    try:
+        txs = _filter_transactions_by_date(txs, getattr(request, "startDate", None), getattr(request, "endDate", None))
+    except Exception as exc:
+        logger.warning("Date filtering failed (%s) — continuing with unfiltered transactions", exc)
 
     doc       = agent_document_intelligence(txs)
     emotional = agent_emotional_pattern(txs, sv)
