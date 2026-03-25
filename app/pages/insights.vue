@@ -673,49 +673,6 @@ const primaryPattern = computed(() => summary.value?.primaryPattern ?? '')
 const weekendSpendAlert = computed(() => summary.value?.weekendSpendAlert ?? false)
 const goals = computed(() => summary.value?.goals ?? [])
 const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
-const topCategories = computed(() => {
-  if (!summary.value?.byCategory) return []
-  const entries = Object.entries(summary.value.byCategory)
-  const total = entries.reduce((sum, [_, amt]) => sum + amt, 0)
-  const byCategoryByMonth = summary.value?.byCategoryByMonth || {}
-  const documentMonths = summary.value?.documentMonths || []
-  
-  // Get month names from month numbers (1-12)
-  const monthNames = documentMonths.map(monthNum => {
-    if (!monthNum) return '?'
-    const date = new Date(2024, monthNum - 1, 1)  // monthNum is 1-12
-    // Use current locale (locale.value is 'es' or 'en')
-    const monthStr = date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase()
-    return monthStr.slice(0, 3)
-  })
-  
-  return entries
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([cat, amt]) => {
-      const key = categoryKeyMap[cat.toLowerCase()]
-      const monthlyBreakdown = byCategoryByMonth[cat] || []
-      
-      // Find the month with highest expense for this category
-      let maxMonthIndex = -1
-      let maxMonthValue = 0
-      monthlyBreakdown.forEach((val, idx) => {
-        if (val > maxMonthValue) {
-          maxMonthValue = val
-          maxMonthIndex = idx
-        }
-      })
-      
-      return {
-        cat: key ? t(key) : cat.charAt(0).toUpperCase() + cat.slice(1),
-        amt: Math.round(amt * 100) / 100,
-        pct: Math.round((amt / total) * 100),
-        monthlyBreakdown: monthlyBreakdown,
-        monthNames: monthNames,
-        maxMonthIndex: maxMonthIndex
-      }
-    })
-})
 
 const pieChartSeries = computed(() => topCategories.value.map(item => item.pct))
 const pieChartLabels = computed(() => topCategories.value.map(item => item.cat))
