@@ -235,9 +235,31 @@ function _parseRowTransaction(row, dateCol, descCol, catCol, amtCol) {
   if (!dateRaw.match(/\d{1,2}[/ -]\d{1,2}[/ -]\d{4}/)) return null
 
   const dateParts = dateRaw.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/)
-  const date = dateParts
-    ? `${dateParts[3]}-${dateParts[2].padStart(2,'0')}-${dateParts[1].padStart(2,'0')}`
-    : dateRaw
+  let date = dateRaw
+  if (dateParts) {
+    const num1 = parseInt(dateParts[1])
+    const num2 = parseInt(dateParts[2])
+    const year = dateParts[3]
+    
+    // Auto-detect format: if first number > 12, it's DD/MM/YYYY; otherwise assume DD/MM/YYYY (European default)
+    // If both <= 12, it's ambiguous, so we assume DD/MM/YYYY (most common in EU/Spanish contexts)
+    let day, month
+    if (num1 > 12) {
+      // First number > 12 → must be day (DD/MM/YYYY)
+      day = num1
+      month = num2
+    } else if (num2 > 12) {
+      // Second number > 12 → must be day (MM/DD/YYYY)
+      day = num2
+      month = num1
+    } else {
+      // Both <= 12 (ambiguous) → default to DD/MM/YYYY (European standard)
+      day = num1
+      month = num2
+    }
+    
+    date = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+  }
 
   let amount = parseAmount(row[amtCol] || '0')
   const category = mapCategory(row[catCol] || desc)
