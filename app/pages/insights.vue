@@ -657,14 +657,17 @@ const topCategories = computed(() => {
       }
     })
 })
-    if (typeof n === 'string') {
-      const key = nudgeKeyMap[n]
-      return key ? t(key) : n
-    }
-    const titleKey = nudgeKeyMap[n.title]
-    return { ...n, title: titleKey ? t(titleKey) : n.title }
-  })
-)
+// Fix: wrap nudge title translation logic in a function for use in map/filter
+function translateNudge(n) {
+  if (typeof n === 'string') {
+    const key = nudgeKeyMap[n]
+    return key ? t(key) : n
+  }
+  const titleKey = nudgeKeyMap[n.title]
+  return { ...n, title: titleKey ? t(titleKey) : n.title }
+}
+
+// ...existing code...
 const nudgeSource = computed(() => summary.value?.nudgeSource ?? 'static')
 const primaryPattern = computed(() => summary.value?.primaryPattern ?? '')
 const weekendSpendAlert = computed(() => summary.value?.weekendSpendAlert ?? false)
