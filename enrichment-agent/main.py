@@ -113,16 +113,44 @@ class ExplainScoreRequest(BaseModel):
 # ──────────────────────────────────────────────────────────────────────────────
 def agent_document_intelligence(transactions: list[dict]) -> dict:
     """Categorises, deduplicates and summarises raw transactions."""
+    from collections import defaultdict
     by_cat: dict[str, float] = {}
     total_in, total_out = 0.0, 0.0
+
+    # --- Agrupación mensual ---
+    monthly_summary = defaultdict(lambda: {"income": 0.0, "expenses": 0.0, "net": 0.0, "byCategory": defaultdict(float)})
+    def get_month_key(t):
+        # Espera fecha en formato YYYY-MM-DD
+        d = t.get("date")
+        if not d:
+            return "unknown"
+        try:
+            dt = datetime.fromisoformat(d)
+            return f"{dt.year}-{dt.month:02d}"
+        except Exception:
+            return str(d)[:7]  # fallback: YYYY-MM
+
     for t in transactions:
         amt = t["amount"]
         cat = t.get("category", "Other")
+        month = get_month_key(t)
         if amt < 0:
             by_cat[cat] = by_cat.get(cat, 0) + abs(amt)
             total_out += abs(amt)
+            monthly_summary[month]["expenses"] += abs(amt)
+            monthly_summary[month]["byCategory"][cat] += abs(amt)
         else:
             total_in += amt
+            monthly_summary[month]["income"] += amt
+            monthly_summary[month]["byCategory"][cat] += amt
+        # neto se calcula después
+
+    # Calcular neto mensual
+    for m in monthly_summary:
+        monthly_summary[m]["net"] = round(monthly_summary[m]["income"] - monthly_summary[m]["expenses"], 2)
+        # Redondear categorías
+        monthly_summary[m]["byCategory"] = {k: round(v, 2) for k, v in monthly_summary[m]["byCategory"].items()}
+
     return {
         "agent": "DocumentIntelligence",
         "transactionCount": len(transactions),
@@ -131,6 +159,7 @@ def agent_document_intelligence(transactions: list[dict]) -> dict:
         "netCashFlow": round(total_in - total_out, 2),
         "byCategory": {k: round(v, 2) for k, v in by_cat.items()},
         "topMerchants": _top_merchants(transactions),
+        "monthlySummary": {k: {"income": round(v["income"],2), "expenses": round(v["expenses"],2), "net": v["net"], "byCategory": v["byCategory"]} for k,v in monthly_summary.items()}
     }
 
 def _top_merchants(txs: list[dict], n: int = 5) -> list[dict]:

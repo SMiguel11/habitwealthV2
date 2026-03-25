@@ -597,49 +597,66 @@ const personaKeyMap = {
   'Mindful Saver':       'ins_persona_mindful_saver',
   'Conscious Spender':   'ins_persona_conscious_spender',
 }
-const financialPersona = computed(() => {
-  const raw = summary.value?.financialPersona ?? 'Conscious Spender'
-  const key = personaKeyMap[raw]
-  return key ? t(key) : raw
-})
-const impulseScore = computed(() => {
-  const fsi = summary.value?.fsiLevel
-  if (fsi === 'High') return '30'
-  if (fsi === 'Medium') return '55'
-  return '85'
-})
-const categoryKeyMap = {
-  utilities:      'ins_cat_utilities',
-  food:           'ins_cat_food',
-  health:         'ins_cat_health',
-  shopping:       'ins_cat_shopping',
-  savings:        'ins_cat_savings',
-  transport:      'ins_cat_transport',
-  other:          'ins_cat_other',
-  entertainment:  'ins_cat_entertainment',
-  education:      'ins_cat_education',
-  insurance:      'ins_cat_insurance',
-  travel:         'ins_cat_travel',
-  subscriptions:  'ins_cat_subscriptions',
-  housing:        'ins_cat_housing',
-  restaurants:    'ins_cat_restaurants',
-}
 
-const nudgeKeyMap = {
-  'Before your next online purchase, wait 48 hours. Is it still necessary?': 'ins_nudge_impulse_1',
-  'Try the 10-10-10 rule: How will you feel about this purchase in 10 minutes, 10 hours, 10 days?': 'ins_nudge_impulse_2',
-  'Unsubscribe from promotional emails — they\'re designed to trigger you.': 'ins_nudge_impulse_3',
-  'Notice when you eat out for emotional reasons vs. hunger. Log the emotion instead.': 'ins_nudge_comfort_1',
-  'Replace one delivery order per week with cooking. Save €20+ and gain satisfaction.': 'ins_nudge_comfort_2',
-  'When stress urges spending, try a 5-minute breathing exercise first.': 'ins_nudge_stress_1',
-  'Track the emotion before swiping your card. Awareness is the first CBT step.': 'ins_nudge_stress_2',
-  'Suggest free social activities: parks, potlucks, hikes.': 'ins_nudge_social_1',
-  'Set a weekend social budget in advance and commit to it publicly.': 'ins_nudge_social_2',
-  'Great spending patterns! Keep building your emergency fund.': 'ins_nudge_none_1',
-}
+// --- NEW: Use documentIntelligence.monthlySummary for all breakdowns ---
+const documentIntelligence = computed(() => summary.value?.documentIntelligence || summary.value?.agents?.documentIntelligence || {})
+const monthlySummary = computed(() => documentIntelligence.value?.monthlySummary || {})
 
-const nudges = computed(() =>
-  (summary.value?.nudges ?? []).map(n => {
+// Get sorted month keys (e.g., ["2024-01", "2024-02", ...])
+const monthKeys = computed(() => Object.keys(monthlySummary.value).sort())
+
+// Get month names for display
+const monthNames = computed(() => monthKeys.value.map(mKey => {
+  const [year, month] = mKey.split('-')
+  const date = new Date(Number(year), Number(month) - 1, 1)
+  return date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase().slice(0, 3)
+}))
+
+// Aggregate by category across all months
+const byCategoryTotal = computed(() => {
+  const catTotals = {}
+  for (const mKey of monthKeys.value) {
+    const byCat = monthlySummary.value[mKey]?.byCategory || {}
+    for (const [cat, amt] of Object.entries(byCat)) {
+      catTotals[cat] = (catTotals[cat] || 0) + amt
+    }
+  }
+  return catTotals
+})
+
+const topCategories = computed(() => {
+  const entries = Object.entries(byCategoryTotal.value)
+  const total = entries.reduce((sum, [_, amt]) => sum + amt, 0)
+  // For each top category, build monthly breakdown array in month order
+  return entries
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([cat, amt]) => {
+      const key = categoryKeyMap[cat.toLowerCase()]
+      // Build monthly breakdown for this category
+      const monthlyBreakdown = monthKeys.value.map(mKey => {
+        const byCat = monthlySummary.value[mKey]?.byCategory || {}
+        return byCat[cat] || 0
+      })
+      // Find the month with highest value for this category
+      let maxMonthIndex = -1
+      let maxMonthValue = 0
+      monthlyBreakdown.forEach((val, idx) => {
+        if (val > maxMonthValue) {
+          maxMonthValue = val
+          maxMonthIndex = idx
+        }
+      })
+      return {
+        cat: key ? t(key) : cat.charAt(0).toUpperCase() + cat.slice(1),
+        amt: Math.round(amt * 100) / 100,
+        pct: total > 0 ? Math.round((amt / total) * 100) : 0,
+        monthlyBreakdown,
+        monthNames: monthNames.value,
+        maxMonthIndex
+      }
+    })
+})
     if (typeof n === 'string') {
       const key = nudgeKeyMap[n]
       return key ? t(key) : n
