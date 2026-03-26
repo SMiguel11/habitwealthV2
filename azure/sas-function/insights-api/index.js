@@ -563,6 +563,7 @@ function _buildMonthlySummary(analysisDocs) {
   for (const month in monthlySummary) {
     monthlySummary[month].net = monthlySummary[month].income - monthlySummary[month].expenses
   }
+  console.log(`[buildMonthlySummary] COMPLETE monthlySummary with byCategory breakdown:`, JSON.stringify(monthlySummary, null, 2))
   return monthlySummary
 }
 
@@ -634,6 +635,8 @@ module.exports = async function (context, req) {
   // Aggregate spending by category and transactions across the analysis window (latest 3 docs)
   // Fallback: compute directly from transactions if agent didn't run
   const { byCategory, byCategoryByMonth, transactionsByMonthAndCategory } = _accumulateCategoryData(analysisDocs)
+  context.log(`[insights-api] All categories found:`, Object.keys(byCategory))
+  context.log(`[insights-api] byCategory amounts:`, byCategory)
   
   // Build monthlySummary from transactions (dynamic fallback if documentIntelligence not in agentResult)
   let monthlySummaryBuilt = _buildMonthlySummary(analysisDocs)
