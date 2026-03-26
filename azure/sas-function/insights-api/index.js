@@ -529,6 +529,40 @@ function _aggregateDocumentTransactions(doc) {
 /**
  * Accumulate category data across analysis documents (3-doc window).
  */
+function _buildMonthlySummary(analysisDocs) {
+  // Build monthlySummary from transactions in analysisDocs
+  const monthlySummary = {}
+  for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
+    const doc = analysisDocs[docIdx]
+    const txns = doc.transactions || []
+    for (const txn of txns) {
+      const dateStr = txn.date || ''
+      if (!dateStr) continue
+      // Extract YYYY-MM from date string
+      const month = dateStr.substring(0, 7) // "2025-12" format
+      if (!monthlySummary[month]) {
+        monthlySummary[month] = { income: 0, expenses: 0, net: 0, byCategory: {} }
+      }
+      const amount = Number(txn.amount) || 0
+      const category = txn.category || 'Other'
+      if (amount > 0) {
+        monthlySummary[month].income += amount
+      } else {
+        monthlySummary[month].expenses += Math.abs(amount)
+      }
+      if (!monthlySummary[month].byCategory[category]) {
+        monthlySummary[month].byCategory[category] = 0
+      }
+      monthlySummary[month].byCategory[category] += Math.abs(amount)
+    }
+  }
+  // Calculate net for each month
+  for (const month in monthlySummary) {
+    monthlySummary[month].net = monthlySummary[month].income - monthlySummary[month].expenses
+  }
+  return monthlySummary
+}
+
 function _accumulateCategoryData(analysisDocs) {
   const byCategory = {}
   const byCategoryByMonth = {}
@@ -597,6 +631,9 @@ module.exports = async function (context, req) {
   // Aggregate spending by category and transactions across the analysis window (latest 3 docs)
   // Fallback: compute directly from transactions if agent didn't run
   const { byCategory, byCategoryByMonth, transactionsByMonthAndCategory } = _accumulateCategoryData(analysisDocs)
+  
+  // Build monthlySummary from transactions (dynamic fallback if documentIntelligence not in agentResult)
+  const monthlySummaryBuilt = _buildMonthlySummary(analysisDocs)
 
   // Average habit score across the analysis window
   const scores = analysisDocs.map(d =>
@@ -707,18 +744,26 @@ module.exports = async function (context, req) {
         trendScores,
         goals: goalSummaries,
         optimization: optimizationSummary,  // NEW: Goal optimization recommendations
-        // Include documentIntelligence with monthlySummary for frontend
-        documentIntelligence: latestDoc.agentResult?.agents?.documentIntelligence || {
-          monthlySummary: {},
-          transactionCount: 0,
-          totalIncome: 0,
-          totalExpenses: 0,
-          netCashFlow: 0,
-          byCategory: {},
-          topMerchants: []
+        // Include documentIntelligence with monthlySummary for frontend (built from transactions)
+        documentIntelligence: {
+          monthlySummary: monthlySummaryBuilt,
+          transactionCount: analysisDocs.reduce((s, d) => s + (d.transactions || []).length, 0),
+          totalIncome: totalIncomeAll,
+          totalExpenses: totalExpensesAll,
+          netCashFlow: netCashFlowAll,
+          byCategory: byCategory,
+          topMerchants: latestDoc.agentResult?.agents?.documentIntelligence?.topMerchants || []
         },
         agents: {
-          documentIntelligence: latestDoc.agentResult?.agents?.documentIntelligence || {}
+          documentIntelligence: latestDoc.agentResult?.agents?.documentIntelligence || {
+            monthlySummary: monthlySummaryBuilt,
+            transactionCount: analysisDocs.reduce((s, d) => s + (d.transactions || []).length, 0),
+            totalIncome: totalIncomeAll,
+            totalExpenses: totalExpensesAll,
+            netCashFlow: netCashFlowAll,
+            byCategory: byCategory,
+            topMerchants: []
+          }
         }
       },
       recentTransactions: (latestDoc.transactions || []).slice(0, 20),
