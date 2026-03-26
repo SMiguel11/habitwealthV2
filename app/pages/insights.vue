@@ -270,16 +270,16 @@
                     <div class="flex gap-1.5 items-center justify-between">
                       <div v-for="(monthly, mIdx) in item.monthlyBreakdown" :key="mIdx" class="flex-1 text-center group/month relative"
                         :class="mIdx === item.maxMonthIndex ? 'bg-red-500/20 rounded px-1 py-0.5 cursor-help' : ''">
-                        <p class="text-[10px] font-semibold" :class="mIdx === item.maxMonthIndex ? 'text-red-400' : 'text-slate-500'">€{{ monthly }}</p>
+                        <p class="text-[10px] font-semibold" :class="mIdx === item.maxMonthIndex ? 'text-red-400' : 'text-slate-500'">€{{ Math.round(monthly * 100) / 100 }}</p>
                         <p class="text-[9px]" :class="mIdx === item.maxMonthIndex ? 'text-red-600' : 'text-slate-700'">{{ item.monthNames[mIdx] }}</p>
                         
                         <!-- Popover with top transactions (only for max month) -->
                         <div v-if="mIdx === item.maxMonthIndex" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover/month:opacity-100 pointer-events-none group-hover/month:pointer-events-auto transition-opacity duration-200">
-                          <div v-if="getTopTransactions(item.cat, item.monthNames[mIdx])" class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-2 min-w-max whitespace-nowrap">
+                          <div v-if="getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0" class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-2 min-w-max whitespace-nowrap">
                             <p class="text-[10px] font-bold text-slate-400 mb-1.5 pb-1 border-b border-slate-700">{{ t('ins_top_expenses') || 'Top Expenses' }}</p>
-                            <div v-for="(tx, txIdx) in getTopTransactions(item.cat, item.monthNames[mIdx])" :key="txIdx" class="text-[10px] text-slate-300 py-0.5 flex items-center justify-between gap-2">
+                            <div v-for="(tx, txIdx) in getTopTransactions(item.catKey, item.monthNames[mIdx])" :key="txIdx" class="text-[10px] text-slate-300 py-0.5 flex items-center justify-between gap-2">
                               <span class="truncate max-w-[180px]">{{ tx.merchant }}</span>
-                              <span class="text-red-400 font-semibold shrink-0">€{{ tx.amount }}</span>
+                              <span class="text-red-400 font-semibold shrink-0">€{{ Math.round(tx.amount * 100) / 100 }}</span>
                             </div>
                           </div>
                         </div>
@@ -675,6 +675,7 @@ const topCategories = computed(() => {
         }
       })
       return {
+        catKey: cat,
         cat: key ? t(key) : cat.charAt(0).toUpperCase() + cat.slice(1),
         amt: Math.round(amt * 100) / 100,
         pct: total > 0 ? Math.round((amt / total) * 100) : 0,
@@ -842,13 +843,18 @@ const optimizationGoals = computed(() => {
 
 const getTopTransactions = (categoryName, monthName) => {
   const transactionsByMonth = summary.value?.transactionsByMonthAndCategory?.[categoryName] || []
+  if (!Array.isArray(transactionsByMonth)) return []
+  
+  // Convert month name (e.g., "DEC") to month number (12)
+  const monthMap = {
+    'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,
+    'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12
+  }
+  const monthNum = monthMap[monthName?.toUpperCase()] || 0
+  if (monthNum === 0) return []
+  
   // Find transactions for this category and month
-  const monthData = transactionsByMonth.find(m => {
-    if (!m.month) return false
-    const date = new Date(2024, m.month - 1, 1)
-    const mName = date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase().slice(0, 3)
-    return mName === monthName
-  })
+  const monthData = transactionsByMonth.find(m => m.month === monthNum)
   return monthData?.transactions || []
 }
 </script>
