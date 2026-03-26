@@ -657,7 +657,7 @@ const topCategories = computed(() => {
   // For each top category, build monthly breakdown array in month order
   return entries
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
+    .slice(0, 10)
     .map(([cat, amt]) => {
       const key = categoryKeyMap[cat.toLowerCase()]
       // Build monthly breakdown for this category
