@@ -843,7 +843,10 @@ const optimizationGoals = computed(() => {
 
 const getTopTransactions = (categoryName, monthName) => {
   const transactionsByMonth = summary.value?.transactionsByMonthAndCategory?.[categoryName] || []
-  if (!Array.isArray(transactionsByMonth)) return []
+  if (!Array.isArray(transactionsByMonth)) {
+    console.warn(`[getTopTransactions] transactionsByMonthAndCategory["${categoryName}"] is not an array:`, transactionsByMonth)
+    return []
+  }
   
   // Convert month name (e.g., "DEC") to month number (12)
   const monthMap = {
@@ -851,11 +854,20 @@ const getTopTransactions = (categoryName, monthName) => {
     'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12
   }
   const monthNum = monthMap[monthName?.toUpperCase()] || 0
-  if (monthNum === 0) return []
+  if (monthNum === 0) {
+    console.warn(`[getTopTransactions] Invalid month name: "${monthName}"`)
+    return []
+  }
   
   // Find transactions for this category and month
   const monthData = transactionsByMonth.find(m => m.month === monthNum)
-  return monthData?.transactions || []
+  if (!monthData) {
+    console.log(`[getTopTransactions] No data found for category "${categoryName}" in month ${monthNum}. Available months:`, transactionsByMonth.map(m => m.month))
+    return []
+  }
+  
+  console.log(`[getTopTransactions] Found ${monthData.transactions.length} transactions for category "${categoryName}" in month ${monthNum}`)
+  return monthData.transactions || []
 }
 </script>
 

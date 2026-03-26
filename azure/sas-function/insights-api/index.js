@@ -637,6 +637,11 @@ module.exports = async function (context, req) {
   const { byCategory, byCategoryByMonth, transactionsByMonthAndCategory } = _accumulateCategoryData(analysisDocs)
   context.log(`[insights-api] All categories found:`, Object.keys(byCategory))
   context.log(`[insights-api] byCategory amounts:`, byCategory)
+  context.log(`[insights-api] transactionsByMonthAndCategory keys:`, Object.keys(transactionsByMonthAndCategory))
+  for (const [cat, monthData] of Object.entries(transactionsByMonthAndCategory)) {
+    const totalTxs = monthData.reduce((sum, m) => sum + (m.transactions?.length || 0), 0)
+    context.log(`[insights-api] Category "${cat}": ${monthData.length} months, ${totalTxs} total transactions`)
+  }
   
   // Build monthlySummary from transactions (dynamic fallback if documentIntelligence not in agentResult)
   let monthlySummaryBuilt = _buildMonthlySummary(analysisDocs)
