@@ -233,7 +233,10 @@
               </div>
               <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div v-for="(item, idx) in topCategories" :key="idx" 
-                  class="group/card flex flex-col gap-2 p-3.5 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.06] hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.08] hover:to-white/[0.02] transition-all duration-300 cursor-pointer"
+                  class="group/card flex flex-col gap-2 p-3.5 rounded-xl transition-all duration-300 cursor-pointer"
+                  :class="item.catKey === 'Income' 
+                    ? 'from-emerald-500/[0.08] to-emerald-500/[0.02] border border-emerald-500/25 bg-gradient-to-br hover:border-emerald-500/40 hover:bg-gradient-to-br hover:from-emerald-500/[0.12] hover:to-emerald-500/[0.04]'
+                    : 'from-white/[0.04] to-white/[0.01] border border-white/[0.06] bg-gradient-to-br hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.08] hover:to-white/[0.02]'"
                   :style="{ animation: `slideIn 0.5s ease-out forwards`, animationDelay: `${idx * 50}ms`, opacity: 1 }">
                   <div class="flex items-center gap-3">
                     <div class="w-3 h-3 rounded-full shrink-0 shadow-lg shadow-current/20" :style="{ backgroundColor: ['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx], boxShadow: `0 0 12px ${['#06df9f', '#0084ff', '#ffa500', '#ff4d7d', '#00d4ff', '#7bff00'][idx]}40` }"></div>
