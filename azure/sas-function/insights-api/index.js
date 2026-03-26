@@ -532,9 +532,11 @@ function _aggregateDocumentTransactions(doc) {
 function _buildMonthlySummary(analysisDocs) {
   // Build monthlySummary from transactions in analysisDocs
   const monthlySummary = {}
+  let debugTxCount = 0
   for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
     const doc = analysisDocs[docIdx]
     const txns = doc.transactions || []
+    debugTxCount += txns.length
     for (const txn of txns) {
       const dateStr = txn.date || ''
       if (!dateStr) continue
@@ -556,6 +558,7 @@ function _buildMonthlySummary(analysisDocs) {
       monthlySummary[month].byCategory[category] += Math.abs(amount)
     }
   }
+  console.log(`[buildMonthlySummary] Processed ${debugTxCount} transactions, built ${Object.keys(monthlySummary).length} months`, monthlySummary)
   // Calculate net for each month
   for (const month in monthlySummary) {
     monthlySummary[month].net = monthlySummary[month].income - monthlySummary[month].expenses
