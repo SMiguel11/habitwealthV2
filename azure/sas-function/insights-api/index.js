@@ -707,6 +707,19 @@ module.exports = async function (context, req) {
         trendScores,
         goals: goalSummaries,
         optimization: optimizationSummary,  // NEW: Goal optimization recommendations
+        // Include documentIntelligence with monthlySummary for frontend
+        documentIntelligence: latestDoc.agentResult?.agents?.documentIntelligence || {
+          monthlySummary: {},
+          transactionCount: 0,
+          totalIncome: 0,
+          totalExpenses: 0,
+          netCashFlow: 0,
+          byCategory: {},
+          topMerchants: []
+        },
+        agents: {
+          documentIntelligence: latestDoc.agentResult?.agents?.documentIntelligence || {}
+        }
       },
       recentTransactions: (latestDoc.transactions || []).slice(0, 20),
       documents: analysisDocs.map(d => ({
