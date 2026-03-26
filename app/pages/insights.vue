@@ -598,6 +598,23 @@ const personaKeyMap = {
   'Conscious Spender':   'ins_persona_conscious_spender',
 }
 
+const categoryKeyMap = {
+  'utilities': 'ins_cat_utilities',
+  'health': 'ins_cat_health',
+  'transport': 'ins_cat_transport',
+  'food': 'ins_cat_food',
+  'entertainment': 'ins_cat_entertainment',
+  'shopping': 'ins_cat_shopping',
+  'savings': 'ins_cat_savings',
+  'income': 'ins_cat_income',
+}
+
+const nudgeKeyMap = {
+  'Be mindful of your spending': 'ins_nudge_mindful',
+  'Track your expenses': 'ins_nudge_track',
+  'Set realistic goals': 'ins_nudge_goals',
+}
+
 // --- NEW: Use documentIntelligence.monthlySummary for all breakdowns ---
 const documentIntelligence = computed(() => summary.value?.documentIntelligence || summary.value?.agents?.documentIntelligence || {})
 const monthlySummary = computed(() => documentIntelligence.value?.monthlySummary || {})
