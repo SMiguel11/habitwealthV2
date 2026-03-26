@@ -848,18 +848,22 @@ const getTopTransactions = (categoryName, monthName) => {
     return []
   }
   
-  // Convert month name (e.g., "DEC" or "DIC") to month number (12)
-  const monthMap = {
-    // English
+  // Convert month name (e.g., "DEC", "DIC") to month number (12)
+  // Use separate maps for English and Spanish to avoid duplicates
+  const monthMapEN = {
     'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,
-    'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12,
-    // Spanish
+    'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12
+  }
+  const monthMapES = {
     'ENE': 1, 'FEB': 2, 'MAR': 3, 'ABR': 4, 'MAY': 5, 'JUN': 6,
     'JUL': 7, 'AGO': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DIC': 12
   }
-  const monthNum = monthMap[monthName?.toUpperCase()] || 0
+  
+  const upperMonth = monthName?.toUpperCase()
+  let monthNum = monthMapEN[upperMonth] || monthMapES[upperMonth] || 0
+  
   if (monthNum === 0) {
-    console.warn(`[getTopTransactions] Invalid month name: "${monthName}". monthNames value:`, monthName)
+    console.warn(`[getTopTransactions] Invalid month name: "${monthName}".`)
     return []
   }
   
