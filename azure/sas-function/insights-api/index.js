@@ -512,24 +512,16 @@ function _aggregateDocumentTransactions(doc) {
   const transactions = doc.transactions || []
   const byCategory = {}
   
-  context.log(`[_aggregateDocumentTransactions] Processing ${transactions.length} transactions from document`)
-  
   for (const tx of transactions) {
     const processed = _processTransaction(tx)
-    if (!processed) {
-      context.log(`[_aggregateDocumentTransactions] Skipped transaction (amount ${tx.amount} or invalid)`)
-      continue
-    }
+    if (!processed) continue
     const cat = tx.category || 'Other'
     if (!byCategory[cat]) byCategory[cat] = []
     byCategory[cat].push(processed)
   }
   
-  context.log(`[_aggregateDocumentTransactions] Categories found: ${Object.keys(byCategory).join(', ')}`)
-  
   for (const [cat, txs] of Object.entries(byCategory)) {
     byCategory[cat] = txs.sort((a, b) => b.amount - a.amount).slice(0, 5)
-    context.log(`[_aggregateDocumentTransactions] Category "${cat}": ${txs.length} before sort, ${byCategory[cat].length} after top 5`)
   }
   return byCategory
 }
@@ -586,13 +578,10 @@ function _accumulateCategoryData(analysisDocs) {
     const monthNum = _extractMonthFromFilename(doc.filename, doc.analyzedAt)
     const txsByCategory = _aggregateDocumentTransactions(doc)
     
-    context.log(`[_accumulateCategoryData] Doc ${docIdx} (month ${monthNum}): categories in txsByCategory =`, Object.keys(txsByCategory))
-    
     // Accumulate transactions by category and month
     for (const [cat, txs] of Object.entries(txsByCategory)) {
       if (!transactionsByMonthAndCategory[cat]) transactionsByMonthAndCategory[cat] = []
       transactionsByMonthAndCategory[cat].push({ month: monthNum, transactions: txs })
-      context.log(`[_accumulateCategoryData] Added ${txs.length} transactions for category "${cat}" in month ${monthNum}`)
     }
     
     // Accumulate category totals
@@ -601,11 +590,6 @@ function _accumulateCategoryData(analysisDocs) {
       if (!byCategoryByMonth[cat]) byCategoryByMonth[cat] = []
       byCategoryByMonth[cat][docIdx] = Math.round(amt * 100) / 100
     }
-  }
-  
-  context.log(`[_accumulateCategoryData] FINAL transactionsByMonthAndCategory keys:`, Object.keys(transactionsByMonthAndCategory))
-  for (const [cat, monthData] of Object.entries(transactionsByMonthAndCategory)) {
-    context.log(`  ${cat}: ${monthData.length} months with ${monthData.reduce((s, m) => s + m.transactions.length, 0)} total transactions`)
   }
   
   return { byCategory, byCategoryByMonth, transactionsByMonthAndCategory }
