@@ -60,7 +60,7 @@ jobs:
 
       - name: Publish to Azure Functions
         working-directory: azure/sas-function
-        run: func azure functionapp publish hwbase-fn-sas-00211 --build remote --javascript
+        run: func azure functionapp publish hwbase-fn-sas-00211 --no-build
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
