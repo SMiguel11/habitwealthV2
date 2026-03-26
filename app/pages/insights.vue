@@ -620,20 +620,28 @@ const documentIntelligence = computed(() => summary.value?.documentIntelligence 
 const monthlySummary = computed(() => documentIntelligence.value?.monthlySummary || {})
 
 // Get sorted month keys (e.g., ["2024-01", "2024-02", ...])
-const monthKeys = computed(() => Object.keys(monthlySummary.value).sort())
+const monthKeys = computed(() => {
+  const ms = monthlySummary.value
+  if (!ms || typeof ms !== 'object') return []
+  return Object.keys(ms).sort()
+})
 
 // Get month names for display
-const monthNames = computed(() => monthKeys.value.map(mKey => {
-  const [year, month] = mKey.split('-')
-  const date = new Date(Number(year), Number(month) - 1, 1)
-  return date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase().slice(0, 3)
-}))
+const monthNames = computed(() => {
+  if (!monthKeys.value || !Array.isArray(monthKeys.value)) return []
+  return monthKeys.value.map(mKey => {
+    const [year, month] = mKey.split('-')
+    const date = new Date(Number(year), Number(month) - 1, 1)
+    return date.toLocaleString(locale.value === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase().slice(0, 3)
+  })
+})
 
 // Aggregate by category across all months
 const byCategoryTotal = computed(() => {
   const catTotals = {}
+  if (!monthKeys.value || !Array.isArray(monthKeys.value)) return catTotals
   for (const mKey of monthKeys.value) {
-    const byCat = monthlySummary.value[mKey]?.byCategory || {}
+    const byCat = monthlySummary.value?.[mKey]?.byCategory || {}
     for (const [cat, amt] of Object.entries(byCat)) {
       catTotals[cat] = (catTotals[cat] || 0) + amt
     }
@@ -642,7 +650,9 @@ const byCategoryTotal = computed(() => {
 })
 
 const topCategories = computed(() => {
-  const entries = Object.entries(byCategoryTotal.value)
+  const byCat = byCategoryTotal.value || {}
+  const entries = Object.entries(byCat)
+  if (!entries || entries.length === 0) return []
   const total = entries.reduce((sum, [_, amt]) => sum + amt, 0)
   // For each top category, build monthly breakdown array in month order
   return entries
@@ -651,8 +661,8 @@ const topCategories = computed(() => {
     .map(([cat, amt]) => {
       const key = categoryKeyMap[cat.toLowerCase()]
       // Build monthly breakdown for this category
-      const monthlyBreakdown = monthKeys.value.map(mKey => {
-        const byCat = monthlySummary.value[mKey]?.byCategory || {}
+      const monthlyBreakdown = (monthKeys.value || []).map(mKey => {
+        const byCat = monthlySummary.value?.[mKey]?.byCategory || {}
         return byCat[cat] || 0
       })
       // Find the month with highest value for this category
@@ -669,7 +679,7 @@ const topCategories = computed(() => {
         amt: Math.round(amt * 100) / 100,
         pct: total > 0 ? Math.round((amt / total) * 100) : 0,
         monthlyBreakdown,
-        monthNames: monthNames.value,
+        monthNames: monthNames.value || [],
         maxMonthIndex
       }
     })
@@ -686,13 +696,14 @@ function translateNudge(n) {
 
 // ...existing code...
 const nudgeSource = computed(() => summary.value?.nudgeSource ?? 'static')
+const nudges = computed(() => summary.value?.nudges ?? [])
 const primaryPattern = computed(() => summary.value?.primaryPattern ?? '')
 const weekendSpendAlert = computed(() => summary.value?.weekendSpendAlert ?? false)
 const goals = computed(() => summary.value?.goals ?? [])
 const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
 
-const pieChartSeries = computed(() => topCategories.value.map(item => item.pct))
-const pieChartLabels = computed(() => topCategories.value.map(item => item.cat))
+const pieChartSeries = computed(() => (topCategories.value || []).map(item => item.pct))
+const pieChartLabels = computed(() => (topCategories.value || []).map(item => item.cat))
 const pieChartOptions = computed(() => ({
   chart: {
     type: 'donut',
