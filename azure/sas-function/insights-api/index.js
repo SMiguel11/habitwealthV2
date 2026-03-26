@@ -543,7 +543,7 @@ function _aggregateDocumentTransactionsByMonthAndCategory(doc) {
     // Extract month number (1-12) from date string (YYYY-MM-DD format)
     let monthNum = 1
     if (dateStr.match(/\d{4}-(\d{2})-\d{2}/)) {
-      monthNum = parseInt(dateStr.substring(5, 7))
+      monthNum = Number.parseInt(dateStr.substring(5, 7), 10)
     }
     
     if (!result[cat]) result[cat] = {}
@@ -620,7 +620,7 @@ function _accumulateCategoryData(analysisDocs) {
       
       for (const [monthNum, txs] of Object.entries(monthsData)) {
         // Check if we already have this month for this category
-        const existing = transactionsByMonthAndCategory[cat].find(m => m.month === parseInt(monthNum))
+        const existing = transactionsByMonthAndCategory[cat].find(m => m.month === Number.parseInt(monthNum, 10))
         if (existing) {
           // Merge with existing
           existing.transactions = [...existing.transactions, ...txs]
@@ -629,7 +629,7 @@ function _accumulateCategoryData(analysisDocs) {
         } else {
           // Add new month entry
           transactionsByMonthAndCategory[cat].push({ 
-            month: parseInt(monthNum), 
+            month: Number.parseInt(monthNum, 10), 
             transactions: txs 
           })
         }
