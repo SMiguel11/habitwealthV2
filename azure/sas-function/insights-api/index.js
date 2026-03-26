@@ -636,7 +636,40 @@ module.exports = async function (context, req) {
   const { byCategory, byCategoryByMonth, transactionsByMonthAndCategory } = _accumulateCategoryData(analysisDocs)
   
   // Build monthlySummary from transactions (dynamic fallback if documentIntelligence not in agentResult)
-  const monthlySummaryBuilt = _buildMonthlySummary(analysisDocs)
+  let monthlySummaryBuilt = _buildMonthlySummary(analysisDocs)
+  
+  // FALLBACK: If monthlySummary is empty, build it from available data using document dates
+  if (Object.keys(monthlySummaryBuilt).length === 0 && analysisDocs.length > 0) {
+    console.log(`[MONTHLY_SUMMARY_FALLBACK] monthlySummaryBuilt was empty, building from analysisDocs...`)
+    // Use each document's analyzedAt date to assign categories to a month
+    for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
+      const doc = analysisDocs[docIdx]
+      const analyzedAt = doc.analyzedAt || ''
+      // Extract YYYY-MM from analyzedAt (e.g., "2026-03-26T..." → "2026-03")
+      const month = analyzedAt.substring(0, 7)
+      if (!month || month.length !== 7) continue
+      
+      if (!monthlySummaryBuilt[month]) {
+        monthlySummaryBuilt[month] = { income: 0, expenses: 0, net: 0, byCategory: {} }
+      }
+      
+      // Use category data from this document
+      const catData = getDocumentCategoryTotals(doc)
+      for (const [cat, amt] of Object.entries(catData)) {
+        monthlySummaryBuilt[month].expenses += amt
+        if (!monthlySummaryBuilt[month].byCategory[cat]) {
+          monthlySummaryBuilt[month].byCategory[cat] = 0
+        }
+        monthlySummaryBuilt[month].byCategory[cat] += amt
+      }
+    }
+    
+    // Calculate net for each month
+    for (const month in monthlySummaryBuilt) {
+      monthlySummaryBuilt[month].net = monthlySummaryBuilt[month].income - monthlySummaryBuilt[month].expenses
+    }
+    console.log(`[MONTHLY_SUMMARY_FALLBACK] rebuilt with ${Object.keys(monthlySummaryBuilt).length} months:`, monthlySummaryBuilt)
+  }
 
   // Average habit score across the analysis window
   const scores = analysisDocs.map(d =>
