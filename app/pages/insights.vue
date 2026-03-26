@@ -257,11 +257,11 @@
                         
                         <!-- Popover with top transactions (only for max month) -->
                         <div v-if="mIdx === item.maxMonthIndex" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover/month:opacity-100 pointer-events-none group-hover/month:pointer-events-auto transition-opacity duration-200">
-                          <div v-if="getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0" class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-2 min-w-max whitespace-nowrap">
-                            <p class="text-[10px] font-bold text-slate-400 mb-1.5 pb-1 border-b border-slate-700">{{ t('ins_top_expenses') || 'Top Expenses' }}</p>
-                            <div v-for="(tx, txIdx) in getTopTransactions(item.catKey, item.monthNames[mIdx])" :key="txIdx" class="text-[10px] text-slate-300 py-0.5 flex items-center justify-between gap-2">
+                          <div v-if="getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0" :class="['rounded-lg shadow-2xl p-2 min-w-max whitespace-nowrap', item.catKey === 'Income' ? 'bg-emerald-950 border border-emerald-700' : 'bg-slate-900 border border-slate-700']">
+                            <p :class="['text-[10px] font-bold mb-1.5 pb-1 border-b', item.catKey === 'Income' ? 'text-emerald-400 border-emerald-700' : 'text-slate-400 border-slate-700']">{{ item.catKey === 'Income' ? 'Ingresos Principales' : (t('ins_top_expenses') || 'Gastos Principales') }}</p>
+                            <div v-for="(tx, txIdx) in getTopTransactions(item.catKey, item.monthNames[mIdx])" :key="txIdx" :class="['text-[10px] py-0.5 flex items-center justify-between gap-2', item.catKey === 'Income' ? 'text-emerald-300' : 'text-slate-300']">
                               <span class="truncate max-w-[180px]">{{ tx.merchant }}</span>
-                              <span class="text-red-400 font-semibold shrink-0">€{{ Math.round(tx.amount * 100) / 100 }}</span>
+                              <span :class="item.catKey === 'Income' ? 'text-emerald-400 font-semibold shrink-0' : 'text-red-400 font-semibold shrink-0'">€{{ Math.round(tx.amount * 100) / 100 }}</span>
                             </div>
                           </div>
                         </div>
