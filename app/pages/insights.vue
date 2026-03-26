@@ -40,7 +40,7 @@
     </div>
 
     <!-- Dashboard -->
-    <main v-else class="relative max-w-7xl mx-auto px-6 pt-10 pb-24 space-y-6">
+    <main v-else v-if="summary" class="relative max-w-7xl mx-auto px-6 pt-10 pb-24 space-y-6">
 
       <!-- Page header -->
       <div class="flex items-center justify-between">
