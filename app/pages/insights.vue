@@ -190,44 +190,7 @@
           </div>
         </div>
 
-        <!-- Impulse Control -->
-        <div class="relative rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.05] to-white/[0.01] p-5 overflow-hidden hover:border-cyan-500/20 hover:bg-gradient-to-br hover:from-white/[0.08] transition-all duration-300 group">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent"></div>
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_impulse_label') }}</span>
-              <p class="text-xs text-slate-700 mt-0.5">Control score</p>
-            </div>
-            <div class="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
-            </div>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <div class="flex items-end gap-2 mb-3">
-                <div class="text-4xl font-black text-white tracking-tighter leading-none">{{ impulseScore }}</div>
-                <span class="text-lg text-slate-700 font-semibold mb-1">%</span>
-              </div>
-              <div class="w-full bg-white/[0.05] rounded-full h-2">
-                <div class="h-2 rounded-full transition-all duration-500" 
-                  :class="{
-                    'bg-gradient-to-r from-red-500 to-orange-400': impulseScore < 40,
-                    'bg-gradient-to-r from-amber-500 to-yellow-400': impulseScore >= 40 && impulseScore < 70,
-                    'bg-gradient-to-r from-emerald-500 to-teal-400': impulseScore >= 70
-                  }"
-                  :style="{ width: impulseScore + '%' }">
-                </div>
-              </div>
-            </div>
-            <div class="p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-teal-500/5 border border-cyan-500/20">
-              <p class="text-[11px] font-medium text-cyan-300 leading-relaxed">
-                <span v-if="impulseScore >= 70" class="block">✓ Strong control! Your spending is deliberate and aligned with goals.</span>
-                <span v-else-if="impulseScore >= 40" class="block">⚡ Moderate control. Room to improve decision-making on discretionary spending.</span>
-                <span v-else class="block">⚠ Low control. Consider implementing the 48-hour rule before purchases.</span>
-              </p>
-            </div>
-          </div>
-        </div>
+
       </div>
 
       <!-- Main grid -->
