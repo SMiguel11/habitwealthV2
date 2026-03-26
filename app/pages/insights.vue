@@ -190,6 +190,22 @@
           </div>
         </div>
 
+        <!-- Financial Persona -->
+        <div class="relative rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-6 overflow-hidden">
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent"></div>
+          <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl"></div>
+          <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-3">{{ t('ins_persona_label') }}</p>
+          <div class="text-xl font-extrabold text-emerald-300 mb-2 leading-tight">{{ financialPersona }}</div>
+          <p class="text-xs text-slate-600 leading-relaxed">{{ t('ins_persona_desc') }}</p>
+          <!-- Detected emotional pattern -->
+          <div v-if="primaryPattern" class="mt-4 pt-4 border-t border-emerald-500/10">
+            <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1.5">{{ t('ins_pattern_label') }}</p>
+            <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              {{ primaryPattern }}
+            </span>
+          </div>
+        </div>
 
       </div>
 
@@ -355,23 +371,6 @@
 
         <!-- RIGHT: 1/3 width -->
         <div class="space-y-6">
-
-          <!-- Financial Persona -->
-          <div class="relative rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-6 overflow-hidden">
-            <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent"></div>
-            <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl"></div>
-            <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-3">{{ t('ins_persona_label') }}</p>
-            <div class="text-xl font-extrabold text-emerald-300 mb-2 leading-tight">{{ financialPersona }}</div>
-            <p class="text-xs text-slate-600 leading-relaxed">{{ t('ins_persona_desc') }}</p>
-            <!-- Detected emotional pattern -->
-            <div v-if="primaryPattern" class="mt-4 pt-4 border-t border-emerald-500/10">
-              <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1.5">{{ t('ins_pattern_label') }}</p>
-              <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                {{ primaryPattern }}
-              </span>
-            </div>
-          </div>
 
           <!-- Weekend Spend Alert -->
           <div v-if="weekendSpendAlert"
