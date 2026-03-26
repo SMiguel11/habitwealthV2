@@ -251,9 +251,9 @@
                     <p class="text-[10px] text-slate-600 font-medium">{{ t('ins_monthly_breakdown') || 'Monthly' }}</p>
                     <div class="flex gap-1.5 items-center justify-between">
                       <div v-for="(monthly, mIdx) in item.monthlyBreakdown" :key="mIdx" class="flex-1 text-center group/month relative"
-                        :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? 'bg-red-500/20 rounded px-1 py-0.5 cursor-help' : ''">
-                        <p class="text-[10px] font-semibold" :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? 'text-red-400' : 'text-slate-500'">€{{ Math.round(monthly * 100) / 100 }}</p>
-                        <p class="text-[9px]" :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? 'text-red-600' : 'text-slate-700'">{{ item.monthNames[mIdx] }}</p>
+                        :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? (item.catKey === 'Income' ? 'bg-emerald-500/20 rounded px-1 py-0.5 cursor-help' : 'bg-red-500/20 rounded px-1 py-0.5 cursor-help') : ''">
+                        <p class="text-[10px] font-semibold" :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? (item.catKey === 'Income' ? 'text-emerald-400' : 'text-red-400') : 'text-slate-500'">€{{ Math.round(monthly * 100) / 100 }}</p>
+                        <p class="text-[9px]" :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? (item.catKey === 'Income' ? 'text-emerald-600' : 'text-red-600') : 'text-slate-700'">{{ item.monthNames[mIdx] }}</p>
                         
                         <!-- Popover with top transactions (only for max month) -->
                         <div v-if="mIdx === item.maxMonthIndex" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover/month:opacity-100 pointer-events-none group-hover/month:pointer-events-auto transition-opacity duration-200">
