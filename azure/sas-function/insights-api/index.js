@@ -527,6 +527,41 @@ function _aggregateDocumentTransactions(doc) {
 }
 
 /**
+ * Aggregate transactions by BOTH category and month within a single document.
+ * Returns { category: { monthNum: [transactions] } }
+ */
+function _aggregateDocumentTransactionsByMonthAndCategory(doc) {
+  const transactions = doc.transactions || []
+  const result = {}
+  
+  for (const tx of transactions) {
+    const processed = _processTransaction(tx)
+    if (!processed) continue
+    
+    const cat = tx.category || 'Other'
+    const dateStr = tx.date || ''
+    // Extract month number (1-12) from date string (YYYY-MM-DD format)
+    let monthNum = 1
+    if (dateStr.match(/\d{4}-(\d{2})-\d{2}/)) {
+      monthNum = parseInt(dateStr.substring(5, 7))
+    }
+    
+    if (!result[cat]) result[cat] = {}
+    if (!result[cat][monthNum]) result[cat][monthNum] = []
+    result[cat][monthNum].push(processed)
+  }
+  
+  // Sort and keep top 5 per category-month
+  for (const [cat, months] of Object.entries(result)) {
+    for (const [monthNum, txs] of Object.entries(months)) {
+      result[cat][monthNum] = txs.sort((a, b) => b.amount - a.amount).slice(0, 5)
+    }
+  }
+  
+  return result
+}
+
+/**
  * Accumulate category data across analysis documents (3-doc window).
  */
 function _buildMonthlySummary(analysisDocs) {
@@ -575,13 +610,30 @@ function _accumulateCategoryData(analysisDocs) {
   for (let docIdx = 0; docIdx < analysisDocs.length; docIdx++) {
     const doc = analysisDocs[docIdx]
     const catMap = getDocumentCategoryTotals(doc)
-    const monthNum = _extractMonthFromFilename(doc.filename, doc.analyzedAt)
-    const txsByCategory = _aggregateDocumentTransactions(doc)
+    
+    // Get transactions grouped by BOTH category and month
+    const txsByMonthAndCategory = _aggregateDocumentTransactionsByMonthAndCategory(doc)
     
     // Accumulate transactions by category and month
-    for (const [cat, txs] of Object.entries(txsByCategory)) {
+    for (const [cat, monthsData] of Object.entries(txsByMonthAndCategory)) {
       if (!transactionsByMonthAndCategory[cat]) transactionsByMonthAndCategory[cat] = []
-      transactionsByMonthAndCategory[cat].push({ month: monthNum, transactions: txs })
+      
+      for (const [monthNum, txs] of Object.entries(monthsData)) {
+        // Check if we already have this month for this category
+        const existing = transactionsByMonthAndCategory[cat].find(m => m.month === parseInt(monthNum))
+        if (existing) {
+          // Merge with existing
+          existing.transactions = [...existing.transactions, ...txs]
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 5)
+        } else {
+          // Add new month entry
+          transactionsByMonthAndCategory[cat].push({ 
+            month: parseInt(monthNum), 
+            transactions: txs 
+          })
+        }
+      }
     }
     
     // Accumulate category totals
@@ -590,6 +642,11 @@ function _accumulateCategoryData(analysisDocs) {
       if (!byCategoryByMonth[cat]) byCategoryByMonth[cat] = []
       byCategoryByMonth[cat][docIdx] = Math.round(amt * 100) / 100
     }
+  }
+  
+  // Sort months within each category for consistent ordering
+  for (const [cat, monthsArray] of Object.entries(transactionsByMonthAndCategory)) {
+    transactionsByMonthAndCategory[cat] = monthsArray.sort((a, b) => a.month - b.month)
   }
   
   return { byCategory, byCategoryByMonth, transactionsByMonthAndCategory }
