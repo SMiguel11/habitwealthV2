@@ -1,0 +1,315 @@
+{
+  "userId": "test-user-001",
+  "filename": "test_statement.pdf",
+  "processedAt": "2026-03-27T18:31:57.243021+00:00",
+  "agents": {
+    "documentIntelligence": {
+      "agent": "DocumentIntelligence",
+      "transactionCount": 14,
+      "totalIncome": 2500.0,
+      "totalExpenses": 3478.0,
+      "netCashFlow": -978.0,
+      "byCategory": {
+        "Alquiler": 2850.0,
+        "Electricidad": 282.5,
+        "Agua": 135.0,
+        "Internet": 110.0,
+        "Shopping": 25.5,
+        "Food": 75.0
+      },
+      "topMerchants": [
+        {
+          "merchant": "Landlord Payments",
+          "total": 2850.0
+        },
+        {
+          "merchant": "Endesa Electricity",
+          "total": 282.5
+        },
+        {
+          "merchant": "Water Company",
+          "total": 135.0
+        },
+        {
+          "merchant": "Vodafone Internet",
+          "total": 110.0
+        },
+        {
+          "merchant": "Groceries Store",
+          "total": 75.0
+        }
+      ],
+      "monthlySummary": {
+        "2025-12": {
+          "income": 0.0,
+          "expenses": 1080.0,
+          "net": -1080.0,
+          "byCategory": {
+            "Alquiler": 950.0,
+            "Electricidad": 85.0,
+            "Agua": 45.0
+          }
+        },
+        "2026-01": {
+          "income": 0.0,
+          "expenses": 1087.5,
+          "net": -1087.5,
+          "byCategory": {
+            "Alquiler": 950.0,
+            "Electricidad": 92.5,
+            "Agua": 45.0
+          }
+        },
+        "2026-02": {
+          "income": 2500.0,
+          "expenses": 1310.5,
+          "net": 1189.5,
+          "byCategory": {
+            "Alquiler": 950.0,
+            "Electricidad": 105.0,
+            "Agua": 45.0,
+            "Internet": 110.0,
+            "Shopping": 25.5,
+            "Food": 75.0,
+            "Income": 2500.0
+          }
+        }
+      }
+    },
+    "emotionalPattern": {
+      "agent": "EmotionalPattern",
+      "emotionalSpendScores": {
+        "impulse": 25.5,
+        "comfort": 0.0,
+        "stress": 0.0,
+        "social": 0.0
+      },
+      "dominantPattern": "impulse",
+      "weekendSpend": 1135.0,
+      "surveyStressScore": 2.8
+    },
+    "financialStress": {
+      "agent": "FinancialStress",
+      "fsi": 33.0,
+      "fsiComponents": {
+        "cashPressure": 11.2,
+        "impulsePressure": 0.7,
+        "surveyPressure": 21.0
+      },
+      "fsiLevel": "Medium"
+    },
+    "goalAlignment": {
+      "agent": "GoalAlignment",
+      "goals": [
+        {
+          "goal": "Save for emergency fund",
+          "monthlyNeeded": 416.67,
+          "currentSavings": 0,
+          "savedAmount": 0.0,
+          "progressPct": 0.0,
+          "onTrack": false,
+          "projectedMonths": null
+        }
+      ],
+      "overallAlignmentScore": 0.0
+    },
+    "goalOptimization": {
+      "agent": "GoalOptimization",
+      "source": "gpt-4o-mini",
+      "actions": [
+        {
+          "title": "Negotiate or find cheaper housing",
+          "description": "Your rent is extremely high relative to your income, causing a large negative cash flow. Explore options to negotiate rent reduction, move to a more affordable place, or find a roommate to share costs.",
+          "category": "Housing",
+          "potentialSavings": 1000.0,
+          "effort": "High",
+          "implementation": "Contact your landlord to discuss rent options, research affordable housing alternatives, or list a room for rent."
+        },
+        {
+          "title": "Reduce weekend impulse spending",
+          "description": "You spend over 1100 EUR on weekends, driven by impulse behavior. Set a strict weekend spending budget and track expenses to reduce impulse purchases.",
+          "category": "Behavioral",
+          "potentialSavings": 400.0,
+          "effort": "Medium",
+          "implementation": "Use a spending tracker app, plan weekend activities that cost less or are free, and avoid carrying excess cash or cards."
+        },
+        {
+          "title": "Cut utility expenses by energy and water saving",
+          "description": "Electricity and water bills are high. Implement energy-saving habits and water conservation to reduce bills.",
+          "category": "Utilities",
+          "potentialSavings": 100.0,
+          "effort": "Low",
+          "implementation": "Turn off lights/appliances when not in use, fix leaks, use water-efficient fixtures, and reduce heating/cooling use."
+        },
+        {
+          "title": "Downgrade or bundle internet service",
+          "description": "Your internet cost is 110 EUR monthly, which might be optimized by switching to a cheaper plan or bundling with other services.",
+          "category": "Utilities",
+          "potentialSavings": 30.0,
+          "effort": "Low",
+          "implementation": "Compare internet plans and providers, negotiate current plan, or bundle with phone/TV services for discounts."
+        }
+      ],
+      "totalPotentialSavings": 1530.0,
+      "currentMonthlySavings": 0.0,
+      "optimizedMonthlySavings": 1530.0,
+      "optimizedGoals": [
+        {
+          "goal": "Save for emergency fund",
+          "currentProjected": null,
+          "optimizedProjected": 2,
+          "timeSaved": 999
+        }
+      ]
+    },
+    "utilityAnomalyDetector": {
+      "agent": "UtilityAnomalyDetector",
+      "hasAlerts": true,
+      "criticalAlerts": [
+        {
+          "alertType": "price_increase",
+          "category": "Electricidad",
+          "months": [
+            {
+              "month": "2025-12",
+              "amount": 85.0
+            },
+            {
+              "month": "2026-01",
+              "amount": 92.5
+            },
+            {
+              "month": "2026-02",
+              "amount": 105.0
+            }
+          ],
+          "percentChange": 23.53,
+          "alert": true,
+          "message": "Electricidad increased 23.5% \u2014 review the contract or supplier.",
+          "severity": "high"
+        }
+      ],
+      "warningAlerts": [
+        {
+          "merchant": "Vodafone Internet",
+          "amount": 55.0,
+          "month": "2026-02",
+          "count": 2,
+          "message": "Found 2 identical payments of \u20ac55.0 from Vodafone Internet in 2026-02",
+          "alert": true,
+          "severity": "medium"
+        }
+      ],
+      "allAlerts": [
+        {
+          "alertType": "price_increase",
+          "category": "Electricidad",
+          "months": [
+            {
+              "month": "2025-12",
+              "amount": 85.0
+            },
+            {
+              "month": "2026-01",
+              "amount": 92.5
+            },
+            {
+              "month": "2026-02",
+              "amount": 105.0
+            }
+          ],
+          "percentChange": 23.53,
+          "alert": true,
+          "message": "Electricidad increased 23.5% \u2014 review the contract or supplier.",
+          "severity": "high"
+        },
+        {
+          "merchant": "Vodafone Internet",
+          "amount": 55.0,
+          "month": "2026-02",
+          "count": 2,
+          "message": "Found 2 identical payments of \u20ac55.0 from Vodafone Internet in 2026-02",
+          "alert": true,
+          "severity": "medium"
+        }
+      ],
+      "summaryMessage": "Electricidad increased 23.5% \u2014 review the contract or supplier.",
+      "totalAlertsFound": 2
+    },
+    "cbtIntervention": {
+      "agent": "CBTIntervention",
+      "interventionUrgency": "suggested",
+      "nudges": [
+        "When you feel the urge to spend impulsively, take a 5-minute pause timer and write down what emotion you are experiencing before deciding.",
+        "Use an implementation intention like 'If I feel the impulse to buy, then I will take three deep breaths to calm myself before acting.'",
+        "Keep a brief emotion journal noting the triggers and feelings around each impulse spend to increase awareness and reduce automatic reactions."
+      ],
+      "nudges_es": [
+        "Cuando sientas el impulso de gastar de forma impulsiva, pon un temporizador de 5 minutos y anota qu\u00e9 emoci\u00f3n est\u00e1s experimentando antes de decidir.",
+        "Usa una intenci\u00f3n de implementaci\u00f3n como 'Si siento el impulso de comprar, entonces tomar\u00e9 tres respiraciones profundas para calmarme antes de actuar.'",
+        "Lleva un diario breve de emociones donde anotes los desencadenantes y sentimientos alrededor de cada gasto impulsivo para aumentar la conciencia y reducir reacciones autom\u00e1ticas."
+      ],
+      "nudgeSource": "gpt-4o",
+      "primaryPattern": "impulse",
+      "weekendSpendAlert": true,
+      "utilityAlert": "Electricidad increased 23.5% \u2014 review the contract or supplier.",
+      "scoreExplanation": {
+        "en": {
+          "positives": [
+            "Good overall HabitWealth Score of 84/100",
+            "Recognized spending patterns well",
+            "Maintained awareness despite weekend spending"
+          ],
+          "warnings": [
+            "Impulse spending and medium stress may impact finances negatively"
+          ]
+        },
+        "es": {
+          "positives": [
+            "Buen puntaje general de HabitWealth de 84/100",
+            "Reconoci\u00f3 bien los patrones de gasto",
+            "Mantuvo conciencia pese a gastos del fin de semana"
+          ],
+          "warnings": [
+            "El gasto impulsivo y estr\u00e9s medio pueden afectar finanzas negativamente"
+          ]
+        },
+        "source": "gpt-4o"
+      }
+    },
+    "digitalTwin": {
+      "agent": "DigitalTwin",
+      "userId": "test-user-001",
+      "updatedAt": "2026-03-27T18:31:55.349419+00:00",
+      "habitWealthScore": 84,
+      "financialPersona": "Developing Spender",
+      "emotionVector": {
+        "impulse": 25.5,
+        "comfort": 0.0,
+        "stress": 0.0,
+        "social": 0.0
+      },
+      "fsi": 33.0,
+      "goalAlignmentScore": 0.0,
+      "activeNudges": [
+        "When you feel the urge to spend impulsively, take a 5-minute pause timer and write down what emotion you are experiencing before deciding.",
+        "Use an implementation intention like 'If I feel the impulse to buy, then I will take three deep breaths to calm myself before acting.'"
+      ],
+      "monthlySnapshot": {
+        "income": 2500.0,
+        "expenses": 3478.0,
+        "savings": 0,
+        "netFlow": -978.0
+      }
+    }
+  },
+  "summary": {
+    "habitWealthScore": 84,
+    "financialPersona": "Developing Spender",
+    "fsiLevel": "Medium",
+    "topNudge": "When you feel the urge to spend impulsively, take a 5-minute pause timer and write down what emotion you are experiencing before deciding.",
+    "goalAlignmentScore": 0.0,
+    "utilityAlert": "Electricidad increased 23.5% \u2014 review the contract or supplier.",
+    "hasUtilityAlerts": true
+  }
+}
