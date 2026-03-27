@@ -153,7 +153,7 @@
           <div class="space-y-4">
             <div>
               <div class="flex items-end gap-1.5 mb-2">
-                <span class="text-3xl font-black text-white tracking-tight leading-none">€{{ totalSpent.toLocaleString() }}</span>
+                <span class="text-3xl font-black text-red-400 tracking-tight leading-none">€{{ totalSpent.toLocaleString() }}</span>
                 <span class="text-xs text-slate-600 font-medium">total spent</span>
               </div>
               <div class="w-full bg-white/[0.05] rounded-full h-1">
@@ -176,19 +176,20 @@
         </div>
 
         <!-- Financial Persona -->
-        <div class="relative rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-6 overflow-hidden">
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent"></div>
-          <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl"></div>
-          <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-3">{{ t('ins_persona_label') }}</p>
-          <div class="text-xl font-extrabold text-emerald-300 mb-2 leading-tight">{{ financialPersona }}</div>
+        <div :class="['relative rounded-2xl border p-6 overflow-hidden', getPatternConfig(primaryPattern).borderColor, getPatternConfig(primaryPattern).bgColor]">
+          <div :class="['absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent', getPatternConfig(primaryPattern).gradientColor]"></div>
+          <div :class="['absolute -bottom-6 -right-6 w-24 h-24 rounded-full blur-2xl', getPatternConfig(primaryPattern).glowColor]"></div>
+          <p :class="['text-[10px] font-bold uppercase tracking-widest mb-3', getPatternConfig(primaryPattern).labelColor]">{{ t('ins_persona_label') }}</p>
+          <div :class="['text-xl font-extrabold mb-2 leading-tight', getPatternConfig(primaryPattern).textColor]">{{ financialPersona }}</div>
           <p class="text-xs text-slate-600 leading-relaxed">{{ t('ins_persona_desc') }}</p>
           <!-- Detected emotional pattern -->
-          <div v-if="primaryPattern" class="mt-4 pt-4 border-t border-emerald-500/10">
+          <div v-if="primaryPattern" :class="['mt-4 pt-4 border-t', getPatternConfig(primaryPattern).borderTopColor]">
             <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1.5">{{ t('ins_pattern_label') }}</p>
-            <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span :class="['inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border', getPatternConfig(primaryPattern).badgeBg, getPatternConfig(primaryPattern).badgeText, getPatternConfig(primaryPattern).badgeBorder]">
+              <span :class="['w-1.5 h-1.5 rounded-full', getPatternConfig(primaryPattern).dotColor]"></span>
               {{ primaryPattern }}
             </span>
+            <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">{{ getPatternConfig(primaryPattern).explanation }}</p>
           </div>
         </div>
 
@@ -649,6 +650,83 @@ const nudgeSource = computed(() => summary.value?.nudgeSource ?? 'static')
 const nudges = computed(() => summary.value?.nudges ?? [])
 const primaryPattern = computed(() => summary.value?.primaryPattern ?? '')
 const weekendSpendAlert = computed(() => summary.value?.weekendSpendAlert ?? false)
+
+// Pattern configuration: color, dot color, and explanation based on financial health
+const getPatternConfig = (pattern) => {
+  const configs = {
+    impulse: {
+      borderColor: 'border-red-500/20',
+      borderTopColor: 'border-t-red-500/20',
+      bgColor: 'bg-red-500/[0.05]',
+      gradientColor: 'via-red-500/60',
+      glowColor: 'bg-red-500/10',
+      labelColor: 'text-red-700',
+      textColor: 'text-red-300',
+      badgeBg: 'bg-red-500/15',
+      badgeText: 'text-red-300',
+      badgeBorder: 'border-red-500/25',
+      dotColor: 'bg-red-400',
+      explanation: 'Gastos impulsivos pueden afectar tu salud financiera. Reconoce patrones de gasto emocional.'
+    },
+    saver: {
+      borderColor: 'border-emerald-500/20',
+      borderTopColor: 'border-t-emerald-500/10',
+      bgColor: 'bg-emerald-500/[0.05]',
+      gradientColor: 'via-emerald-500/60',
+      glowColor: 'bg-emerald-500/10',
+      labelColor: 'text-emerald-700',
+      textColor: 'text-emerald-300',
+      badgeBg: 'bg-emerald-500/15',
+      badgeText: 'text-emerald-300',
+      badgeBorder: 'border-emerald-500/25',
+      dotColor: 'bg-emerald-400',
+      explanation: 'Mentalidad ahorradora fortalece tu patrimonio. Mantén este hábito positivo de disciplina.'
+    },
+    cautious: {
+      borderColor: 'border-emerald-500/20',
+      borderTopColor: 'border-t-emerald-500/10',
+      bgColor: 'bg-emerald-500/[0.05]',
+      gradientColor: 'via-emerald-500/60',
+      glowColor: 'bg-emerald-500/10',
+      labelColor: 'text-emerald-700',
+      textColor: 'text-emerald-300',
+      badgeBg: 'bg-emerald-500/15',
+      badgeText: 'text-emerald-300',
+      badgeBorder: 'border-emerald-500/25',
+      dotColor: 'bg-emerald-400',
+      explanation: 'Cautela en gastos indica disciplina financiera. Tu prudencia protege tu patrimonio.'
+    },
+    balanced: {
+      borderColor: 'border-amber-500/20',
+      borderTopColor: 'border-t-amber-500/10',
+      bgColor: 'bg-amber-500/[0.05]',
+      gradientColor: 'via-amber-500/60',
+      glowColor: 'bg-amber-500/10',
+      labelColor: 'text-amber-700',
+      textColor: 'text-amber-300',
+      badgeBg: 'bg-amber-500/15',
+      badgeText: 'text-amber-300',
+      badgeBorder: 'border-amber-500/25',
+      dotColor: 'bg-amber-400',
+      explanation: 'Balance entre gasto e inversión es prudente. Mantén este equilibrio saludable.'
+    },
+    'risk-averse': {
+      borderColor: 'border-emerald-500/20',
+      borderTopColor: 'border-t-emerald-500/10',
+      bgColor: 'bg-emerald-500/[0.05]',
+      gradientColor: 'via-emerald-500/60',
+      glowColor: 'bg-emerald-500/10',
+      labelColor: 'text-emerald-700',
+      textColor: 'text-emerald-300',
+      badgeBg: 'bg-emerald-500/15',
+      badgeText: 'text-emerald-300',
+      badgeBorder: 'border-emerald-500/25',
+      dotColor: 'bg-emerald-400',
+      explanation: 'Prudencia ante riesgos protege tu patrimonio. Sigue priorizando decisiones seguras.'
+    }
+  }
+  return configs[pattern] || configs.cautious // Default to cautious if pattern not found
+}
 const goals = computed(() => summary.value?.goals ?? [])
 const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
 
