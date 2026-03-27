@@ -58,8 +58,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         <!-- HabitWealth Score -->
-        <div class="relative rounded-2xl border bg-white/[0.03] p-5 group transition-all duration-300"
-          :class="showExplanation ? 'border-emerald-500/30 bg-emerald-500/[0.04]' : 'border-white/[0.08] hover:border-emerald-500/30 hover:bg-emerald-500/[0.04]'">
+        <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 group transition-all duration-300 hover:border-emerald-500/30 hover:bg-emerald-500/[0.04]">
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent rounded-t-2xl"></div>
           <div class="flex items-center justify-between mb-3">
             <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{{ t('ins_score_label') }}</span>
@@ -74,26 +73,12 @@
           <div class="mt-3 w-full bg-white/[0.05] rounded-full h-1">
             <div class="h-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700" :style="{ width: habitScore + '%' }"></div>
           </div>
-          <!-- AI Explanation toggle -->
-          <button v-if="scoreExplanation" @click="showExplanation = !showExplanation"
-            class="mt-3 w-full flex items-center justify-between text-[10px] font-semibold transition-colors focus:outline-none"
-            :class="showExplanation ? 'text-emerald-400' : 'text-slate-600 hover:text-emerald-400'">
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3 h-3 text-violet-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-              AI Explanation
-            </span>
-            <svg class="w-3 h-3 transition-transform duration-200" :class="{ 'rotate-180': showExplanation }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-          </button>
-          <!-- Expandable explanation panel -->
-          <div v-show="showExplanation && scoreExplanation" class="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
+          <!-- AI Explanation (always visible, no toggle) -->
+          <div v-if="scoreExplanation" class="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
             <p class="text-[9px] font-bold text-violet-500 uppercase tracking-widest mb-2">Your score improved because:</p>
-            <div v-for="(point, i) in scoreExplanation?.positives" :key="'p'+i" class="flex items-start gap-1.5">
+            <div v-if="scoreExplanation?.positives?.[0]" class="flex items-start gap-1.5">
               <span class="text-emerald-400 text-xs leading-tight mt-px shrink-0">•</span>
-              <span class="text-[11px] text-slate-300 leading-snug">{{ point }}</span>
-            </div>
-            <div v-if="scoreExplanation?.warnings?.length" class="mt-2 pt-2 border-t border-white/[0.04] flex items-start gap-1.5">
-              <svg class="w-3 h-3 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-              <span class="text-[11px] text-amber-400/80 leading-snug">{{ scoreExplanation?.warnings[0] }}</span>
+              <span class="text-[11px] text-slate-300 leading-snug">{{ scoreExplanation.positives[0] }}</span>
             </div>
           </div>
         </div>
@@ -470,7 +455,6 @@ import ApexChart from 'vue3-apexcharts'
 const { t, locale } = useI18n()
 
 const loading = ref(true)
-const showExplanation = ref(false)
 
 const categoryColors = [
   'linear-gradient(90deg,#10b981,#14b8a6)',
