@@ -361,15 +361,31 @@
         <!-- RIGHT: 1/3 width -->
         <div class="space-y-6">
 
-          <!-- Weekend Spend Alert -->
-          <div v-if="weekendSpendAlert"
-            class="relative rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-4 flex gap-3">
-            <div class="shrink-0 w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+          <!-- Weekend/Utility Spend Alert (Utility takes priority) -->
+          <div v-if="alertToShow"
+            :class="[
+              'relative rounded-2xl border p-4 flex gap-3',
+              alertToShow.type === 'utility'
+                ? 'border-red-500/30 bg-red-500/[0.06]'
+                : 'border-amber-500/30 bg-amber-500/[0.06]'
+            ]">
+            <div :class="[
+              'shrink-0 w-8 h-8 rounded-xl border flex items-center justify-center',
+              alertToShow.type === 'utility'
+                ? 'bg-red-500/20 border-red-500/30'
+                : 'bg-amber-500/20 border-amber-500/30'
+            ]">
+              <svg :class="[
+                'w-4 h-4',
+                alertToShow.type === 'utility' ? 'text-red-400' : 'text-amber-400'
+              ]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
             </div>
             <div>
-              <p class="text-xs font-bold text-amber-300">{{ t('ins_weekend_alert') }}</p>
-              <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ t('ins_weekend_alert_desc') }}</p>
+              <p :class="[
+                'text-xs font-bold',
+                alertToShow.type === 'utility' ? 'text-red-300' : 'text-amber-300'
+              ]">{{ alertToShow.type === 'utility' ? t('ins_utility_alert') : t('ins_weekend_alert') }}</p>
+              <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ alertToShow.message }}</p>
             </div>
           </div>
 
@@ -650,6 +666,20 @@ const nudgeSource = computed(() => summary.value?.nudgeSource ?? 'static')
 const nudges = computed(() => summary.value?.nudges ?? [])
 const primaryPattern = computed(() => summary.value?.primaryPattern ?? '')
 const weekendSpendAlert = computed(() => summary.value?.weekendSpendAlert ?? false)
+const hasUtilityAlerts = computed(() => summary.value?.hasUtilityAlerts ?? false)
+const utilityAlert = computed(() => summary.value?.utilityAlert ?? '')
+const weekendAlertDesc = computed(() => t('ins_weekend_alert_desc'))
+
+// Computed to show utility alert when present, fallback to weekend alert
+const alertToShow = computed(() => {
+  if (hasUtilityAlerts.value && utilityAlert.value) {
+    return { type: 'utility', message: utilityAlert.value }
+  }
+  if (weekendSpendAlert.value) {
+    return { type: 'weekend', message: weekendAlertDesc.value }
+  }
+  return null
+})
 
 // Pattern configuration: color, dot color, and explanation based on financial health
 const getPatternConfig = (pattern) => {
@@ -729,7 +759,6 @@ const getPatternConfig = (pattern) => {
 }
 const goals = computed(() => summary.value?.goals ?? [])
 const goalAlignmentScore = computed(() => Math.round(summary.value?.goalAlignmentScore ?? 0))
-
 const pieChartSeries = computed(() => (topCategories.value || []).map(item => item.pct))
 const pieChartLabels = computed(() => (topCategories.value || []).map(item => item.cat))
 const pieChartOptions = computed(() => ({

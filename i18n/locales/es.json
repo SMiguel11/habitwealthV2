@@ -206,6 +206,7 @@
   "ins_pattern_label":      "Patrón Detectado",
   "ins_weekend_alert":      "Alerta de Gasto de Fin de Semana",
   "ins_weekend_alert_desc": "Se detectó mayor gasto los fines de semana. Establecer un presupuesto puede ayudar.",
+  "ins_utility_alert":      "Alerta de Precio de Servicio",
   "ins_urgency_high":       "Alta Prioridad",
   "ins_urgency_medium":     "Prioridad Media",
   "ins_urgency_low":        "Baja Prioridad",

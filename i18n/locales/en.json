@@ -206,6 +206,7 @@
   "ins_pattern_label":      "Detected Pattern",
   "ins_weekend_alert":      "Weekend Spending Alert",
   "ins_weekend_alert_desc": "Higher spending detected on weekends. Setting a weekend budget can help.",
+  "ins_utility_alert":      "Service Price Alert",
   "ins_urgency_high":       "High Priority",
   "ins_urgency_medium":     "Medium Priority",
   "ins_urgency_low":        "Low Priority",
