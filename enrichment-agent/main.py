@@ -730,7 +730,185 @@ def agent_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) 
     if ai_result and ai_result.get("actions"):
         return ai_result
     return _static_goal_optimization(doc, emotional, fsi, goals)
+
+
+# Agent 4c – Utility Anomaly Detector (NEW)
+# Detects price increases in fixed services (utilities, rent, subscriptions)
+# and identifies duplicate payments
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Target utility/fixed service categories
+UTILITY_CATEGORIES = {
+    "alquiler", "alquiler piso", "renta", "rent",
+    "endesa", "luz", "electricidad", "electricity",
+    "agua", "water", "gas", "gás",
+    "internet", "phone", "móvil", "telefonika", "vodafone",
+    "óptica", "opticalia", "vista", "eye care",
+    "clínica dental", "dentista", "dental", "dentist",
+    "seguro", "insurance", "sanitas", "axa"
+}
+
+def _normalize_category(category: str) -> str:
+    """Normalize category name for comparison."""
+    return str(category or "").strip().lower()
+
+def _is_utility_category(category: str) -> bool:
+    """Check if category is a utility/fixed service."""
+    normalized = _normalize_category(category)
+    return any(util in normalized for util in UTILITY_CATEGORIES)
+
+def _analyze_utility_trends(transactions: list[dict], monthly_summary: dict, threshold_pct: float = 1.0) -> dict:
+    """
+    Analyze price trends for utility categories across months.
+    Returns: {
+        "alertType": "price_increase" | "stable",
+        "category": category name,
+        "months": [{"month": "YYYY-MM", "amount": float}, ...],
+        "percentChange": float,
+        "alert": bool,
+        "message": str
+    }
+    """
+    alerts = []
     
+    # Aggregate utilities by category and month
+    utility_by_cat_month = {}
+    for t in transactions:
+        if t.get("amount", 0) >= 0:  # Skip income
+            continue
+        cat = _normalize_category(t.get("category", "Other"))
+        if not _is_utility_category(cat):
+            continue
+        
+        # Extract month from transaction date
+        date_str = t.get("date", "")
+        if not date_str:
+            continue
+        try:
+            month = date_str[:7]  # YYYY-MM format
+        except Exception:
+            continue
+        
+        if cat not in utility_by_cat_month:
+            utility_by_cat_month[cat] = {}
+        if month not in utility_by_cat_month[cat]:
+            utility_by_cat_month[cat][month] = 0.0
+        
+        utility_by_cat_month[cat][month] += abs(t.get("amount", 0))
+    
+    # Analyze trends per category
+    for cat, months_data in utility_by_cat_month.items():
+        sorted_months = sorted(months_data.items())
+        if len(sorted_months) < 2:
+            continue  # Need at least 2 months to compare
+        
+        # Get first and last month amounts
+        first_amount = sorted_months[0][1]
+        last_amount = sorted_months[-1][1]
+        
+        if first_amount <= 0:
+            continue
+        
+        pct_change = ((last_amount - first_amount) / first_amount) * 100
+        
+        if pct_change >= threshold_pct:
+            alerts.append({
+                "alertType": "price_increase",
+                "category": cat.title(),
+                "months": [{"month": m, "amount": round(a, 2)} for m, a in sorted_months],
+                "percentChange": round(pct_change, 2),
+                "alert": True,
+                "message": f"{cat.title()} increased {pct_change:.1f}% — review the contract or supplier.",
+                "severity": "high" if pct_change >= 5 else "medium"
+            })
+    
+    return alerts
+
+def _detect_duplicate_payments(transactions: list[dict]) -> list[dict]:
+    """
+    Detect duplicate or recurring identical payments.
+    Returns list of potential duplicates:
+    {
+        "merchant": str,
+        "amount": float,
+        "month": str,
+        "count": int,
+        "message": str,
+        "alert": bool,
+        "severity": str
+    }
+    """
+    duplicates = []
+    
+    # Group by (merchant, amount, month)
+    payment_groups = {}
+    for t in transactions:
+        if t.get("amount", 0) >= 0:  # Skip income
+            continue
+        
+        merchant = str(t.get("merchant", "")).lower().strip()
+        amount = abs(round(float(t.get("amount", 0)), 2))
+        date_str = t.get("date", "")
+        
+        if not date_str or amount <= 0:
+            continue
+        
+        month = date_str[:7]  # YYYY-MM
+        key = (merchant, amount, month)
+        
+        if key not in payment_groups:
+            payment_groups[key] = 0
+        payment_groups[key] += 1
+    
+    # Flag duplicates (count > 1)
+    for (merchant, amount, month), count in payment_groups.items():
+        if count > 1:
+            duplicates.append({
+                "merchant": merchant.title(),
+                "amount": amount,
+                "month": month,
+                "count": count,
+                "message": f"Found {count} identical payments of €{amount} from {merchant.title()} in {month}",
+                "alert": True,
+                "severity": "high" if count >= 3 else "medium"
+            })
+    
+    return duplicates
+
+def agent_utility_anomaly_detector(transactions: list[dict], monthly_summary: dict) -> dict:
+    """
+    Detects anomalies in utility/fixed service spending:
+    - Price increases >= +1%
+    - Duplicate/redundant payments
+    
+    Returns actionable alerts for the user.
+    """
+    price_alerts = _analyze_utility_trends(transactions, monthly_summary, threshold_pct=1.0)
+    duplicate_alerts = _detect_duplicate_payments(transactions)
+    
+    # Consolidate all alerts
+    all_alerts = price_alerts + duplicate_alerts
+    
+    # Prioritize by severity
+    critical_alerts = [a for a in all_alerts if a.get("severity") == "high"]
+    warning_alerts = [a for a in all_alerts if a.get("severity") == "medium"]
+    
+    # Build summary for frontend
+    summary_text = ""
+    if critical_alerts:
+        summary_text = critical_alerts[0]["message"]
+    elif warning_alerts:
+        summary_text = warning_alerts[0]["message"]
+    
+    return {
+        "agent": "UtilityAnomalyDetector",
+        "hasAlerts": bool(all_alerts),
+        "criticalAlerts": critical_alerts,
+        "warningAlerts": warning_alerts,
+        "allAlerts": all_alerts,
+        "summaryMessage": summary_text,
+        "totalAlertsFound": len(all_alerts),
+    }
 
 # Agent 5 – CBT Intervention Agent  (Azure OpenAI GPT-4o-mini + static fallback)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -763,6 +941,7 @@ def _ai_nudges(
     fsi_level: str,
     emotional_scores: dict,
     doc_summary: dict,
+    utility_alerts: dict | None = None,
 ) -> tuple[list[str], str]:
     """Generate 3 personalized CBT nudges via Azure OpenAI GPT-4o-mini.
 
@@ -792,6 +971,12 @@ def _ai_nudges(
             for k, v in sorted(emotional_scores.items(), key=lambda x: -x[1])
             if v > 0
         ) or "general spending"
+        
+        # Build utility alerts section
+        utility_alert_text = ""
+        if utility_alerts and utility_alerts.get("allAlerts"):
+            alert_msgs = [a.get("message", "") for a in utility_alerts.get("allAlerts", [])[:2]]
+            utility_alert_text = "\n- Service/utility alerts: " + "; ".join(alert_msgs)
 
         prompt = (
             f"You are a certified financial therapist specializing in Cognitive Behavioral "
@@ -800,7 +985,8 @@ def _ai_nudges(
             f"- Dominant emotional spending pattern: \"{dominant}\"\n"
             f"- Financial Stress Level: {fsi_level}\n"
             f"- Top emotional spending areas: {top_areas}\n"
-            f"- Net cash flow this month: €{doc_summary.get('netCashFlow', 0):.2f}\n\n"
+            f"- Net cash flow this month: €{doc_summary.get('netCashFlow', 0):.2f}"
+            f"{utility_alert_text}\n\n"
             f"Generate exactly 3 highly personalized, actionable CBT micro-interventions.\n"
             f"Rules:\n"
             f"- Each nudge: 1-2 sentences maximum.\n"
@@ -838,13 +1024,14 @@ def _ai_nudges(
     return CBT_NUDGES.get(dominant, CBT_NUDGES["none"]), "static"
 
 
-def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None) -> dict:
+def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None, anomalies: dict | None = None) -> dict:
     dominant = emotional["dominantPattern"]
     nudges_result, source = _ai_nudges(
         dominant=dominant,
         fsi_level=fsi["fsiLevel"],
         emotional_scores=emotional["emotionalSpendScores"],
         doc_summary=doc or {},
+        utility_alerts=anomalies or {},
     )
     # nudges_result is {"en": [...], "es": [...]} for GPT, or a plain list for static fallback
     if isinstance(nudges_result, dict):
@@ -868,6 +1055,7 @@ def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None) 
         "nudgeSource": source,
         "primaryPattern": dominant,
         "weekendSpendAlert": emotional["weekendSpend"] > 200,
+        "utilityAlert": anomalies.get("summaryMessage", "") if anomalies else "",
     }
 
 
@@ -1022,8 +1210,9 @@ def run_pipeline(request: EnrichRequest) -> dict:
     emotional = agent_emotional_pattern(txs, sv)
     fsi       = agent_financial_stress(doc, emotional)
     goal      = agent_goal_alignment(doc, gs)
-    optim     = agent_goal_optimization(doc, emotional, fsi, goal)  # NEW
-    cbt       = agent_cbt_intervention(emotional, fsi, doc)
+    optim     = agent_goal_optimization(doc, emotional, fsi, goal)
+    anomalies = agent_utility_anomaly_detector(txs, doc.get("monthlySummary", {}))  # NEW
+    cbt       = agent_cbt_intervention(emotional, fsi, doc, anomalies)
     twin      = agent_digital_twin(request.userId, doc, emotional, fsi, goal, cbt)
     cbt["scoreExplanation"] = _ai_score_explanation(twin["habitWealthScore"], doc, emotional, fsi)
 
@@ -1036,7 +1225,8 @@ def run_pipeline(request: EnrichRequest) -> dict:
             "emotionalPattern":     emotional,
             "financialStress":      fsi,
             "goalAlignment":        goal,
-            "goalOptimization":     optim,  # NEW
+            "goalOptimization":     optim,
+            "utilityAnomalyDetector": anomalies,  # NEW
             "cbtIntervention":      cbt,
             "digitalTwin":          twin,
         },
@@ -1047,6 +1237,8 @@ def run_pipeline(request: EnrichRequest) -> dict:
             "fsiLevel":         fsi["fsiLevel"],
             "topNudge":         cbt["nudges"][0] if cbt["nudges"] else "",
             "goalAlignmentScore": goal["overallAlignmentScore"],
+            "utilityAlert":      anomalies.get("summaryMessage", ""),
+            "hasUtilityAlerts":  anomalies.get("hasAlerts", False),
         },
     }
 
