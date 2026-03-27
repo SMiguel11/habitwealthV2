@@ -1024,14 +1024,13 @@ def _ai_nudges(
     return CBT_NUDGES.get(dominant, CBT_NUDGES["none"]), "static"
 
 
-def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None, anomalies: dict | None = None) -> dict:
+def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None) -> dict:
     dominant = emotional["dominantPattern"]
     nudges_result, source = _ai_nudges(
         dominant=dominant,
         fsi_level=fsi["fsiLevel"],
         emotional_scores=emotional["emotionalSpendScores"],
         doc_summary=doc or {},
-        utility_alerts=anomalies or {},
     )
     # nudges_result is {"en": [...], "es": [...]} for GPT, or a plain list for static fallback
     if isinstance(nudges_result, dict):
@@ -1055,7 +1054,6 @@ def agent_cbt_intervention(emotional: dict, fsi: dict, doc: dict | None = None, 
         "nudgeSource": source,
         "primaryPattern": dominant,
         "weekendSpendAlert": emotional["weekendSpend"] > 200,
-        "utilityAlert": anomalies.get("summaryMessage", "") if anomalies else "",
     }
 
 
@@ -1211,8 +1209,7 @@ def run_pipeline(request: EnrichRequest) -> dict:
     fsi       = agent_financial_stress(doc, emotional)
     goal      = agent_goal_alignment(doc, gs)
     optim     = agent_goal_optimization(doc, emotional, fsi, goal)
-    anomalies = agent_utility_anomaly_detector(txs, doc.get("monthlySummary", {}))  # NEW
-    cbt       = agent_cbt_intervention(emotional, fsi, doc, anomalies)
+    cbt       = agent_cbt_intervention(emotional, fsi, doc)
     twin      = agent_digital_twin(request.userId, doc, emotional, fsi, goal, cbt)
     cbt["scoreExplanation"] = _ai_score_explanation(twin["habitWealthScore"], doc, emotional, fsi)
 
@@ -1226,7 +1223,6 @@ def run_pipeline(request: EnrichRequest) -> dict:
             "financialStress":      fsi,
             "goalAlignment":        goal,
             "goalOptimization":     optim,
-            "utilityAnomalyDetector": anomalies,  # NEW
             "cbtIntervention":      cbt,
             "digitalTwin":          twin,
         },
@@ -1237,8 +1233,6 @@ def run_pipeline(request: EnrichRequest) -> dict:
             "fsiLevel":         fsi["fsiLevel"],
             "topNudge":         cbt["nudges"][0] if cbt["nudges"] else "",
             "goalAlignmentScore": goal["overallAlignmentScore"],
-            "utilityAlert":      anomalies.get("summaryMessage", ""),
-            "hasUtilityAlerts":  anomalies.get("hasAlerts", False),
         },
     }
 
