@@ -4,7 +4,7 @@
  * Uses Cosmos DB in production, falls back to /tmp JSON locally.
  */
 const { getDocuments } = require('../shared/cosmos-db')
-const https = require('https')
+const https = require('node:https')
 
 function getMonthlySavings(byCategory = {}, transactions = [], fullDoc = {}) {
   // Direct calculation: Income - Expenses
@@ -61,7 +61,7 @@ function buildGoalSummaries(rawGoals = [], goalAlignmentGoals = [], monthlySavin
         ...goal,
         currentSavings,
         monthlyNeeded,
-        progressPct: !Number.isNaN(progressPct) ? progressPct : undefined,
+        progressPct: Number.isNaN(progressPct) ? undefined : progressPct,
         onTrack: currentSavings >= monthlyNeeded,
         projectedMonths: goal?.projectedMonths ?? (currentSavings > 0 && monthlyNeeded > 0 ? Math.ceil(monthlyNeeded / currentSavings) : null),
       }
@@ -84,8 +84,8 @@ function deriveGoalAlignmentScore(_summaryScore, goalSummaries = []) {
 }
 
 function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], savingsMonthly = 0, fsiLevel = 'Medium') {
-  const rawActions = Array.isArray(goalOptimization?.actions) ? goalOptimization.actions : []
-  let actions = rawActions.filter(action => action && action.title)
+  const rawActions = Array.isArray(goalOptimization?.actions) ? goalOptimization?.actions : []
+  let actions = rawActions.filter(action => action?.title)
   const source = goalOptimization?.source || (actions.length ? 'agent' : 'api-fallback')
 
   // Backward-compatible fallback for older analyzed docs where goalOptimization may be empty.
@@ -391,9 +391,9 @@ async function generateGoalOptimization(summaryData) {
 
     const parsed = _extractJsonObject(raw)
     if (!parsed) return null
-    const parsedActions = Array.isArray(parsed?.actions) ? parsed.actions : []
+    const parsedActions = Array.isArray(parsed?.actions) ? parsed?.actions : []
     const actions = parsedActions
-      .filter(a => a && a.title)
+      .filter(a => a?.title)
       .slice(0, 4)
       .map(a => ({
         title: String(a.title),
