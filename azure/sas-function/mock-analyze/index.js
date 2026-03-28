@@ -237,8 +237,8 @@ function _parseRowTransaction(row, dateCol, descCol, catCol, amtCol) {
   const dateParts = dateRaw.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/)
   let date = dateRaw
   if (dateParts) {
-    const num1 = parseInt(dateParts[1])
-    const num2 = parseInt(dateParts[2])
+    const num1 = Number.parseInt(dateParts[1])
+    const num2 = Number.parseInt(dateParts[2])
     const year = dateParts[3]
     
     // Auto-detect format: if first number > 12, it's DD/MM/YYYY; otherwise assume DD/MM/YYYY (European default)
