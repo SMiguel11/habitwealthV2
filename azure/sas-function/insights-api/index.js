@@ -562,6 +562,71 @@ function _aggregateDocumentTransactionsByMonthAndCategory(doc) {
 }
 
 /**
+ * Detect repeated expenses in fixed service categories (Utilities, Subscriptions).
+ * Returns array of services with month-to-month increment analysis.
+ * @param {Object} transactionsByMonthAndCategory - Grouped transactions { category: [{ month, transactions }] }
+ * @returns {Array} Array of { merchant, category, baseAmount, currentAmount, incrementPercent, months, trend }
+ */
+function _detectRepeatedExpenses(transactionsByMonthAndCategory) {
+  const FIXED_CATEGORIES = ['Utilities', 'Subscriptions'] // Only track fixed services
+  const repeatedExpenses = new Map() // Key: "Merchant|Category", Value: { months, amounts }
+
+  // Scan for same merchant appearing in multiple months within fixed categories
+  for (const [category, monthsArray] of Object.entries(transactionsByMonthAndCategory)) {
+    if (!FIXED_CATEGORIES.includes(category)) continue
+
+    // Track merchant occurrences across months
+    const merchantsByMonth = {} // { merchant: { 1: [amount1], 2: [amount1, amount2], ... } }
+
+    for (const { month, transactions } of monthsArray) {
+      for (const { merchant, amount } of transactions) {
+        if (!merchantsByMonth[merchant]) merchantsByMonth[merchant] = {}
+        if (!merchantsByMonth[merchant][month]) merchantsByMonth[merchant][month] = []
+        merchantsByMonth[merchant][month].push(amount)
+      }
+    }
+
+    // Analyze each merchant for repetition and increases
+    for (const [merchant, monthData] of Object.entries(merchantsByMonth)) {
+      const months = Object.keys(monthData).map(Number).sort((a, b) => a - b)
+      
+      // Only flag if appears in 2+ months
+      if (months.length < 2) continue
+
+      // Get average amount per month (handle multiple txs same merchant same month)
+      const monthlyAverages = {}
+      for (const month of months) {
+        const amounts = monthData[month]
+        monthlyAverages[month] = Math.round((amounts.reduce((s, v) => s + v, 0) / amounts.length) * 100) / 100
+      }
+
+      // Check for any increase from base (first occurrence) to current (last)
+      const baseAmount = monthlyAverages[months[0]]
+      const currentAmount = monthlyAverages[months[months.length - 1]]
+      const incrementPercent = Math.round(((currentAmount - baseAmount) / baseAmount) * 100 * 10) / 10
+
+      // Flag if increment > 0 (any increase, even tiny like 1%)
+      if (incrementPercent > 0) {
+        const key = `${merchant}|${category}`
+        repeatedExpenses.set(key, {
+          merchant,
+          category,
+          baseAmount,
+          currentAmount,
+          incrementPercent,
+          months: months.map(m => ({ month: m, amount: monthlyAverages[m] })),
+          trend: incrementPercent > 0 ? '↑' : '→'
+        })
+      }
+    }
+  }
+
+  // Convert Map to sorted array (sort by incrementPercent descending)
+  return Array.from(repeatedExpenses.values())
+    .sort((a, b) => b.incrementPercent - a.incrementPercent)
+}
+
+/**
  * Accumulate category data across analysis documents (3-doc window).
  */
 function _buildMonthlySummary(analysisDocs) {
@@ -699,6 +764,10 @@ module.exports = async function (context, req) {
     const totalTxs = monthData.reduce((sum, m) => sum + (m.transactions?.length || 0), 0)
     context.log(`[insights-api] Category "${cat}": ${monthData.length} months, ${totalTxs} total transactions`)
   }
+
+  // Detect repeated expenses with increments in fixed service categories
+  const repeatedExpenses = _detectRepeatedExpenses(transactionsByMonthAndCategory)
+  context.log(`[insights-api] Repeated expenses detected: ${repeatedExpenses.length}`, repeatedExpenses)
   
   // Build monthlySummary from transactions (dynamic fallback if documentIntelligence not in agentResult)
   let monthlySummaryBuilt = _buildMonthlySummary(analysisDocs)
@@ -845,6 +914,7 @@ module.exports = async function (context, req) {
         trendScores,
         goals: goalSummaries,
         optimization: optimizationSummary,  // NEW: Goal optimization recommendations
+        repeatedExpenses,  // NEW: Detected services with price increases
         // Include documentIntelligence with monthlySummary for frontend (built from transactions)
         documentIntelligence: {
           monthlySummary: monthlySummaryBuilt,
@@ -853,7 +923,8 @@ module.exports = async function (context, req) {
           totalExpenses: totalExpensesAll,
           netCashFlow: netCashFlowAll,
           byCategory: byCategory,
-          topMerchants: latestDoc.agentResult?.agents?.documentIntelligence?.topMerchants || []
+          topMerchants: latestDoc.agentResult?.agents?.documentIntelligence?.topMerchants || [],
+          repeatedExpenses  // Include repeated expenses in documentIntelligence as well
         },
         agents: {
           documentIntelligence: latestDoc.agentResult?.agents?.documentIntelligence || {
@@ -863,7 +934,8 @@ module.exports = async function (context, req) {
             totalExpenses: totalExpensesAll,
             netCashFlow: netCashFlowAll,
             byCategory: byCategory,
-            topMerchants: []
+            topMerchants: [],
+            repeatedExpenses  // Include repeated expenses here too
           }
         }
       },

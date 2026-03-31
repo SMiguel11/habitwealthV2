@@ -306,6 +306,82 @@
             </div>
           </div>
 
+          <!-- Repeated Expenses with Increases (NEW) -->
+          <div v-if="repeatedExpenses.length > 0" class="relative rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/[0.05] to-amber-500/[0.01] p-6">
+            <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
+            
+            <div class="mb-5">
+              <h2 class="text-sm font-bold text-white mb-1">🔍 {{ t('ins_repeated_expenses_title') || 'Services with Price Increases' }}</h2>
+              <p class="text-xs text-slate-600">{{ t('ins_repeated_expenses_desc') || 'Fixed service costs that have increased' }}</p>
+            </div>
+
+            <div class="space-y-2 max-h-[400px] overflow-y-auto">
+              <div v-for="(expense, idx) in repeatedExpenses" :key="idx"
+                class="rounded-lg border p-3.5 transition-all hover:border-amber-500/40 hover:bg-amber-500/[0.08]"
+                :class="expense.incrementPercent > 10 
+                  ? 'bg-red-500/[0.05] border-red-500/20' 
+                  : 'bg-amber-500/[0.05] border-amber-500/20'">
+                
+                <!-- Header: Merchant + Trend -->
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-white truncate">{{ expense.merchant }}</p>
+                    <p class="text-xs text-slate-600">{{ expense.category }}</p>
+                  </div>
+                  <span :class="[
+                    'text-lg font-bold shrink-0',
+                    expense.incrementPercent > 0 ? 'text-red-400' : 'text-slate-400'
+                  ]">{{ expense.trend }}</span>
+                </div>
+
+                <!-- Amount and Increment -->
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                  <div class="rounded-lg bg-white/[0.02] border border-white/[0.03] p-2">
+                    <p class="text-[10px] text-slate-600 mb-0.5">{{ t('ins_base_amount') || 'Base' }}</p>
+                    <p class="text-sm font-bold text-white">€{{ (expense.baseAmount || 0).toFixed(2) }}</p>
+                  </div>
+                  <div class="rounded-lg bg-white/[0.02] border border-white/[0.03] p-2">
+                    <p class="text-[10px] text-slate-600 mb-0.5">{{ t('ins_current_amount') || 'Current' }}</p>
+                    <p class="text-sm font-bold text-white">€{{ (expense.currentAmount || 0).toFixed(2) }}</p>
+                  </div>
+                  <div :class="[
+                    'rounded-lg border p-2',
+                    expense.incrementPercent > 10 
+                      ? 'bg-red-500/15 border-red-500/30' 
+                      : 'bg-amber-500/15 border-amber-500/30'
+                  ]">
+                    <p class="text-[10px] font-semibold mb-0.5"
+                      :class="expense.incrementPercent > 10 ? 'text-red-400' : 'text-amber-400'">
+                      {{ t('ins_increase') || 'Increase' }}
+                    </p>
+                    <p class="text-sm font-bold"
+                      :class="expense.incrementPercent > 10 ? 'text-red-400' : 'text-amber-400'">
+                      +{{ expense.incrementPercent.toFixed(1) }}%
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Monthly Timeline -->
+                <div class="flex items-end gap-1 pt-2 border-t border-white/[0.05]">
+                  <p class="text-[10px] text-slate-600 w-12 shrink-0">{{ t('ins_months') || 'Months' }}</p>
+                  <div class="flex-1 flex gap-1 items-end">
+                    <div v-for="(month, mIdx) in expense.months" :key="mIdx"
+                      class="flex-1 flex flex-col items-center gap-1"
+                      :class="mIdx === expense.months.length - 1 ? 'opacity-100' : 'opacity-60'">
+                      <div class="w-full flex justify-center text-[9px] text-slate-600 font-medium">€{{ month.amount.toFixed(0) }}</div>
+                      <div class="w-full rounded-sm h-8 bg-gradient-to-t"
+                        :class="expense.incrementPercent > 0 
+                          ? 'from-red-500/40 to-red-500/20' 
+                          : 'from-amber-500/40 to-amber-500/20'"
+                        :style="{ minHeight: Math.max(8, (month.amount / Math.max(...expense.months.map(m => m.amount)) * 24)) + 'px' }"></div>
+                      <div class="text-[9px] text-slate-700 font-medium">M{{ month.month }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- AI Action Plan (Goal Optimization) NEW -->
           <div v-if="optimizationActions.length > 0" class="relative rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.05] to-emerald-500/[0.01] p-6">
             <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
@@ -895,6 +971,12 @@ const optimizationActions = computed(() => {
 
 const optimizationGoals = computed(() => {
   return summary.value?.optimization?.optimizedGoals || []
+})
+
+// Repeated expenses with price increases (NEW)
+const repeatedExpenses = computed(() => {
+  const repeated = summary.value?.repeatedExpenses || summary.value?.documentIntelligence?.repeatedExpenses || []
+  return Array.isArray(repeated) ? repeated : []
 })
 
 const getTopTransactions = (categoryName, monthName) => {
