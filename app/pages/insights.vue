@@ -374,7 +374,7 @@
                           ? 'from-red-500/40 to-red-500/20' 
                           : 'from-amber-500/40 to-amber-500/20'"
                         :style="{ minHeight: Math.max(8, (month.amount / Math.max(...expense.months.map(m => m.amount)) * 24)) + 'px' }"></div>
-                      <div class="text-[9px] text-slate-700 font-medium">M{{ month.month }}</div>
+                      <div class="text-[9px] text-slate-700 font-medium">{{ getMonthName(month.month, locale === 'es') }}</div>
                     </div>
                   </div>
                 </div>
@@ -978,6 +978,14 @@ const repeatedExpenses = computed(() => {
   const repeated = summary.value?.repeatedExpenses || summary.value?.documentIntelligence?.repeatedExpenses || []
   return Array.isArray(repeated) ? repeated : []
 })
+
+// Convert month number to name
+const getMonthName = (monthNum, isSpanish = false) => {
+  const namesES = ['', 'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
+  const namesEN = ['', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+  const names = isSpanish ? namesES : namesEN
+  return names[monthNum] || `M${monthNum}`
+}
 
 const getTopTransactions = (categoryName, monthName) => {
   const transactionsByMonth = summary.value?.transactionsByMonthAndCategory?.[categoryName] || []
