@@ -521,7 +521,7 @@ function _aggregateDocumentTransactions(doc) {
   }
   
   for (const [cat, txs] of Object.entries(byCategory)) {
-    byCategory[cat] = txs.sort((a, b) => b.amount - a.amount).slice(0, 5)
+    byCategory[cat] = txs.sort((a, b) => b.amount - a.amount).slice(0, 20)
   }
   return byCategory
 }
@@ -551,10 +551,10 @@ function _aggregateDocumentTransactionsByMonthAndCategory(doc) {
     result[cat][monthNum].push(processed)
   }
   
-  // Sort and keep top 5 per category-month
+  // Sort and keep top 20 per category-month to capture all meaningful recurring services
   for (const [cat, months] of Object.entries(result)) {
     for (const [monthNum, txs] of Object.entries(months)) {
-      result[cat][monthNum] = txs.sort((a, b) => b.amount - a.amount).slice(0, 5)
+      result[cat][monthNum] = txs.sort((a, b) => b.amount - a.amount).slice(0, 20)
     }
   }
   
@@ -691,7 +691,7 @@ function _accumulateCategoryData(analysisDocs) {
           // Merge with existing
           existing.transactions = [...existing.transactions, ...txs]
             .sort((a, b) => b.amount - a.amount)
-            .slice(0, 5)
+            .slice(0, 20)
         } else {
           // Add new month entry
           transactionsByMonthAndCategory[cat].push({ 
