@@ -562,17 +562,20 @@ function _aggregateDocumentTransactionsByMonthAndCategory(doc) {
 }
 
 /**
- * Detect repeated expenses with price increases across ALL categories.
+ * Detect repeated expenses with price increases in key service categories.
  * Returns array of services that appear in 2+ months and show price increases.
- * Any merchant appearing in multiple months with >1% increment is flagged.
+ * Only tracks meaningful recurring costs: Utilities, Subscriptions, Housing, Entertainment, Transport.
  * @param {Object} transactionsByMonthAndCategory - Grouped transactions { category: [{ month, transactions }] }
  * @returns {Array} Array of { merchant, category, baseAmount, currentAmount, incrementPercent, months, trend }
  */
 function _detectRepeatedExpenses(transactionsByMonthAndCategory) {
+  const TRACKED_CATEGORIES = ['Utilities', 'Subscriptions', 'Housing', 'Insurance', 'Transport', 'Entertainment']
   const repeatedExpenses = new Map() // Key: "Merchant|Category", Value: { months, amounts }
 
-  // Scan for same merchant appearing in multiple months ACROSS ALL CATEGORIES
+  // Scan for same merchant appearing in multiple months in tracked categories
   for (const [category, monthsArray] of Object.entries(transactionsByMonthAndCategory)) {
+    if (!TRACKED_CATEGORIES.includes(category)) continue
+
     // Track merchant occurrences across months
     const merchantsByMonth = {} // { merchant: { 1: [amount1], 2: [amount1, amount2], ... } }
 
@@ -603,7 +606,7 @@ function _detectRepeatedExpenses(transactionsByMonthAndCategory) {
       const currentAmount = monthlyAverages[months[months.length - 1]]
       const incrementPercent = Math.round(((currentAmount - baseAmount) / baseAmount) * 100 * 10) / 10
 
-      // Flag if increment > 1% (detect even small increases in any merchant/category)
+      // Flag if increment > 1% (detect even small increases)
       if (incrementPercent > 1) {
         const key = `${merchant}|${category}`
         repeatedExpenses.set(key, {
