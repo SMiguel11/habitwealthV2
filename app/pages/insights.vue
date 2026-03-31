@@ -966,7 +966,13 @@ const pieChartOptions = computed(() => ({
 
 // Goal Optimization (AI Action Plan)
 const optimizationActions = computed(() => {
-  return summary.value?.optimization?.actions || []
+  const actions = summary.value?.optimization?.actions || []
+  // Handle bilingual format {"en": [...], "es": [...]}
+  if (actions?.en && actions?.es) {
+    return locale.value === 'es' ? actions.es : actions.en
+  }
+  // Legacy format - single array
+  return Array.isArray(actions) ? actions : []
 })
 
 const optimizationGoals = computed(() => {

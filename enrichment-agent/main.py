@@ -545,11 +545,22 @@ def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) ->
         if not parsed:
             return None
 
-        normalized_actions = _extract_and_normalize_actions(parsed)
-        if not normalized_actions:
+        normalized_actions_result = _extract_and_normalize_actions(parsed)
+        
+        # Handle bilingual (dict with "en" and "es") or legacy (list) format
+        if isinstance(normalized_actions_result, dict):
+            # Bilingual format
+            actions_for_savings = normalized_actions_result.get("en", []) if normalized_actions_result else []
+            actions = normalized_actions_result  # Keep full bilingual structure
+        else:
+            # Legacy format
+            actions_for_savings = normalized_actions_result if isinstance(normalized_actions_result, list) else []
+            actions = actions_for_savings
+
+        if not actions_for_savings:
             return None
 
-        total_potential_savings = _calculate_action_savings(parsed, normalized_actions)
+        total_potential_savings = _calculate_action_savings(parsed, actions_for_savings)
         current_monthly_savings = round(float(parsed.get("currentMonthlySavings") or current_savings), 2)
         optimized_monthly_savings = round(float(parsed.get("optimizedMonthlySavings") or (current_monthly_savings + total_potential_savings)), 2)
 
@@ -558,7 +569,7 @@ def _ai_goal_optimization(doc: dict, emotional: dict, fsi: dict, goals: dict) ->
         return {
             "agent": "GoalOptimization",
             "source": deployment,
-            "actions": normalized_actions,
+            "actions": actions,
             "totalPotentialSavings": total_potential_savings,
             "currentMonthlySavings": current_monthly_savings,
             "optimizedMonthlySavings": optimized_monthly_savings,
@@ -594,20 +605,22 @@ def _build_optimization_payload(doc: dict, emotional: dict, fsi: dict, goals: di
 
 
 def _build_optimization_prompt(payload: dict) -> str:
-    """Build the optimization prompt for Azure OpenAI."""
+    """Build the optimization prompt for Azure OpenAI, with bilingual (EN/ES) support."""
     return (
         "You are a financial optimization advisor. Analyze the user data and produce an actionable plan to achieve goals faster. "
         "Prioritize realistic, behavior-aware actions from both transactions and behavioral survey signals. "
-        "Return ONLY valid JSON with this schema: "
+        "Return ONLY valid JSON with bilingual structure (English and Spanish). Schema:\n"
         "{"
-        "\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Low\"|\"Medium\"|\"High\", \"implementation\": str}],"
-        "\"totalPotentialSavings\": number,"
-        "\"currentMonthlySavings\": number,"
-        "\"optimizedMonthlySavings\": number,"
-        "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]"
+        "\"en\": {\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Low\"|\"Medium\"|\"High\", \"implementation\": str}], "
+        "\"totalPotentialSavings\": number, \"currentMonthlySavings\": number, \"optimizedMonthlySavings\": number, "
+        "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]}, "
+        "\"es\": {\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Baja\"|\"Media\"|\"Alta\", \"implementation\": str}], "
+        "\"totalPotentialSavings\": number, \"currentMonthlySavings\": number, \"optimizedMonthlySavings\": number, "
+        "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]}"
         "}. "
-        "Rules: 1) max 4 actions, sorted by impact. 2) potentialSavings must be monthly EUR values. "
-        "3) If data quality is limited, still return at least 1 safe action. 4) Do not add markdown or explanation outside JSON.\n\n"
+        "Rules: 1) max 4 actions per language, sorted by impact. 2) potentialSavings must be monthly EUR values. "
+        "3) effort levels in English (Low/Medium/High) and Spanish (Baja/Media/Alta). "
+        "4) If data quality is limited, still return at least 1 safe action per language. 5) Do not add markdown or explanation outside JSON.\n\n"
         f"UserData:\n{json.dumps(payload, ensure_ascii=True)}"
     )
 
@@ -657,8 +670,29 @@ def _normalize_action(action: dict) -> dict | None:
     }
 
 
-def _extract_and_normalize_actions(parsed: dict) -> list[dict]:
-    """Extract, normalize, and validate actions from parsed response."""
+def _extract_and_normalize_actions(parsed: dict) -> dict | list[dict]:
+    """Extract, normalize, and validate actions from parsed response.
+    Handles both bilingual format ({"en": {...}, "es": {...}}) and legacy format ({"actions": [...]}).
+    Returns: dict with "en" and "es" keys for bilingual, or list for legacy."""
+    
+    # Check for bilingual format (new)
+    if isinstance(parsed, dict) and "en" in parsed and "es" in parsed:
+        result = {}
+        for lang in ["en", "es"]:
+            lang_data = parsed.get(lang, {})
+            actions = lang_data.get("actions", []) if isinstance(lang_data, dict) else []
+            if not isinstance(actions, list):
+                actions = []
+            
+            normalized = []
+            for action in actions[:4]:
+                normalized_action = _normalize_action(action)
+                if normalized_action:
+                    normalized.append(normalized_action)
+            result[lang] = normalized
+        return result
+    
+    # Legacy format (old)
     actions = parsed.get("actions", []) if isinstance(parsed, dict) else []
     if not isinstance(actions, list) or len(actions) == 0:
         return []

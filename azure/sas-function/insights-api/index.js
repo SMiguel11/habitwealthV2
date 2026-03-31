@@ -374,11 +374,10 @@ async function generateGoalOptimization(summaryData) {
   }
 
   const prompt =
-    'You are a financial optimization advisor. Return ONLY valid JSON. ' +
+    'You are a financial optimization advisor. Return ONLY valid JSON with bilingual structure (English and Spanish). ' +
     'Build an actionable monthly plan to achieve the goals faster using user spending and behavior context. ' +
-    'Schema: ' +
-    '{"actions":[{"title":string,"description":string,"category":string,"potentialSavings":number,"effort":"Low"|"Medium"|"High","implementation":string}],"totalPotentialSavings":number,"currentMonthlySavings":number,"optimizedMonthlySavings":number,"optimizedGoals":[{"goal":string,"currentProjected":number|null,"optimizedProjected":number|null,"timeSaved":number}]} ' +
-    'Rules: max 4 actions, realistic monthly EUR savings, never worsen goal timeline (optimizedProjected <= currentProjected), at least 1 action.\n\n' +
+    'Schema: {"en": {"actions":[{"title":string,"description":string,"category":string,"potentialSavings":number,"effort":"Low"|"Medium"|"High","implementation":string}],"totalPotentialSavings":number,"currentMonthlySavings":number,"optimizedMonthlySavings":number,"optimizedGoals":[{"goal":string,"currentProjected":number|null,"optimizedProjected":number|null,"timeSaved":number}]}, "es": {"actions":[{"title":string,"description":string,"category":string,"potentialSavings":number,"effort":"Baja"|"Media"|"Alta","implementation":string}],"totalPotentialSavings":number,"currentMonthlySavings":number,"optimizedMonthlySavings":number,"optimizedGoals":[{"goal":string,"currentProjected":number|null,"optimizedProjected":number|null,"timeSaved":number}]}} ' +
+    'Rules: max 4 actions per language, realistic monthly EUR savings, never worsen goal timeline (optimizedProjected <= currentProjected), at least 1 action per language. Use "Baja", "Media", "Alta" for Spanish effort levels.\n\n' +
     `UserData:\n${JSON.stringify(payload)}`
 
   try {
@@ -391,31 +390,79 @@ async function generateGoalOptimization(summaryData) {
 
     const parsed = _extractJsonObject(raw)
     if (!parsed) return null
-    const parsedActions = Array.isArray(parsed?.actions) ? parsed?.actions : []
-    const actions = parsedActions
-      .filter(a => a?.title)
-      .slice(0, 4)
-      .map(a => ({
-        title: String(a.title),
-        description: String(a.description || ''),
-        category: String(a.category || 'Planning'),
-        potentialSavings: Math.round(Math.max(0, Number(a.potentialSavings) || 0) * 100) / 100,
-        effort: String(a.effort || 'Medium'),
-        implementation: String(a.implementation || 'Apply this action for 30 days and review results.'),
-      }))
+    
+    // Handle bilingual format {"en": {...}, "es": {...}}
+    let actions
+    let totalPotentialSavings, optimizedGoals
+    let current = Math.round((Number(parsed?.currentMonthlySavings) || Number(currentMonthlySavings) || 0) * 100) / 100
+    let optimized = 0
+    
+    if (parsed?.en && parsed?.es) {
+      // Bilingual format - extract from English for reference, but keep structure
+      const enData = parsed.en || {}
+      const parsedActions = Array.isArray(enData?.actions) ? enData?.actions : []
+      
+      actions = {
+        en: parsedActions
+          .filter(a => a?.title)
+          .slice(0, 4)
+          .map(a => ({
+            title: String(a.title),
+            description: String(a.description || ''),
+            category: String(a.category || 'Planning'),
+            potentialSavings: Math.round(Math.max(0, Number(a.potentialSavings) || 0) * 100) / 100,
+            effort: String(a.effort || 'Medium'),
+            implementation: String(a.implementation || 'Apply this action for 30 days and review results.'),
+          })),
+        es: (Array.isArray(parsed.es?.actions) ? parsed.es.actions : [])
+          .filter(a => a?.title)
+          .slice(0, 4)
+          .map(a => ({
+            title: String(a.title),
+            description: String(a.description || ''),
+            category: String(a.category || 'Planificación'),
+            potentialSavings: Math.round(Math.max(0, Number(a.potentialSavings) || 0) * 100) / 100,
+            effort: String(a.effort || 'Media'),
+            implementation: String(a.implementation || 'Aplica esta acción durante 30 días y revisa los resultados.'),
+          }))
+      }
+      
+      if (!actions.en?.length && !actions.es?.length) return null
+      
+      totalPotentialSavings = Math.round(
+        ((Number(enData?.totalPotentialSavings) > 0
+          ? Number(enData.totalPotentialSavings)
+          : actions.en.reduce((sum, action) => sum + (Number(action?.potentialSavings) || 0), 0)) * 100)
+      ) / 100
+      optimized = Math.round((Number(enData?.optimizedMonthlySavings) || (current + totalPotentialSavings)) * 100) / 100
+      
+      optimizedGoals = Array.isArray(enData?.optimizedGoals) ? enData.optimizedGoals : []
+    } else {
+      // Legacy format
+      const parsedActions = Array.isArray(parsed?.actions) ? parsed?.actions : []
+      actions = parsedActions
+        .filter(a => a?.title)
+        .slice(0, 4)
+        .map(a => ({
+          title: String(a.title),
+          description: String(a.description || ''),
+          category: String(a.category || 'Planning'),
+          potentialSavings: Math.round(Math.max(0, Number(a.potentialSavings) || 0) * 100) / 100,
+          effort: String(a.effort || 'Medium'),
+          implementation: String(a.implementation || 'Apply this action for 30 days and review results.'),
+        }))
 
-    if (!actions.length) return null
+      if (!actions.length) return null
 
-    const totalPotentialSavings = Math.round(
-      ((Number(parsed?.totalPotentialSavings) > 0
-        ? Number(parsed.totalPotentialSavings)
-        : actions.reduce((sum, action) => sum + (Number(action?.potentialSavings) || 0), 0)) * 100)
-    ) / 100
-
-    const current = Math.round((Number(parsed?.currentMonthlySavings) || Number(currentMonthlySavings) || 0) * 100) / 100
-    const optimized = Math.round((Number(parsed?.optimizedMonthlySavings) || (current + totalPotentialSavings)) * 100) / 100
-
-    let optimizedGoals = Array.isArray(parsed?.optimizedGoals) ? parsed.optimizedGoals : []
+      totalPotentialSavings = Math.round(
+        ((Number(parsed?.totalPotentialSavings) > 0
+          ? Number(parsed.totalPotentialSavings)
+          : actions.reduce((sum, action) => sum + (Number(action?.potentialSavings) || 0), 0)) * 100)
+      ) / 100
+      optimized = Math.round((Number(parsed?.optimizedMonthlySavings) || (current + totalPotentialSavings)) * 100) / 100
+      
+      optimizedGoals = Array.isArray(parsed?.optimizedGoals) ? parsed.optimizedGoals : []
+    }
     if (!optimizedGoals.length && Array.isArray(goals) && goals.length) {
       optimizedGoals = goals.map(goal => {
         const currentProjected = Number(goal?.projectedMonths)
