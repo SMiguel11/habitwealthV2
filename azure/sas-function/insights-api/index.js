@@ -589,7 +589,18 @@ function _detectRepeatedExpenses(transactionsByMonthAndCategory) {
 
     // Analyze each merchant for repetition and increases
     for (const [merchant, monthData] of Object.entries(merchantsByMonth)) {
-      const months = Object.keys(monthData).map(Number).sort((a, b) => a - b)
+      let months = Object.keys(monthData).map(Number).sort((a, b) => a - b)
+      
+      // Handle year boundary: if min month ≤ 3 and max month ≥ 10, reorder chronologically
+      // E.g., [1,2,12] should become [12,1,2] to calculate increase correctly
+      if (months.length > 1) {
+        const minMonth = months[0]
+        const maxMonth = months[months.length - 1]
+        if (minMonth <= 3 && maxMonth >= 10) {
+          // Reorder: months ≥ 10 (previous year) come first
+          months = months.filter(m => m >= 10).concat(months.filter(m => m < 10))
+        }
+      }
       
       // Debug log for Endesa
       if (merchant.toLowerCase().includes('endesa') || merchant.toLowerCase().includes('luz')) {
