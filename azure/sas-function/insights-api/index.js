@@ -591,6 +591,14 @@ function _detectRepeatedExpenses(transactionsByMonthAndCategory) {
     for (const [merchant, monthData] of Object.entries(merchantsByMonth)) {
       const months = Object.keys(monthData).map(Number).sort((a, b) => a - b)
       
+      // Debug log for Endesa
+      if (merchant.toLowerCase().includes('endesa') || merchant.toLowerCase().includes('luz')) {
+        console.log(`[_detectRepeatedExpenses] Found Endesa: merchant="${merchant}", category="${category}", months=${months}`)
+        for (const m of months) {
+          console.log(`  Month ${m}: ${monthData[m].map(a => a.toFixed(2)).join(', ')}`)
+        }
+      }
+      
       // Only flag if appears in 2+ months
       if (months.length < 2) continue
 
