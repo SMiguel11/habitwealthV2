@@ -374,10 +374,33 @@ async function generateGoalOptimization(summaryData) {
   }
 
   const prompt =
-    'You are a financial optimization advisor. Return ONLY valid JSON with bilingual structure (English and Spanish). ' +
-    'Build an actionable monthly plan to achieve the goals faster using user spending and behavior context. ' +
-    'Schema: {"en": {"actions":[{"title":string,"description":string,"category":string,"potentialSavings":number,"effort":"Low"|"Medium"|"High","implementation":string}],"totalPotentialSavings":number,"currentMonthlySavings":number,"optimizedMonthlySavings":number,"optimizedGoals":[{"goal":string,"currentProjected":number|null,"optimizedProjected":number|null,"timeSaved":number}]}, "es": {"actions":[{"title":string,"description":string,"category":string,"potentialSavings":number,"effort":"Baja"|"Media"|"Alta","implementation":string}],"totalPotentialSavings":number,"currentMonthlySavings":number,"optimizedMonthlySavings":number,"optimizedGoals":[{"goal":string,"currentProjected":number|null,"optimizedProjected":number|null,"timeSaved":number}]}} ' +
-    'Rules: max 4 actions per language, realistic monthly EUR savings, never worsen goal timeline (optimizedProjected <= currentProjected), at least 1 action per language. Use "Baja", "Media", "Alta" for Spanish effort levels.\n\n' +
+    'You are a financial optimization advisor. CRITICAL REQUIREMENT: You MUST generate actions in BOTH English AND Spanish.\n\n' +
+    'Analyze the user financial data and create an actionable optimization plan.\n\n' +
+    'YOUR RESPONSE MUST BE VALID JSON with this EXACT structure:\n' +
+    '{\n' +
+    '  "en": {\n' +
+    '    "actions": [{"title": "...", "description": "...", "category": "...", "potentialSavings": number, "effort": "Low"|"Medium"|"High", "implementation": "..."}],\n' +
+    '    "totalPotentialSavings": number,\n' +
+    '    "currentMonthlySavings": number,\n' +
+    '    "optimizedMonthlySavings": number,\n' +
+    '    "optimizedGoals": [{"goal": "...", "currentProjected": number, "optimizedProjected": number, "timeSaved": number}]\n' +
+    '  },\n' +
+    '  "es": {\n' +
+    '    "actions": [{"title": "...", "description": "...", "category": "...", "potentialSavings": number, "effort": "Baja"|"Media"|"Alta", "implementation": "..."}],\n' +
+    '    "totalPotentialSavings": number,\n' +
+    '    "currentMonthlySavings": number,\n' +
+    '    "optimizedMonthlySavings": number,\n' +
+    '    "optimizedGoals": [{"goal": "...", "currentProjected": number, "optimizedProjected": number, "timeSaved": number}]\n' +
+    '  }\n' +
+    '}\n\n' +
+    'MANDATORY RULES:\n' +
+    '1. BOTH "en" and "es" keys MUST exist in the response\n' +
+    '2. Generate 4 actions max per language, sorted by savings impact\n' +
+    '3. Each action in Spanish is a natural translation, NOT a literal word-for-word translation\n' +
+    '4. potentialSavings = monthly EUR amount\n' +
+    '5. Effort in English: Low/Medium/High. Effort in Spanish: Baja/Media/Alta\n' +
+    '6. Never add markdown, code blocks, or explanations outside JSON\n' +
+    '7. Return ONLY the JSON object, no preamble or postamble\n\n' +
     `UserData:\n${JSON.stringify(payload)}`
 
   try {

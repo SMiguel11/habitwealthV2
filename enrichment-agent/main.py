@@ -605,22 +605,35 @@ def _build_optimization_payload(doc: dict, emotional: dict, fsi: dict, goals: di
 
 
 def _build_optimization_prompt(payload: dict) -> str:
-    """Build the optimization prompt for Azure OpenAI, with bilingual (EN/ES) support."""
+    """Build the optimization prompt for Azure OpenAI with EXPLICIT bilingual requirement."""
     return (
-        "You are a financial optimization advisor. Analyze the user data and produce an actionable plan to achieve goals faster. "
-        "Prioritize realistic, behavior-aware actions from both transactions and behavioral survey signals. "
-        "Return ONLY valid JSON with bilingual structure (English and Spanish). Schema:\n"
-        "{"
-        "\"en\": {\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Low\"|\"Medium\"|\"High\", \"implementation\": str}], "
-        "\"totalPotentialSavings\": number, \"currentMonthlySavings\": number, \"optimizedMonthlySavings\": number, "
-        "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]}, "
-        "\"es\": {\"actions\": [{\"title\": str, \"description\": str, \"category\": str, \"potentialSavings\": number, \"effort\": \"Baja\"|\"Media\"|\"Alta\", \"implementation\": str}], "
-        "\"totalPotentialSavings\": number, \"currentMonthlySavings\": number, \"optimizedMonthlySavings\": number, "
-        "\"optimizedGoals\": [{\"goal\": str, \"currentProjected\": number|null, \"optimizedProjected\": number|null, \"timeSaved\": number}]}"
-        "}. "
-        "Rules: 1) max 4 actions per language, sorted by impact. 2) potentialSavings must be monthly EUR values. "
-        "3) effort levels in English (Low/Medium/High) and Spanish (Baja/Media/Alta). "
-        "4) If data quality is limited, still return at least 1 safe action per language. 5) Do not add markdown or explanation outside JSON.\n\n"
+        "You are a financial optimization advisor. CRITICAL REQUIREMENT: You MUST generate actions in BOTH English AND Spanish.\n\n"
+        "Analyze the user financial data and create an actionable optimization plan.\n\n"
+        "YOUR RESPONSE MUST BE VALID JSON with this EXACT structure:\n"
+        "{\n"
+        '  "en": {\n'
+        '    "actions": [{"title": "...", "description": "...", "category": "...", "potentialSavings": number, "effort": "Low"|"Medium"|"High", "implementation": "..."}],\n'
+        '    "totalPotentialSavings": number,\n'
+        '    "currentMonthlySavings": number,\n'
+        '    "optimizedMonthlySavings": number,\n'
+        '    "optimizedGoals": [{"goal": "...", "currentProjected": number, "optimizedProjected": number, "timeSaved": number}]\n'
+        '  },\n'
+        '  "es": {\n'
+        '    "actions": [{"title": "...", "description": "...", "category": "...", "potentialSavings": number, "effort": "Baja"|"Media"|"Alta", "implementation": "..."}],\n'
+        '    "totalPotentialSavings": number,\n'
+        '    "currentMonthlySavings": number,\n'
+        '    "optimizedMonthlySavings": number,\n'
+        '    "optimizedGoals": [{"goal": "...", "currentProjected": number, "optimizedProjected": number, "timeSaved": number}]\n'
+        '  }\n'
+        "}\n\n"
+        "MANDATORY RULES:\n"
+        "1. BOTH 'en' and 'es' keys MUST exist in the response\n"
+        "2. Generate 4 actions max per language, sorted by savings impact\n"
+        "3. Each action in Spanish is a natural translation, NOT a literal word-for-word translation\n"
+        "4. potentialSavings = monthly EUR amount\n"
+        "5. Effort in English: Low/Medium/High. Effort in Spanish: Baja/Media/Alta\n"
+        "6. Never add markdown, code blocks, or explanations outside JSON\n"
+        "7. Return ONLY the JSON object, no preamble or postamble\n\n"
         f"UserData:\n{json.dumps(payload, ensure_ascii=True)}"
     )
 
