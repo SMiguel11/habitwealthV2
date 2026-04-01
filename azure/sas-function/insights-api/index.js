@@ -182,6 +182,11 @@ function getDocumentCategoryTotals(doc = {}) {
 function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
   return new Promise((resolve) => {
     try {
+      // Log prompt validation
+      console.log(`[OpenAI] Prompt contains 'CRITICAL': ${prompt.includes('CRITICAL')}`)
+      console.log(`[OpenAI] Prompt contains 'BOTH...en...es': ${prompt.includes('BOTH') && prompt.includes('"en"')}`)
+      console.log(`[OpenAI] Prompt first 400 chars: ${prompt.substring(0, 400)}`)
+      
       const url = new URL(`/openai/deployments/${deployment}/chat/completions?api-version=2024-02-01`, endpoint)
       const payload = {
         messages: [{ role: 'user', content: prompt }],
@@ -206,7 +211,16 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
         let data = ''
         res.on('data', chunk => { data += chunk })
         res.on('end', () => {
-          try { resolve(JSON.parse(data).choices?.[0]?.message?.content || null) }
+          try { 
+            const response = JSON.parse(data).choices?.[0]?.message?.content || null
+            // Log response validation
+            if (response) {
+              console.log(`[OpenAI] Response has 'en' key: ${response.includes('"en"')}`)
+              console.log(`[OpenAI] Response has 'es' key: ${response.includes('"es"')}`)
+              console.log(`[OpenAI] Response first 500 chars: ${response.substring(0, 500)}`)
+            }
+            resolve(response)
+          }
           catch { resolve(null) }
         })
       })

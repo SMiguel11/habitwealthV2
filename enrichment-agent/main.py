@@ -640,6 +640,11 @@ def _build_optimization_prompt(payload: dict) -> str:
 
 def _call_openai_api(client, deployment: str, prompt: str) -> str | None:
     """Call Azure OpenAI API and return raw response or None."""
+    # Log prompt validation
+    logger.info(f"[OpenAI] Prompt contains 'CRITICAL': {'CRITICAL' in prompt}")
+    logger.info(f"[OpenAI] Prompt contains 'BOTH...en...es': {'BOTH' in prompt and '\"en\"' in prompt}")
+    logger.info(f"[OpenAI] Prompt first 400 chars: {prompt[:400]}")
+    
     resp = client.chat.completions.create(
         model=deployment,
         messages=[{"role": "user", "content": prompt}],
@@ -647,7 +652,16 @@ def _call_openai_api(client, deployment: str, prompt: str) -> str | None:
         max_tokens=900,
         response_format={"type": "json_object"},
     )
-    return (resp.choices[0].message.content or "").strip() if resp.choices else None
+    
+    raw_response = (resp.choices[0].message.content or "").strip() if resp.choices else None
+    
+    # Log response validation
+    if raw_response:
+        logger.info(f"[OpenAI] Response has 'en' key: {'\"en\"' in raw_response}")
+        logger.info(f"[OpenAI] Response has 'es' key: {'\"es\"' in raw_response}")
+        logger.info(f"[OpenAI] Response first 500 chars: {raw_response[:500]}")
+    
+    return raw_response
 
 
 def _clean_json_response(raw: str) -> str:
