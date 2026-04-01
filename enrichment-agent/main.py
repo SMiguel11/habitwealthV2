@@ -288,16 +288,30 @@ def agent_emotional_pattern(transactions: list[dict], survey_answers: list) -> d
     }
 
 def _get_monthly_savings(doc: dict) -> float:
+    """
+    Calculate average monthly savings.
+    NOTE: doc.totalIncome/totalExpenses/byCategory contain TOTALS across all months.
+    We must divide by the number of months to get the monthly average.
+    """
+    # Count the number of distinct months in monthlySummary
+    monthly_summary = doc.get("monthlySummary", {})
+    num_months = max(1, len(monthly_summary))  # default to 1 if no summary
+    
+    # First, try to find explicit "Ahorros" category (total amount saved)
     by_category = doc.get("byCategory", {}) or {}
     for key, value in by_category.items():
         normalized = str(key).strip().lower()
         if normalized in {"savings", "saving", "ahorros", "ahorro"} or "saving" in normalized or "ahorr" in normalized or "invers" in normalized:
-            return round(abs(float(value or 0)), 2)
-    # If no explicit savings category, calculate as: Income - Expenses
+            total_saved = abs(float(value or 0))
+            monthly_avg = round(total_saved / num_months, 2)
+            return monthly_avg
+    
+    # Fallback: Calculate as: Income - Expenses, averaged across months
     total_in = float(doc.get("totalIncome") or 0)
     total_out = float(doc.get("totalExpenses") or 0)
     available_savings = max(0, total_in - total_out)
-    return round(available_savings, 2)
+    monthly_avg = round(available_savings / num_months, 2)
+    return monthly_avg
 
 
 # Agent 3 – Financial Stress Index
