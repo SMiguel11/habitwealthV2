@@ -103,7 +103,6 @@ function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], sav
   
   const source = goalOptimization?.source || (actions.length || isBilingual ? 'agent' : 'api-fallback')
 
-  // Backward-compatible fallback for older analyzed docs where goalOptimization may be empty.
   if (!actions.length && !isBilingual) {
     actions = [{
       title: 'Review spending habits',
