@@ -84,12 +84,27 @@ function deriveGoalAlignmentScore(_summaryScore, goalSummaries = []) {
 }
 
 function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], savingsMonthly = 0, fsiLevel = 'Medium') {
-  const rawActions = Array.isArray(goalOptimization?.actions) ? goalOptimization?.actions : []
-  let actions = rawActions.filter(action => action?.title)
-  const source = goalOptimization?.source || (actions.length ? 'agent' : 'api-fallback')
+  // Detect if we have bilingual format
+  const isBilingual = typeof goalOptimization?.actions === 'object' && goalOptimization.actions !== null &&
+                      !Array.isArray(goalOptimization.actions) &&
+                      ((Array.isArray(goalOptimization.actions.en) && goalOptimization.actions.en.length > 0) ||
+                       (Array.isArray(goalOptimization.actions.es) && goalOptimization.actions.es.length > 0))
+  
+  // Extract actions for calculations (use English for fallback logic)
+  let actions = []
+  if (Array.isArray(goalOptimization?.actions)) {
+    // Legacy array format
+    actions = goalOptimization.actions.filter(action => action?.title)
+  } else if (isBilingual) {
+    // Bilingual format {en: [...], es: [...]} - extract English for calculations
+    const enActions = goalOptimization.actions.en || []
+    actions = (Array.isArray(enActions) ? enActions : []).filter(action => action?.title)
+  }
+  
+  const source = goalOptimization?.source || (actions.length || isBilingual ? 'agent' : 'api-fallback')
 
   // Backward-compatible fallback for older analyzed docs where goalOptimization may be empty.
-  if (!actions.length) {
+  if (!actions.length && !isBilingual) {
     actions = [{
       title: 'Review spending habits',
       description: 'A monthly budget review helps uncover easy savings opportunities.',
@@ -151,13 +166,19 @@ function buildOptimizationSummary(goalOptimization = {}, goalSummaries = [], sav
     })
   }
 
+  // For response, preserve bilingual structure if present
+  let responseActions = actions
+  if (isBilingual) {
+    responseActions = goalOptimization.actions  // {en: [...], es: [...]}
+  }
+
   return {
     source,
     totalPotentialSavings,
     currentMonthlySavings,
     optimizedMonthlySavings,
     optimizedGoals,
-    actions,
+    actions: responseActions,
   }
 }
 
@@ -960,7 +981,13 @@ module.exports = async function (context, req) {
       goals: goalSummaries,
       currentMonthlySavings: savingsMonthly,
     })
-    if (aiOptimization?.actions?.length) {
+    // Check for bilingual format {en: [...], es: [...]} or legacy array format
+    const hasActions = 
+      (Array.isArray(aiOptimization?.actions) && aiOptimization.actions.length > 0) ||
+      (typeof aiOptimization?.actions === 'object' && aiOptimization.actions !== null && 
+       ((Array.isArray(aiOptimization.actions.en) && aiOptimization.actions.en.length > 0) ||
+        (Array.isArray(aiOptimization.actions.es) && aiOptimization.actions.es.length > 0)))
+    if (hasActions) {
       optimizationSummary = aiOptimization
       context.log(`[insights-api] optimization generated on-demand (source: ${aiOptimization.source})`)
     }
