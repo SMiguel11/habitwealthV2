@@ -439,14 +439,6 @@
             
             <div class="mb-4">
               <h2 class="text-sm font-bold text-white mb-3">🚀 {{ t('ins_action_plan_title') }}</h2>
-
-              <p v-if="optimizationGoals.length > 0" class="text-xs text-slate-400">
-                {{ t('ins_action_plan_desc') || 'Reduce your goal time from' }} 
-                <span class="text-red-400 font-bold">{{ optimizationGoals[0]?.currentProjected || '?' }}</span>
-                {{ t('ins_to') || '→' }}
-                <span class="text-emerald-400 font-bold">{{ optimizationGoals[0]?.optimizedProjected || '?' }}</span>
-                {{ t('ins_months') || 'months' }}
-              </p>
             </div>
 
             <div class="space-y-2">
