@@ -605,35 +605,31 @@ def _build_optimization_payload(doc: dict, emotional: dict, fsi: dict, goals: di
 
 
 def _build_optimization_prompt(payload: dict) -> str:
-    """Build the optimization prompt for Azure OpenAI with EXPLICIT bilingual requirement."""
+    """Build the optimization prompt for Azure OpenAI with bilingual (EN/ES) support."""
     return (
-        "You are a financial optimization advisor. CRITICAL REQUIREMENT: You MUST generate actions in BOTH English AND Spanish.\n\n"
+        "You are a financial optimization advisor specializing in personalized money management.\n\n"
         "Analyze the user financial data and create an actionable optimization plan.\n\n"
-        "YOUR RESPONSE MUST BE VALID JSON with this EXACT structure:\n"
+        "CRITICAL: Return ONLY a valid JSON object with two keys: 'en' (English) and 'es' (Spanish).\n"
+        "Each key contains the complete optimization plan in that language.\n\n"
+        "JSON Structure for BOTH 'en' AND 'es' keys:\n"
         "{\n"
-        '  "en": {\n'
-        '    "actions": [{"title": "...", "description": "...", "category": "...", "potentialSavings": number, "effort": "Low"|"Medium"|"High", "implementation": "..."}],\n'
-        '    "totalPotentialSavings": number,\n'
-        '    "currentMonthlySavings": number,\n'
-        '    "optimizedMonthlySavings": number,\n'
-        '    "optimizedGoals": [{"goal": "...", "currentProjected": number, "optimizedProjected": number, "timeSaved": number}]\n'
-        '  },\n'
-        '  "es": {\n'
-        '    "actions": [{"title": "...", "description": "...", "category": "...", "potentialSavings": number, "effort": "Baja"|"Media"|"Alta", "implementation": "..."}],\n'
-        '    "totalPotentialSavings": number,\n'
-        '    "currentMonthlySavings": number,\n'
-        '    "optimizedMonthlySavings": number,\n'
-        '    "optimizedGoals": [{"goal": "...", "currentProjected": number, "optimizedProjected": number, "timeSaved": number}]\n'
-        '  }\n'
+        '  "actions": [\n'
+        '    {"title": "...", "description": "...", "category": "...", "potentialSavings": number, "effort": "Low"|"Medium"|"High", "implementation": "..."},\n'
+        '    ...\n'
+        '  ],\n'
+        '  "totalPotentialSavings": number,\n'
+        '  "currentMonthlySavings": number,\n'
+        '  "optimizedMonthlySavings": number,\n'
+        '  "optimizedGoals": [{"goal": "...", "currentProjected": number, "optimizedProjected": number, "timeSaved": number}]\n'
         "}\n\n"
-        "MANDATORY RULES:\n"
-        "1. BOTH 'en' and 'es' keys MUST exist in the response\n"
-        "2. Generate 4 actions max per language, sorted by savings impact\n"
-        "3. Each action in Spanish is a natural translation, NOT a literal word-for-word translation\n"
-        "4. potentialSavings = monthly EUR amount\n"
-        "5. Effort in English: Low/Medium/High. Effort in Spanish: Baja/Media/Alta\n"
-        "6. Never add markdown, code blocks, or explanations outside JSON\n"
-        "7. Return ONLY the JSON object, no preamble or postamble\n\n"
+        "RULES:\n"
+        "1. Max 3-4 actions per language, sorted by savings impact (highest first).\n"
+        "2. Spanish effort: Baja/Media/Alta. English effort: Low/Medium/High.\n"
+        "3. Spanish titles and descriptions must be natural translations (NOT literal).\n"
+        "4. No markdown or explanations outside the JSON.\n"
+        "5. Both 'en' and 'es' must be present and complete.\n\n"
+        "EXAMPLE OUTPUT:\n"
+        '{"en": {"actions": [{"title": "Reduce subscriptions", "description": "Cancel unused services", "category": "Subscriptions", "potentialSavings": 75, "effort": "Low", "implementation": "Review monthly bills"}], "totalPotentialSavings": 75, "currentMonthlySavings": 100, "optimizedMonthlySavings": 175, "optimizedGoals": [{"goal": "Beach trip", "currentProjected": 12, "optimizedProjected": 4, "timeSaved": 8}]}, "es": {"actions": [{"title": "Reducir suscripciones", "description": "Cancela servicios no utilizados", "category": "Suscripciones", "potentialSavings": 75, "effort": "Baja", "implementation": "Revisa tus facturas mensuales"}], "totalPotentialSavings": 75, "currentMonthlySavings": 100, "optimizedMonthlySavings": 175, "optimizedGoals": [{"goal": "Viaje a la playa", "currentProjected": 12, "optimizedProjected": 4, "timeSaved": 8}]}}\n\n'
         f"UserData:\n{json.dumps(payload, ensure_ascii=True)}"
     )
 
