@@ -49,15 +49,23 @@ async function upsertDocument(userId, filename, doc) {
 async function getDocuments(userId) {
   const container = getContainer()
   if (container) {
-    const query = {
-      query: 'SELECT * FROM c WHERE c.userId = @userId ORDER BY c.analyzedAt DESC',
-      parameters: [{ name: '@userId', value: userId }]
+    try {
+      // Use querySpec with proper parameter passing for @azure/cosmos SDK
+      const querySpec = {
+        query: 'SELECT * FROM c WHERE c.userId = @userId ORDER BY c.analyzedAt DESC',
+        parameters: [{ name: '@userId', value: userId }]
+      }
+      const { resources } = await container.items.query(querySpec).fetchAll()
+      console.log(`[cosmos-db] getDocuments("${userId}"): found ${resources.length} documents`)
+      return resources
+    } catch (err) {
+      console.error(`[cosmos-db] query error for userId="${userId}": ${err.message}`)
+      return []
     }
-    const { resources } = await container.items.query(query).fetchAll()
-    return resources
   }
   // Fallback: local /tmp
   const db = loadLocalDb()
+  console.log(`[cosmos-db] No Cosmos container - using local fallback for userId="${userId}"`)
   return (db.users[userId]?.documents) || []
 }
 
