@@ -119,6 +119,7 @@
   "ins_stmt_one": "extracto analizado",
   "ins_stmt_many": "extractos analizados",
   "ins_loading_hint": "Esto puede tardar hasta 30 segundos",
+  "ins_ai_step": "Aplicando inteligencia artificial a tus datos",
   "ins_score_label": "Puntuación HabitWealth",
   "ins_stress_label": "Índice de Estrés",
   "ins_stress_desc": "Nivel de estrés financiero",

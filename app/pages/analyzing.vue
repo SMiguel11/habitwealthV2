@@ -165,6 +165,11 @@ async function pollAndRedirect() {
   }
 
   clearInterval(timerHandle)
+  // Signal to insights.vue that we're arriving from the analysis flow
+  // so it can continue the step-list UI instead of showing a new spinner
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem('hw_from_analyzing', '1')
+  }
   router.push('/insights')
 }
 

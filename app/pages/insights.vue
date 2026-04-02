@@ -27,8 +27,50 @@
       </div>
     </header>
 
-    <!-- Loading state -->
-    <div v-if="loading" class="flex flex-col items-center justify-center min-h-[70vh] gap-6">
+    <!-- Loading state: continuation from analyzing.vue (step-list style) -->
+    <div v-if="loading && fromAnalyzing" class="flex flex-col items-center justify-center min-h-[70vh] px-6">
+
+      <!-- Spinner -->
+      <div class="relative w-20 h-20 mx-auto mb-8">
+        <div class="absolute inset-0 rounded-full border-[3px] border-white/[0.04]"></div>
+        <div class="absolute inset-0 rounded-full border-[3px] border-t-emerald-400 border-r-emerald-400/20 animate-spin" style="animation-duration:1.2s"></div>
+        <div class="absolute inset-0 rounded-full border-[3px] border-transparent border-b-teal-500/30 animate-spin" style="animation-duration:2.4s;animation-direction:reverse"></div>
+        <div class="absolute inset-4 rounded-full bg-emerald-500/[0.07] border border-emerald-500/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Step list -->
+      <div class="w-full max-w-sm space-y-2.5">
+        <!-- Steps 1-4: all done (came from analyzing.vue) -->
+        <div v-for="label in [t('an_step1'), t('an_step2'), t('an_step3'), t('an_step4')]" :key="label"
+          class="flex items-center gap-4 px-5 py-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.07]">
+          <div class="w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center bg-emerald-500 shadow-lg shadow-emerald-500/30">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+            </svg>
+          </div>
+          <p class="flex-1 text-sm font-semibold text-emerald-300">{{ label }}</p>
+          <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{{ t('an_done') }}</span>
+        </div>
+
+        <!-- Step 5: AI generation (active) -->
+        <div class="flex items-center gap-4 px-5 py-3.5 rounded-2xl border border-emerald-500/20 bg-white/[0.04] shadow-lg shadow-emerald-950/50">
+          <div class="w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center bg-white/[0.07] border border-emerald-500/40">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+          </div>
+          <p class="flex-1 text-sm font-semibold text-white">{{ t('ins_ai_step') }}</p>
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-pulse">{{ t('an_working') }}</span>
+        </div>
+      </div>
+
+      <p class="text-center text-xs text-slate-700 mt-8">{{ t('an_hint') }}</p>
+    </div>
+
+    <!-- Loading state: direct visit (simple spinner) -->
+    <div v-else-if="loading" class="flex flex-col items-center justify-center min-h-[70vh] gap-6">
       <div class="relative w-16 h-16">
         <div class="absolute inset-0 rounded-full border-2 border-white/[0.06]"></div>
         <div class="absolute inset-0 rounded-full border-2 border-t-emerald-400 animate-spin"></div>
@@ -570,6 +612,7 @@ const { t, locale } = useI18n()
 const { principal, refresh: refreshAuth } = useSwaAuth()
 
 const loading = ref(true)
+const fromAnalyzing = ref(false)
 
 const categoryColors = [
   'linear-gradient(90deg,#10b981,#14b8a6)',
@@ -602,6 +645,10 @@ async function fetchInsights() {
 }
 
 onMounted(async () => {
+  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('hw_from_analyzing') === '1') {
+    fromAnalyzing.value = true
+    sessionStorage.removeItem('hw_from_analyzing')
+  }
   try {
     await fetchInsights()
   } catch (e) {

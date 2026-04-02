@@ -119,6 +119,7 @@
   "ins_stmt_one": "statement analyzed",
   "ins_stmt_many": "statements analyzed",
   "ins_loading_hint": "This may take up to 30 seconds",
+  "ins_ai_step": "Applying AI intelligence to your data",
   "ins_score_label": "HabitWealth Score",
   "ins_stress_label": "Stress Index",
   "ins_stress_desc": "Financial stress level",
