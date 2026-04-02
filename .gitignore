@@ -26,6 +26,13 @@ logs
 azure/sas-function/local.settings.json
 azure/doc-intel-function/local.settings.json
 
+# Test/debug scripts with hardcoded credentials (never commit)
+test_api_with_logs.py
+test_cosmos_query.js
+test_openai.json
+test_openai_api.py
+test_local.py
+
 # Python virtual environment
 .venv/
 __pycache__/

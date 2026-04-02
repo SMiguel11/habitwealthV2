@@ -208,8 +208,14 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
     _openAICallCount++
     const callId = _openAICallCount
     try {
-      console.log(`[OpenAI #${callId}] Starting request to ${endpoint}`)
+      console.log(`[OpenAI #${callId}] Endpoint: ${endpoint}`)
+      console.log(`[OpenAI #${callId}] Deployment: ${deployment}`)
       const url = new URL(`/openai/deployments/${deployment}/chat/completions?api-version=2024-02-01`, endpoint)
+      console.log(`[OpenAI #${callId}] Full URL: ${url.toString()}`)
+      console.log(`[OpenAI #${callId}] Hostname: ${url.hostname}`)
+      console.log(`[OpenAI #${callId}] Port: ${url.port || 443}`)
+      console.log(`[OpenAI #${callId}] Path: ${url.pathname + url.search}`)
+      
       const payload = {
         messages: [{ role: 'user', content: prompt }],
         temperature: Number(options.temperature ?? 0.6),
@@ -219,7 +225,6 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
         payload.response_format = { type: 'json_object' }
       }
       const body = JSON.stringify(payload)
-      console.log(`[OpenAI #${callId}] Request URL: ${url.toString()}`)
       console.log(`[OpenAI #${callId}] Payload size: ${body.length} bytes`)
       
       const req = https.request({
@@ -404,6 +409,49 @@ async function generateScoreExplanation(summaryData, lang) {
   } catch { /* fall through */ }
 
   return staticResult
+}
+
+/**
+ * Generate personalized CBT nudges on-demand via Azure OpenAI when stored docs
+ * only have static/rule-based nudges.
+ * Returns { nudges_en, nudges_es, source } or null on failure.
+ */
+async function generateNudges(summaryData) {
+  const { dominantPattern, fsiLevel, byCategory, weekendSpend, weekendSpendAlert } = summaryData
+
+  const endpoint   = (process.env.AZURE_OPENAI_ENDPOINT || '').replace(/\/$/, '')
+  const apiKey     = process.env.AZURE_OPENAI_KEY || ''
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini'
+
+  if (!endpoint || !apiKey) return null
+
+  const topCategories = Object.entries(byCategory || {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([cat, amt]) => `${cat} (€${Math.round(amt)})`)
+    .join(', ')
+
+  const prompt =
+    'You are a CBT-based financial coach generating personalized behavioral nudges.\n\n' +
+    'User profile:\n' +
+    `- Dominant spending pattern: "${dominantPattern}"\n` +
+    `- Financial Stress Level: ${fsiLevel}\n` +
+    `- Top spending categories: ${topCategories || 'general'}\n` +
+    `- Weekend overspending: ${weekendSpendAlert ? 'yes' : 'no'} (€${Math.round(weekendSpend || 0)} weekend spend)\n\n` +
+    'Generate exactly 3 short, actionable CBT nudges personalized to this user.\n' +
+    'Each nudge must be 1-2 sentences, practical, and specific to their pattern.\n' +
+    'Return ONLY valid JSON, no markdown:\n' +
+    '{"en":["nudge 1","nudge 2","nudge 3"],"es":["nudge 1 en español","nudge 2 en español","nudge 3 en español"]}'
+
+  try {
+    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, { maxTokens: 300, temperature: 0.5 })
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed?.en) && parsed.en.length && Array.isArray(parsed?.es) && parsed.es.length) {
+      return { nudges_en: parsed.en, nudges_es: parsed.es, source: 'gpt-4o' }
+    }
+  } catch { /* fall through */ }
+  return null
 }
 
 /**
@@ -979,9 +1027,10 @@ module.exports = async function (context, req) {
   const habitScore = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length)
 
   // Latest nudges from CBT agent — pick Spanish if requested and available
-  const nudges_en = latestDoc.agentResult?.agents?.cbtIntervention?.nudges || []
-  const nudges_es = latestDoc.agentResult?.agents?.cbtIntervention?.nudges_es || []
-  const nudges = lang === 'es' && nudges_es.length > 0 ? nudges_es : nudges_en
+  let nudges_en = latestDoc.agentResult?.agents?.cbtIntervention?.nudges || []
+  let nudges_es = latestDoc.agentResult?.agents?.cbtIntervention?.nudges_es || []
+  let nudgeSource = latestDoc.agentResult?.agents?.cbtIntervention?.nudgeSource || 'static'
+  let nudges = lang === 'es' && nudges_es.length > 0 ? nudges_es : nudges_en
 
   // Trend data from current analysis window
   const trendScores = analysisDocs.map(d =>
@@ -1010,6 +1059,24 @@ module.exports = async function (context, req) {
   )
   const goalAlignmentScore = deriveGoalAlignmentScore(latestDoc.agentResult?.summary?.goalAlignmentScore, goalSummaries)
   
+  // If stored nudges are static/rule-based, generate personalized ones via AI on-demand.
+  if (nudgeSource === 'static') {
+    const aiNudges = await generateNudges({
+      dominantPattern: latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || 'none',
+      fsiLevel:        latestDoc.agentResult?.summary?.fsiLevel || latestDoc.insights?.fsiLevel || 'Medium',
+      byCategory,
+      weekendSpend:    latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
+      weekendSpendAlert: latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
+    })
+    if (aiNudges) {
+      nudges_en  = aiNudges.nudges_en
+      nudges_es  = aiNudges.nudges_es
+      nudgeSource = aiNudges.source
+      nudges = lang === 'es' ? nudges_es : nudges_en
+      context.log(`[insights-api] nudges generated on-demand (source: ${aiNudges.source})`)
+    }
+  }
+
   let optimizationSummary = buildOptimizationSummary(
     latestDoc.agentResult?.agents?.goalOptimization,
     goalSummaries,
@@ -1087,7 +1154,7 @@ module.exports = async function (context, req) {
         emotionVector:      twin?.emotionVector || {},
         weekendSpend:       latestDoc.agentResult?.agents?.emotionalPattern?.weekendSpend || 0,
         nudges,
-        nudgeSource:        latestDoc.agentResult?.agents?.cbtIntervention?.nudgeSource || 'static',
+        nudgeSource,
         scoreExplanation,
         primaryPattern:     latestDoc.agentResult?.agents?.cbtIntervention?.primaryPattern || '',
         weekendSpendAlert:  latestDoc.agentResult?.agents?.cbtIntervention?.weekendSpendAlert || false,
