@@ -465,8 +465,8 @@ async function generateProviderAlternatives(repeatedExpenses) {
 
   if (!endpoint || !apiKey) return null
 
-  // Only process services with meaningful increases (>5%) to keep prompt focused
-  const significant = repeatedExpenses.filter(e => e.incrementPercent > 5).slice(0, 5)
+  // Only process top 3 services with most significant increases (>5%)
+  const significant = repeatedExpenses.filter(e => e.incrementPercent > 5).slice(0, 3)
   if (!significant.length) return null
 
   const servicesJson = significant.map(e => ({
@@ -477,30 +477,20 @@ async function generateProviderAlternatives(repeatedExpenses) {
   }))
 
   const prompt =
-    'You are a personal finance advisor helping users find cheaper alternatives to their current services.\n\n' +
-    'For each service below, suggest 2 realistic alternatives available in Spain/Europe.\n' +
-    'Focus on: lower price, same quality, easy to switch.\n\n' +
-    'Services with price increases:\n' +
-    JSON.stringify(servicesJson, null, 2) + '\n\n' +
-    'RULES:\n' +
-    '1. Return ONLY valid JSON — no markdown, no explanations.\n' +
-    '2. For each merchant, provide "en" and "es" arrays with exactly 2 alternatives.\n' +
-    '3. Each alternative: { "name": "...", "estimatedPrice": number, "saving": number, "reason": "1 sentence" }\n' +
-    '4. "saving" = currentAmount minus estimatedPrice (can be 0 if similar price but better value).\n' +
-    '5. Only suggest real, well-known services available in Spain/Europe.\n' +
-    '6. Spanish "reason" must be natural translation, NOT literal.\n\n' +
-    'Output format:\n' +
-    '{\n' +
-    '  "Steam": { "en": [{"name":"...","estimatedPrice":9.99,"saving":5.87,"reason":"..."},{"name":"...","estimatedPrice":6.99,"saving":8.87,"reason":"..."}], "es": [...] },\n' +
-    '  "Endesa Luz": { "en": [...], "es": [...] },\n' +
-    '  ...\n' +
-    '}'
+    'You are a personal finance advisor. For each service below, suggest 2 cheaper alternatives available in Spain/Europe.\n\n' +
+    'Services:\n' +
+    JSON.stringify(servicesJson) + '\n\n' +
+    'Return ONLY valid JSON. For each merchant key, include "en" and "es" arrays with 2 alternatives.\n' +
+    'Each alternative: {"name":"...","estimatedPrice":number,"saving":number,"reason":"1 short sentence"}\n' +
+    '"saving" = currentAmount minus estimatedPrice.\n' +
+    'Only real, well-known services available in Spain/Europe. No markdown.\n\n' +
+    'Format: {"Steam":{"en":[...],"es":[...]},"Cabify":{"en":[...],"es":[...]}}'
 
   try {
     const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, {
       responseFormat: 'json_object',
       temperature: 0.3,
-      maxTokens: 700,
+      maxTokens: 1000,
     })
     if (!raw) return null
     const parsed = _extractJsonObject(raw)
