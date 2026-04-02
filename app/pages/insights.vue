@@ -434,9 +434,16 @@
                   </button>
                   <div v-if="expandedAlternatives[expense.merchant]" class="mt-2 space-y-2">
                     <div v-for="(alt, aIdx) in getAlternatives(expense.merchant)" :key="aIdx"
-                      class="rounded-lg bg-violet-500/[0.06] border border-violet-500/20 p-3">
+                      class="rounded-lg bg-violet-500/[0.06] border border-violet-500/20 p-3 transition-all hover:bg-violet-500/[0.10] hover:border-violet-500/40"
+                      :class="alt.url ? 'cursor-pointer group/alt' : ''"
+                      @click="alt.url && alt.url.startsWith('https://') && window.open(alt.url, '_blank', 'noopener,noreferrer')">
                       <div class="flex items-center justify-between mb-1">
-                        <span class="text-xs font-semibold text-violet-300">{{ alt.name }}</span>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-semibold text-violet-300 group-hover/alt:text-violet-200 transition-colors">{{ alt.name }}</span>
+                          <svg v-if="alt.url" class="w-3 h-3 text-violet-500 group-hover/alt:text-violet-300 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                          </svg>
+                        </div>
                         <div class="flex items-center gap-2">
                           <span class="text-xs text-slate-400">€{{ Number(alt.estimatedPrice).toFixed(2) }}/mo</span>
                           <span v-if="alt.saving > 0" class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded px-1.5 py-0.5">

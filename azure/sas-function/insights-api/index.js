@@ -489,8 +489,8 @@ async function generateProviderAlternatives(repeatedExpenses) {
     'Services:\n' +
     JSON.stringify(servicesJson) + '\n\n' +
     'Return ONLY valid JSON. For each merchant key, include "en" and "es" arrays with 2 alternatives.\n' +
-    'Each alternative: {"name":"...","estimatedPrice":number,"saving":number,"reason":"1 short sentence"}\n' +
-    '"saving" = currentAmount minus estimatedPrice.\n' +
+    'Each alternative: {"name":"...","estimatedPrice":number,"saving":number,"reason":"1 short sentence","url":"https://official-website.com"}\n' +
+    '"saving" = currentAmount minus estimatedPrice. "url" must be the real official HTTPS website of the service.\n' +
     'Only real, well-known services available in Spain/Europe. No markdown.\n\n' +
     'Format: {"Steam":{"en":[...],"es":[...]},"Cabify":{"en":[...],"es":[...]},"Endesa Luz":{"en":[...],"es":[...]}}'
 
