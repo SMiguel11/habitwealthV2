@@ -202,11 +202,7 @@ function getDocumentCategoryTotals(doc = {}) {
 function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
   return new Promise((resolve) => {
     try {
-      // Log prompt validation
-      console.log(`[OpenAI] Prompt contains 'CRITICAL': ${prompt.includes('CRITICAL')}`)
-      console.log(`[OpenAI] Prompt contains 'BOTH...en...es': ${prompt.includes('BOTH') && prompt.includes('"en"')}`)
-      console.log(`[OpenAI] Prompt first 400 chars: ${prompt.substring(0, 400)}`)
-      
+      console.log(`[OpenAI] Starting request to ${endpoint}`)
       const url = new URL(`/openai/deployments/${deployment}/chat/completions?api-version=2024-02-01`, endpoint)
       const payload = {
         messages: [{ role: 'user', content: prompt }],
@@ -217,6 +213,9 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
         payload.response_format = { type: 'json_object' }
       }
       const body = JSON.stringify(payload)
+      console.log(`[OpenAI] Request URL: ${url.toString()}`)
+      console.log(`[OpenAI] Payload size: ${body.length} bytes`)
+      
       const req = https.request({
         hostname: url.hostname,
         port: url.port || 443,
@@ -228,27 +227,47 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
           'Content-Length': Buffer.byteLength(body),
         },
       }, (res) => {
+        console.log(`[OpenAI] Response status: ${res.statusCode}`)
         let data = ''
         res.on('data', chunk => { data += chunk })
         res.on('end', () => {
-          try { 
-            const response = JSON.parse(data).choices?.[0]?.message?.content || null
-            // Log response validation
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.error) {
+              console.error(`[OpenAI] API Error: ${JSON.stringify(parsed.error)}`)
+              resolve(null)
+              return
+            }
+            const response = parsed.choices?.[0]?.message?.content || null
             if (response) {
-              console.log(`[OpenAI] Response has 'en' key: ${response.includes('"en"')}`)
-              console.log(`[OpenAI] Response has 'es' key: ${response.includes('"es"')}`)
-              console.log(`[OpenAI] Response first 500 chars: ${response.substring(0, 500)}`)
+              console.log(`[OpenAI] Success - got response (${response.length} chars)`)
+            } else {
+              console.warn(`[OpenAI] No content in response`)
             }
             resolve(response)
           }
-          catch { resolve(null) }
+          catch (parseErr) {
+            console.error(`[OpenAI] Parse error: ${parseErr.message}`)
+            console.error(`[OpenAI] Response body: ${data.substring(0, 500)}`)
+            resolve(null)
+          }
         })
       })
-      req.on('error', () => resolve(null))
-      req.setTimeout(9000, () => { req.destroy(); resolve(null) })
+      req.on('error', (err) => {
+        console.error(`[OpenAI] Request error: ${err.message}`)
+        resolve(null)
+      })
+      req.setTimeout(9000, () => {
+        console.error(`[OpenAI] Request timeout after 9s`)
+        req.destroy()
+        resolve(null)
+      })
       req.write(body)
       req.end()
-    } catch { resolve(null) }
+    } catch (err) {
+      console.error(`[OpenAI] Catch error: ${err.message}`)
+      resolve(null)
+    }
   })
 }
 
