@@ -278,6 +278,8 @@ async function generateAnalysis(ticker, yfData, scores) {
         `PEG ratio: ${ks.pegRatio ? Number(ks.pegRatio).toFixed(2) : 'N/A'}`,
         `Beta: ${(ks.beta || 0).toFixed(2)}`,
         `Market cap: $${((sd.marketCap || 0) / 1e9).toFixed(0)}B`,
+        `Current price: $${fd.currentPrice ? Number(fd.currentPrice).toFixed(2) : 'N/A'}`,
+        `Shares outstanding: ${ks.sharesOutstanding ? (ks.sharesOutstanding / 1e9).toFixed(2) + 'B' : 'N/A'}`,
       ].join('\n')
     : 'No live data — use your training knowledge for this ticker.'
 
@@ -398,7 +400,9 @@ module.exports = async function (context, req) {
         forwardPE:     _n(ks.forwardPE,      1,   1),
         pegRatio:      _n(ks.pegRatio,       1,   2),
         beta:          _n(ks.beta,           1,   2),
+        currentPrice:  fd.currentPrice != null ? Math.round(Number(fd.currentPrice) * 100) / 100 : null,
         marketCapB:    _n(sd.marketCap,    1/1e9,  1),
+        sharesB:       _n(ks.sharesOutstanding, 1/1e9, 2),
         freeCashflowB: _n(fd.freeCashflow, 1/1e9,  2),
       } : null,
       dataSource: yfData ? 'yahoo-finance' : 'openai-knowledge',

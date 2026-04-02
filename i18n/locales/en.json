@@ -243,6 +243,8 @@
   "inv_data_source":      "Live Data",
   "inv_ai_knowledge":     "AI Knowledge",
   "inv_no_data":          "Real-time data unavailable — analysis based on AI knowledge base.",
+  "inv_metric_price":        "Share Price",
+  "inv_metric_mktcap":       "Market Cap",
   "inv_metric_rev_growth":   "Rev. Growth",
   "inv_metric_gross_margin": "Gross Margin",
   "inv_positives":        "Strengths",

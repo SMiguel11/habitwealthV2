@@ -243,6 +243,8 @@
   "inv_data_source":      "Datos en Vivo",
   "inv_ai_knowledge":     "Conocimiento IA",
   "inv_no_data":          "Datos en tiempo real no disponibles — análisis basado en conocimiento del modelo.",
+  "inv_metric_price":        "Precio Acción",
+  "inv_metric_mktcap":       "Cap. Mercado",
   "inv_metric_rev_growth":   "Crec. Ingresos",
   "inv_metric_gross_margin": "Margen Bruto",
   "inv_positives":        "Fortalezas",

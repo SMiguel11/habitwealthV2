@@ -692,8 +692,11 @@
                   </p>
                 </div>
                 <div class="flex flex-col items-end gap-1 shrink-0">
+                  <span v-if="investorResult.metrics?.currentPrice != null" class="text-base font-black text-white tracking-tight">
+                    ${{ investorResult.metrics.currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  </span>
                   <span v-if="investorResult.metrics?.marketCapB" class="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/5 text-slate-400">
-                    ${{ investorResult.metrics.marketCapB }}B
+                    Cap ${{ investorResult.metrics.marketCapB }}B
                   </span>
                   <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold"
                     :class="investorResult.dataSource === 'yahoo-finance' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-600'">
@@ -787,6 +790,14 @@
             <div v-if="investorResult.metrics" class="p-5 border-b border-white/[0.05]">
               <p class="text-[10px] text-slate-700 uppercase tracking-widest font-semibold mb-3">{{ t('inv_metrics_title') }}</p>
               <div class="grid grid-cols-2 gap-1.5 text-xs">
+                <div v-if="investorResult.metrics.currentPrice != null" class="flex justify-between px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <span class="text-amber-400/80 font-semibold">{{ t('inv_metric_price') }}</span>
+                  <span class="font-black text-amber-300">${{ investorResult.metrics.currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                </div>
+                <div v-if="investorResult.metrics.marketCapB != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">{{ t('inv_metric_mktcap') }}</span>
+                  <span class="font-semibold text-white">${{ investorResult.metrics.marketCapB }}B</span>
+                </div>
                 <div v-if="investorResult.metrics.revenueGrowth != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
                   <span class="text-slate-600">{{ t('inv_metric_rev_growth') }}</span>
                   <span class="font-semibold" :class="investorResult.metrics.revenueGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'">{{ investorResult.metrics.revenueGrowth }}%</span>
