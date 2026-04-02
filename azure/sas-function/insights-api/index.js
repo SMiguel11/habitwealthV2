@@ -455,6 +455,61 @@ async function generateNudges(summaryData) {
 }
 
 /**
+ * Generate alternative provider suggestions for services with significant price increases.
+ * Returns { alternatives: { [merchantKey]: { en: [...], es: [...] } }, source } or null on failure.
+ */
+async function generateProviderAlternatives(repeatedExpenses) {
+  const endpoint   = (process.env.AZURE_OPENAI_ENDPOINT || '').replace(/\/$/, '')
+  const apiKey     = process.env.AZURE_OPENAI_KEY || ''
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini'
+
+  if (!endpoint || !apiKey) return null
+
+  // Only process services with meaningful increases (>5%) to keep prompt focused
+  const significant = repeatedExpenses.filter(e => e.incrementPercent > 5).slice(0, 5)
+  if (!significant.length) return null
+
+  const servicesJson = significant.map(e => ({
+    merchant: e.merchant,
+    category: e.category,
+    currentAmount: e.currentAmount,
+    incrementPercent: e.incrementPercent,
+  }))
+
+  const prompt =
+    'You are a personal finance advisor helping users find cheaper alternatives to their current services.\n\n' +
+    'For each service below, suggest 2 realistic alternatives available in Spain/Europe.\n' +
+    'Focus on: lower price, same quality, easy to switch.\n\n' +
+    'Services with price increases:\n' +
+    JSON.stringify(servicesJson, null, 2) + '\n\n' +
+    'RULES:\n' +
+    '1. Return ONLY valid JSON — no markdown, no explanations.\n' +
+    '2. For each merchant, provide "en" and "es" arrays with exactly 2 alternatives.\n' +
+    '3. Each alternative: { "name": "...", "estimatedPrice": number, "saving": number, "reason": "1 sentence" }\n' +
+    '4. "saving" = currentAmount minus estimatedPrice (can be 0 if similar price but better value).\n' +
+    '5. Only suggest real, well-known services available in Spain/Europe.\n' +
+    '6. Spanish "reason" must be natural translation, NOT literal.\n\n' +
+    'Output format:\n' +
+    '{\n' +
+    '  "Steam": { "en": [{"name":"...","estimatedPrice":9.99,"saving":5.87,"reason":"..."},{"name":"...","estimatedPrice":6.99,"saving":8.87,"reason":"..."}], "es": [...] },\n' +
+    '  "Endesa Luz": { "en": [...], "es": [...] },\n' +
+    '  ...\n' +
+    '}'
+
+  try {
+    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, {
+      responseFormat: 'json_object',
+      temperature: 0.3,
+      maxTokens: 700,
+    })
+    if (!raw) return null
+    const parsed = _extractJsonObject(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return { alternatives: parsed, source: 'gpt-4o' }
+  } catch { return null }
+}
+
+/**
  * Generate optimization actions on-demand via Azure OpenAI when historical docs
  * do not include GoalOptimization results.
  */
@@ -983,6 +1038,16 @@ module.exports = async function (context, req) {
   // Detect repeated expenses with increments in fixed service categories
   const repeatedExpenses = _detectRepeatedExpenses(transactionsByMonthAndCategory)
   context.log(`[insights-api] Repeated expenses detected: ${repeatedExpenses.length}`, repeatedExpenses)
+
+  // Generate AI provider alternatives for services with price increases
+  let providerAlternatives = {}
+  if (repeatedExpenses.length > 0) {
+    const aiAlternatives = await generateProviderAlternatives(repeatedExpenses)
+    if (aiAlternatives) {
+      providerAlternatives = aiAlternatives.alternatives
+      context.log(`[insights-api] provider alternatives generated for: ${Object.keys(providerAlternatives).join(', ')}`)
+    }
+  }
   
   // Build monthlySummary from transactions (dynamic fallback if documentIntelligence not in agentResult)
   let monthlySummaryBuilt = _buildMonthlySummary(analysisDocs)
@@ -1162,7 +1227,8 @@ module.exports = async function (context, req) {
         trendScores,
         goals: goalSummaries,
         optimization: optimizationSummary,  // NEW: Goal optimization recommendations
-        repeatedExpenses,  // NEW: Detected services with price increases
+        repeatedExpenses,  // Detected services with price increases
+        providerAlternatives,  // AI-suggested alternatives for overpriced services
         // Include documentIntelligence with monthlySummary for frontend (built from transactions)
         documentIntelligence: {
           monthlySummary: monthlySummaryBuilt,

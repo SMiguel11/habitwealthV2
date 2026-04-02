@@ -378,6 +378,34 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- AI Provider Alternatives -->
+                <template v-if="getAlternatives(expense.merchant).length">
+                  <button
+                    class="mt-3 w-full flex items-center justify-between text-[11px] font-medium rounded-lg px-3 py-2 transition-all"
+                    :class="expandedAlternatives[expense.merchant]
+                      ? 'bg-violet-500/15 border border-violet-500/30 text-violet-300'
+                      : 'bg-white/[0.03] border border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12]'"
+                    @click="toggleAlternatives(expense.merchant)">
+                    <span>💡 {{ locale === 'es' ? 'Ver alternativas más baratas' : 'See cheaper alternatives' }}</span>
+                    <span class="text-xs">{{ expandedAlternatives[expense.merchant] ? '▲' : '▼' }}</span>
+                  </button>
+                  <div v-if="expandedAlternatives[expense.merchant]" class="mt-2 space-y-2">
+                    <div v-for="(alt, aIdx) in getAlternatives(expense.merchant)" :key="aIdx"
+                      class="rounded-lg bg-violet-500/[0.06] border border-violet-500/20 p-3">
+                      <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-semibold text-violet-300">{{ alt.name }}</span>
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs text-slate-400">€{{ Number(alt.estimatedPrice).toFixed(2) }}/mo</span>
+                          <span v-if="alt.saving > 0" class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded px-1.5 py-0.5">
+                            {{ locale === 'es' ? 'Ahorro' : 'Save' }} €{{ Number(alt.saving).toFixed(2) }}
+                          </span>
+                        </div>
+                      </div>
+                      <p class="text-[11px] text-slate-500">{{ alt.reason }}</p>
+                    </div>
+                  </div>
+                </template>
               </div>
             </div>
           </div>
@@ -977,11 +1005,25 @@ const optimizationGoals = computed(() => {
   return summary.value?.optimization?.optimizedGoals || []
 })
 
-// Repeated expenses with price increases (NEW)
+// Repeated expenses with price increases
 const repeatedExpenses = computed(() => {
   const repeated = summary.value?.repeatedExpenses || summary.value?.documentIntelligence?.repeatedExpenses || []
   return Array.isArray(repeated) ? repeated : []
 })
+
+// AI provider alternatives keyed by merchant name
+const providerAlternatives = computed(() => summary.value?.providerAlternatives || {})
+
+// Track which expense cards have alternatives expanded
+const expandedAlternatives = ref({})
+function toggleAlternatives(merchant) {
+  expandedAlternatives.value[merchant] = !expandedAlternatives.value[merchant]
+}
+function getAlternatives(merchant) {
+  const alts = providerAlternatives.value[merchant]
+  if (!alts) return []
+  return locale.value === 'es' ? (alts.es || alts.en || []) : (alts.en || [])
+}
 
 // Convert month number to name
 const getMonthName = (monthNum, isSpanish = false) => {
