@@ -82,6 +82,7 @@
 
           <h3 class="text-sm font-bold text-white mb-1.5">{{ t('gs_step1_title') }}</h3>
           <p class="text-xs text-slate-500 leading-relaxed">{{ t('gs_step1_desc') }}</p>
+          <p class="mt-2.5 text-[11px] text-amber-400/80 leading-relaxed">{{ t('gs_step1_warning') }}</p>
 
           <div class="mt-5 flex items-center gap-1.5 text-xs font-semibold transition-opacity duration-300"
             :class="uploadCompleted ? 'text-emerald-400 opacity-100' : 'text-blue-400 opacity-0 group-hover:opacity-100'">
