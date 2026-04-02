@@ -602,7 +602,7 @@
     <!-- ══ Investor Agent FAB ══════════════════════════════════════════════ -->
     <button
       v-if="!loading"
-      @click="showInvestorModal = true"
+      @click="openInvestorModal"
       class="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-sm shadow-2xl shadow-amber-500/40 hover:shadow-amber-500/60 hover:scale-105 active:scale-95 transition-all">
       <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
@@ -894,7 +894,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useI18n } from '#imports'
 import { useSwaAuth } from '~/composables/useSwaAuth'
 import AppLogo from '../components/AppLogo.vue'
@@ -1411,10 +1411,17 @@ const getTopTransactions = (categoryName, monthName) => {
 
 // ─── Investor Agent ────────────────────────────────────────────────────────────
 const showInvestorModal = ref(false)
-const investorTicker    = ref('')
+const investorTicker    = ref('MSFT')
 const investorLoading   = ref(false)
 const investorResult    = ref(null)
 const investorError     = ref(null)
+
+function openInvestorModal() {
+  showInvestorModal.value = true
+  if (!investorResult.value && !investorLoading.value) {
+    nextTick(() => analyzeStock())
+  }
+}
 
 async function analyzeStock() {
   const sym = investorTicker.value.trim().toUpperCase()
