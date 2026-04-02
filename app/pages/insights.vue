@@ -578,12 +578,28 @@
     <!-- ══ Investor Agent FAB ══════════════════════════════════════════════ -->
     <button
       v-if="!loading"
-      @click="openInvestorModal"
-      class="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-sm shadow-2xl shadow-amber-500/40 hover:shadow-amber-500/60 hover:scale-105 active:scale-95 transition-all">
-      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
-      </svg>
-      {{ t('inv_btn_label') }}
+      type="button"
+      class="inv-fab"
+      @click="openInvestorModal">
+      <span class="inv-fab__fold"></span>
+      <div class="inv-fab__points">
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+        <i class="inv-fab__point"></i>
+      </div>
+      <span class="inv-fab__inner">
+        <svg class="inv-fab__icon" fill="white" stroke="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+          <polyline points="13.18 1.37 13.18 9.64 21.45 9.64 10.82 22.63 10.82 14.36 2.55 14.36 13.18 1.37"></polyline>
+        </svg>
+        {{ t('inv_btn_label') }}
+      </span>
     </button>
 
     <!-- ══ Investor Agent Modal ═════════════════════════════════════════════ -->
@@ -1444,6 +1460,148 @@ async function analyzeStock() {
 </script>
 
 <style scoped>
+/* ── Investor Agent FAB ─────────────────────────────────────────────────────── */
+.inv-fab {
+  --round: 0.85rem;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 40;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  background:
+    radial-gradient(65.28% 65.28% at 50% 100%, rgba(251,191,36,0.85) 0%, rgba(251,191,36,0) 100%),
+    linear-gradient(0deg, #f59e0b, #ea580c);
+  border-radius: var(--round);
+  border: none;
+  outline: none;
+  padding: 12px 20px;
+  box-shadow: 0 8px 32px rgba(245,158,11,0.45);
+}
+.inv-fab::before,
+.inv-fab::after {
+  content: "";
+  position: absolute;
+  inset: var(--space);
+  transition: all 0.5s ease-in-out;
+  border-radius: calc(var(--round) - var(--space));
+  z-index: 0;
+}
+.inv-fab::before {
+  --space: 1px;
+  background: linear-gradient(177.95deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%);
+}
+.inv-fab::after {
+  --space: 2px;
+  background:
+    radial-gradient(65.28% 65.28% at 50% 100%, rgba(251,191,36,0.85) 0%, rgba(251,191,36,0) 100%),
+    linear-gradient(0deg, #f59e0b, #ea580c);
+}
+.inv-fab:active { transform: scale(0.95); }
+
+.inv-fab__fold {
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 1rem;
+  width: 1rem;
+  display: inline-block;
+  transition: all 0.5s ease-in-out;
+  background: radial-gradient(100% 75% at 55%, rgba(251,191,36,0.9) 0%, rgba(251,191,36,0) 100%);
+  box-shadow: 0 0 3px rgba(0,0,0,0.6);
+  border-bottom-left-radius: 0.5rem;
+  border-top-right-radius: var(--round);
+}
+.inv-fab__fold::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150%;
+  height: 150%;
+  transform: rotate(45deg) translateX(0%) translateY(-18px);
+  background-color: #fde68a;
+  pointer-events: none;
+}
+.inv-fab:hover .inv-fab__fold {
+  margin-top: -1rem;
+  margin-right: -1rem;
+}
+
+.inv-fab__points {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+.inv-fab__point {
+  bottom: -10px;
+  position: absolute;
+  animation: inv-float infinite ease-in-out;
+  pointer-events: none;
+  width: 2px;
+  height: 2px;
+  background-color: #fff;
+  border-radius: 9999px;
+}
+.inv-fab__point:nth-child(1)  { left: 10%; opacity: 1;   animation-duration: 2.35s; animation-delay: 0.2s; }
+.inv-fab__point:nth-child(2)  { left: 30%; opacity: 0.7; animation-duration: 2.5s;  animation-delay: 0.5s; }
+.inv-fab__point:nth-child(3)  { left: 25%; opacity: 0.8; animation-duration: 2.2s;  animation-delay: 0.1s; }
+.inv-fab__point:nth-child(4)  { left: 44%; opacity: 0.6; animation-duration: 2.05s; }
+.inv-fab__point:nth-child(5)  { left: 50%; opacity: 1;   animation-duration: 1.9s; }
+.inv-fab__point:nth-child(6)  { left: 75%; opacity: 0.5; animation-duration: 1.5s;  animation-delay: 1.5s; }
+.inv-fab__point:nth-child(7)  { left: 88%; opacity: 0.9; animation-duration: 2.2s;  animation-delay: 0.2s; }
+.inv-fab__point:nth-child(8)  { left: 58%; opacity: 0.8; animation-duration: 2.25s; animation-delay: 0.2s; }
+.inv-fab__point:nth-child(9)  { left: 98%; opacity: 0.6; animation-duration: 2.6s;  animation-delay: 0.1s; }
+.inv-fab__point:nth-child(10) { left: 65%; opacity: 1;   animation-duration: 2.5s;  animation-delay: 0.2s; }
+@keyframes inv-float {
+  0%   { transform: translateY(0); }
+  85%  { opacity: 0; }
+  100% { transform: translateY(-55px); opacity: 0; }
+}
+
+.inv-fab__inner {
+  z-index: 2;
+  gap: 7px;
+  position: relative;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  transition: color 0.2s ease-in-out;
+  white-space: nowrap;
+}
+.inv-fab__icon {
+  width: 16px;
+  height: 16px;
+  transition: fill 0.1s linear;
+  fill: white;
+  stroke: white;
+}
+.inv-fab:hover .inv-fab__icon {
+  fill: transparent;
+  animation:
+    inv-dasharray 1s linear forwards,
+    inv-filled 0.1s linear forwards 0.95s;
+}
+@keyframes inv-dasharray {
+  from { stroke-dasharray: 0 0 0 0; }
+  to   { stroke-dasharray: 68 68 0 0; }
+}
+@keyframes inv-filled {
+  to { fill: white; }
+}
+
 /* Smooth animations */
 @keyframes fadeInUp {
   from {

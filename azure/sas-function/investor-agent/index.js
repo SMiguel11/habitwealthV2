@@ -316,7 +316,7 @@ async function generateAnalysis(ticker, yfData, scores) {
 // ─── Safe number extraction ────────────────────────────────────────────────────
 function _n(val, multiplier = 1, decimals = 2) {
   const v = Number(val)
-  if (!isFinite(v)) return null
+  if (!Number.isFinite(v)) return null
   const f = Math.pow(10, decimals)
   return Math.round(v * multiplier * f) / f
 }
