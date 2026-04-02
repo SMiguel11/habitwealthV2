@@ -211,7 +211,7 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
       console.log(`[OpenAI #${callId}] Starting request to ${endpoint}`)
       const url = new URL(`/openai/deployments/${deployment}/chat/completions?api-version=2024-02-01`, endpoint)
       const payload = {
-        messages: [{ role: 'user', content: prompt.substring(0, 100) + '...' }],
+        messages: [{ role: 'user', content: prompt }],
         temperature: Number(options.temperature ?? 0.6),
         max_tokens: Number(options.maxTokens ?? 350),
       }
