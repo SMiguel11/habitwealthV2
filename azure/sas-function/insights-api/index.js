@@ -473,8 +473,8 @@ async function generateProviderAlternatives(repeatedExpenses) {
 
   if (!endpoint || !apiKey) return null
 
-  // Only process top 3 services with most significant increases (>5%)
-  const significant = repeatedExpenses.filter(e => e.incrementPercent > 5).slice(0, 3)
+  // Only process top 4 services with most significant increases (>5%)
+  const significant = repeatedExpenses.filter(e => e.incrementPercent > 5).slice(0, 4)
   if (!significant.length) return null
 
   const servicesJson = significant.map(e => ({
@@ -492,14 +492,14 @@ async function generateProviderAlternatives(repeatedExpenses) {
     'Each alternative: {"name":"...","estimatedPrice":number,"saving":number,"reason":"1 short sentence"}\n' +
     '"saving" = currentAmount minus estimatedPrice.\n' +
     'Only real, well-known services available in Spain/Europe. No markdown.\n\n' +
-    'Format: {"Steam":{"en":[...],"es":[...]},"Cabify":{"en":[...],"es":[...]}}'
+    'Format: {"Steam":{"en":[...],"es":[...]},"Cabify":{"en":[...],"es":[...]},"Endesa Luz":{"en":[...],"es":[...]}}'
 
   try {
     const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, {
       responseFormat: 'json_object',
       temperature: 0.3,
-      maxTokens: 1000,
-      timeout: 20000,
+      maxTokens: 1300,
+      timeout: 25000,
     })
     if (!raw) return null
     const parsed = _extractJsonObject(raw)
