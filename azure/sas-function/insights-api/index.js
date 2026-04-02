@@ -575,7 +575,8 @@ async function generateGoalOptimization(summaryData) {
     const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, {
       responseFormat: 'json_object',
       temperature: 0.25,
-      maxTokens: 900,
+      maxTokens: 1200,
+      timeout: 25000,
     })
     if (!raw) return null
 
