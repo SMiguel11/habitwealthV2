@@ -534,10 +534,12 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from '#imports'
+import { useSwaAuth } from '~/composables/useSwaAuth'
 import AppLogo from '../components/AppLogo.vue'
 import ApexChart from 'vue3-apexcharts'
 
 const { t, locale } = useI18n()
+const { principal, refresh: refreshAuth } = useSwaAuth()
 
 const loading = ref(true)
 
@@ -555,9 +557,13 @@ const documentCount = ref(0)
 const recentTransactions = ref([])
 
 async function fetchInsights() {
+  // Get the real userId from the authenticated principal
+  await refreshAuth()
+  const userId = principal.value?.userId || 'local-user'
+  
   const isProduction = globalThis.location !== undefined && globalThis.location.hostname !== 'localhost'
   const functionBase = isProduction ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
-  const res = await fetch(`${functionBase}/api/insights-api?userId=local-user&lang=${locale.value}`)
+  const res = await fetch(`${functionBase}/api/insights-api?userId=${userId}&lang=${locale.value}`)
   const data = await res.json()
   if (data.summary) {
     summary.value = data.summary
