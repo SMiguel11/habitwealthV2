@@ -275,8 +275,9 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
         _lastOpenAIError = errMsg
         resolve(null)
       })
-      req.setTimeout(9000, () => {
-        const errMsg = `Request timeout after 9s`
+      const timeoutMs = Number(options.timeout ?? 9000)
+      req.setTimeout(timeoutMs, () => {
+        const errMsg = `Request timeout after ${timeoutMs / 1000}s`
         console.error(`[OpenAI #${callId}] ${errMsg}`)
         _lastOpenAIError = errMsg
         req.destroy()
@@ -491,6 +492,7 @@ async function generateProviderAlternatives(repeatedExpenses) {
       responseFormat: 'json_object',
       temperature: 0.3,
       maxTokens: 1000,
+      timeout: 20000,
     })
     if (!raw) return null
     const parsed = _extractJsonObject(raw)
