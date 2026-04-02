@@ -459,24 +459,6 @@
             </div>
           </div>
 
-          <!-- Recent Transactions -->
-          <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
-            <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-            <h2 class="text-sm font-bold text-white mb-5">{{ t('ins_transactions_title') }}</h2>
-            <div v-if="recentTransactions.length" class="space-y-0.5">
-              <div v-for="(t, idx) in recentTransactions.slice(0, 8)" :key="idx"
-                class="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0 group hover:bg-white/[0.02] -mx-2 px-2 rounded-lg transition-colors">
-                <div>
-                  <p class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">{{ t.merchant }}</p>
-                  <p class="text-[11px] text-slate-700">{{ t.date }}</p>
-                </div>
-                <span class="text-sm font-bold tabular-nums" :class="t.amount >= 0 ? 'text-emerald-400' : 'text-red-400'">
-                  {{ t.amount >= 0 ? '+' : '−' }}€{{ Math.abs(t.amount).toFixed(2) }}
-                </span>
-              </div>
-            </div>
-            <div v-else class="text-sm text-slate-600">{{ t('ins_transactions_empty') }}</div>
-          </div>
         </div>
 
         <!-- RIGHT: 1/3 width -->
@@ -576,6 +558,25 @@
               </div>
             </div>
             <div v-else class="text-xs text-slate-600 leading-relaxed">{{ t('ins_recs_empty') }}</div>
+          </div>
+
+          <!-- Recent Transactions -->
+          <div class="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
+            <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            <h3 class="text-sm font-bold text-white mb-4">{{ t('ins_transactions_title') }}</h3>
+            <div v-if="recentTransactions.length" class="space-y-0.5">
+              <div v-for="(tx, idx) in recentTransactions.slice(0, 10)" :key="idx"
+                class="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0 group hover:bg-white/[0.02] -mx-2 px-2 rounded-lg transition-colors">
+                <div class="min-w-0 flex-1 pr-3">
+                  <p class="text-xs font-medium text-slate-300 group-hover:text-white transition-colors truncate">{{ tx.merchant }}</p>
+                  <p class="text-[10px] text-slate-700">{{ tx.date }}</p>
+                </div>
+                <span class="text-xs font-bold tabular-nums shrink-0" :class="tx.amount >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                  {{ tx.amount >= 0 ? '+' : '−' }}€{{ Math.abs(tx.amount).toFixed(2) }}
+                </span>
+              </div>
+            </div>
+            <div v-else class="text-xs text-slate-600">{{ t('ins_transactions_empty') }}</div>
           </div>
         </div>
 
