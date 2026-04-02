@@ -436,7 +436,7 @@
                     <div v-for="(alt, aIdx) in getAlternatives(expense.merchant)" :key="aIdx"
                       class="rounded-lg bg-violet-500/[0.06] border border-violet-500/20 p-3 transition-all hover:bg-violet-500/[0.10] hover:border-violet-500/40"
                       :class="alt.url ? 'cursor-pointer group/alt' : ''"
-                      @click="alt.url && alt.url.startsWith('https://') && window.open(alt.url, '_blank', 'noopener,noreferrer')">
+                      @click="openAltLink(alt.url)">
                       <div class="flex items-center justify-between mb-1">
                         <div class="flex items-center gap-1.5">
                           <span class="text-xs font-semibold text-violet-300 group-hover/alt:text-violet-200 transition-colors">{{ alt.name }}</span>
@@ -1370,6 +1370,11 @@ const providerAlternatives = computed(() => summary.value?.providerAlternatives 
 const expandedAlternatives = ref({})
 function toggleAlternatives(merchant) {
   expandedAlternatives.value[merchant] = !expandedAlternatives.value[merchant]
+}
+function openAltLink(url) {
+  if (typeof window !== 'undefined' && url && url.startsWith('https://')) {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
 }
 function getAlternatives(merchant) {
   const alts = providerAlternatives.value[merchant]
