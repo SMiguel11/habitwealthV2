@@ -733,6 +733,21 @@
                   </p>
                 </div>
               </div>
+
+              <!-- Personal capacity nudge: shown only when BUY + positive net cash flow -->
+              <div v-if="investorResult.recommendation === 'BUY' && netCashFlow > 0"
+                class="mt-4 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 px-4 py-3.5 flex items-start gap-3">
+                <span class="text-lg shrink-0 mt-px">💚</span>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-emerald-400 mb-1">{{ t('inv_buy_capacity_title') }}</p>
+                  <p class="text-xs text-slate-300 leading-relaxed">
+                    {{ t('inv_buy_capacity_body_pre') }}
+                    <span class="font-black text-emerald-300"> +€{{ netCashFlow.toLocaleString() }} </span>
+                    {{ t('inv_buy_capacity_body_post') }}
+                  </p>
+                  <p class="text-[10px] text-slate-600 mt-1.5 leading-relaxed italic">{{ t('inv_buy_capacity_tip') }}</p>
+                </div>
+              </div>
             </div>
 
             <!-- ② Score breakdown grid -->

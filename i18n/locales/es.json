@@ -197,6 +197,7 @@
   "ins_cat_subscriptions": "Suscripciones",
   "ins_cat_housing":       "Vivienda",
   "ins_cat_restaurants":   "Restaurantes",
+  "ins_cat_income":        "Ingresos",
 
   "ins_nudge_impulse_1": "Antes de tu próxima compra en línea, espera 48 horas. ¿Sigue siendo necesario?",
   "ins_nudge_impulse_2": "Prueba la regla 10-10-10: ¿Cómo te sentirás con esta compra en 10 minutos, 10 horas, 10 días?",
@@ -255,5 +256,9 @@
   "inv_disclaimer_title": "Importante",
   "inv_error_hint":       "Comprueba el ticker (ej. AAPL, MSFT, SAN.MC) e inténtalo de nuevo.",
   "inv_empty_title":      "Introduce un ticker para empezar",
-  "inv_empty_hint":       "Prueba AAPL, MSFT, GOOGL, NVDA, o acciones europeas como SAN.MC, ITX.MC, ASML.AS"
+  "inv_empty_hint":       "Prueba AAPL, MSFT, GOOGL, NVDA, o acciones europeas como SAN.MC, ITX.MC, ASML.AS",
+  "inv_buy_capacity_title": "Tus finanzas respaldan esta oportunidad",
+  "inv_buy_capacity_body_pre": "Tu flujo neto mensual es de",
+  "inv_buy_capacity_body_post": "— tienes capacidad real para considerar esta inversión de manera responsable.",
+  "inv_buy_capacity_tip": "Como regla general, invierte solo el dinero que no necesitarás en los próximos 12 meses."
 }

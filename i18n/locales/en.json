@@ -197,6 +197,7 @@
   "ins_cat_subscriptions": "Subscriptions",
   "ins_cat_housing":       "Housing",
   "ins_cat_restaurants":   "Restaurants",
+  "ins_cat_income":        "Income",
 
   "ins_nudge_impulse_1": "Before your next online purchase, wait 48 hours. Is it still necessary?",
   "ins_nudge_impulse_2": "Try the 10-10-10 rule: How will you feel about this purchase in 10 minutes, 10 hours, 10 days?",
@@ -255,5 +256,9 @@
   "inv_disclaimer_title": "Important",
   "inv_error_hint":       "Check the ticker symbol (e.g. AAPL, MSFT, SAN.MC) and try again.",
   "inv_empty_title":      "Enter a stock ticker to begin",
-  "inv_empty_hint":       "Try AAPL, MSFT, GOOGL, NVDA, or European stocks like SAN.MC, ITX.MC, ASML.AS"
+  "inv_empty_hint":       "Try AAPL, MSFT, GOOGL, NVDA, or European stocks like SAN.MC, ITX.MC, ASML.AS",
+  "inv_buy_capacity_title": "Your finances support this opportunity",
+  "inv_buy_capacity_body_pre": "Your net monthly cash flow is",
+  "inv_buy_capacity_body_post": "— you have real capacity to consider this investment responsibly.",
+  "inv_buy_capacity_tip": "As a general rule, only invest money you won't need in the next 12 months."
 }
