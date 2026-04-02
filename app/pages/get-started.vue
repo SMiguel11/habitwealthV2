@@ -201,7 +201,7 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="successMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 bg-emerald-950/90 border border-emerald-500/30 text-emerald-300 px-5 py-3.5 rounded-2xl text-sm font-medium shadow-2xl shadow-black/60 backdrop-blur-md whitespace-nowrap">
+      <div v-if="successMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] max-w-[calc(100vw-2rem)] flex items-center gap-3 bg-emerald-950/90 border border-emerald-500/30 text-emerald-300 px-5 py-3.5 rounded-2xl text-sm font-medium shadow-2xl shadow-black/60 backdrop-blur-md">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {{ successMessage }}
       </div>
@@ -216,7 +216,7 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="errorMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 bg-red-950/90 border border-red-500/30 text-red-300 px-5 py-3.5 rounded-2xl text-sm font-medium shadow-2xl shadow-black/60 backdrop-blur-md whitespace-nowrap">
+      <div v-if="errorMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] max-w-[calc(100vw-2rem)] flex items-center gap-3 bg-red-950/90 border border-red-500/30 text-red-300 px-5 py-3.5 rounded-2xl text-sm font-medium shadow-2xl shadow-black/60 backdrop-blur-md">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
         {{ errorMessage }}
       </div>

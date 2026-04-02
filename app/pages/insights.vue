@@ -240,8 +240,8 @@
       <!-- Main grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- LEFT: 2/3 width -->
-        <div class="lg:col-span-2 space-y-6">
+        <!-- LEFT: 2/3 width — order-2 on mobile so sidebar shows first -->
+        <div class="lg:col-span-2 order-2 lg:order-1 space-y-6">
 
           <!-- Spending by category -->
           <div class="relative rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.01] p-6">
@@ -283,8 +283,8 @@
                         <p class="text-[10px] font-semibold" :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? (item.catKey === 'Income' ? 'text-emerald-400' : 'text-red-400') : 'text-slate-500'">€{{ Math.round(monthly * 100) / 100 }}</p>
                         <p class="text-[9px]" :class="mIdx === item.maxMonthIndex && getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0 ? (item.catKey === 'Income' ? 'text-emerald-600' : 'text-red-600') : 'text-slate-700'">{{ item.monthNames[mIdx] }}</p>
                         
-                        <!-- Popover with top transactions (only for max month) -->
-                        <div v-if="mIdx === item.maxMonthIndex" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover/month:opacity-100 pointer-events-none group-hover/month:pointer-events-auto transition-opacity duration-200">
+                        <!-- Popover with top transactions (only for max month — desktop only, touch can't hover) -->
+                        <div v-if="mIdx === item.maxMonthIndex" class="hidden sm:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover/month:opacity-100 pointer-events-none group-hover/month:pointer-events-auto transition-opacity duration-200">
                           <div v-if="getTopTransactions(item.catKey, item.monthNames[mIdx]).length > 0" :class="['rounded-lg shadow-2xl p-2 min-w-max whitespace-nowrap', item.catKey === 'Income' ? 'bg-emerald-950 border border-emerald-700' : 'bg-slate-900 border border-slate-700']">
                             <p :class="['text-[10px] font-bold mb-1.5 pb-1 border-b', item.catKey === 'Income' ? 'text-emerald-400 border-emerald-700' : 'text-slate-400 border-slate-700']">{{ item.catKey === 'Income' ? 'Ingresos Principales' : (t('ins_top_expenses') || 'Gastos Principales') }}</p>
                             <div v-for="(tx, txIdx) in getTopTransactions(item.catKey, item.monthNames[mIdx])" :key="txIdx" :class="['text-[10px] py-0.5 flex items-center justify-between gap-2', item.catKey === 'Income' ? 'text-emerald-300' : 'text-slate-300']">
@@ -357,7 +357,7 @@
               <p class="text-xs text-slate-600">{{ t('ins_repeated_expenses_desc') || 'Fixed service costs that have increased' }}</p>
             </div>
 
-            <div class="space-y-2 max-h-[400px] overflow-y-auto">
+            <div class="space-y-2 overflow-y-auto sm:max-h-[400px]">
               <div v-for="(expense, idx) in repeatedExpenses" :key="idx"
                 class="rounded-lg border p-3.5 transition-all hover:border-amber-500/40 hover:bg-amber-500/[0.08]"
                 :class="expense.incrementPercent > 10 
@@ -461,8 +461,8 @@
 
         </div>
 
-        <!-- RIGHT: 1/3 width -->
-        <div class="space-y-6">
+        <!-- RIGHT: 1/3 width — order-1 on mobile: alert + nudges + transactions appear above heavy charts -->
+        <div class="order-1 lg:order-2 space-y-6">
 
           <!-- Weekend/Utility Spend Alert (Utility takes priority) -->
           <div v-if="alertToShow"
