@@ -402,10 +402,13 @@ async function generateScoreExplanation(summaryData, lang) {
     `{"en":{"positives":["..."],"warnings":["..."]},"es":{"positives":["..."],"warnings":["..."]}}`
 
   try {
-    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt)
+    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, {
+      responseFormat: 'json_object',
+      maxTokens: 350,
+    })
     if (!raw) return staticResult
-    const parsed = JSON.parse(raw)
-    const localized = lang === 'es' ? (parsed.es ?? parsed.en) : parsed.en
+    const parsed = _extractJsonObject(raw)
+    const localized = lang === 'es' ? (parsed?.es ?? parsed?.en) : parsed?.en
     if (localized?.positives?.length) return { ...localized, source: 'gpt-4o' }
   } catch { /* fall through */ }
 
@@ -445,9 +448,13 @@ async function generateNudges(summaryData) {
     '{"en":["nudge 1","nudge 2","nudge 3"],"es":["nudge 1 en español","nudge 2 en español","nudge 3 en español"]}'
 
   try {
-    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, { maxTokens: 300, temperature: 0.5 })
+    const raw = await _callOpenAI(endpoint, deployment, apiKey, prompt, {
+      responseFormat: 'json_object',
+      maxTokens: 300,
+      temperature: 0.5,
+    })
     if (!raw) return null
-    const parsed = JSON.parse(raw)
+    const parsed = _extractJsonObject(raw)
     if (Array.isArray(parsed?.en) && parsed.en.length && Array.isArray(parsed?.es) && parsed.es.length) {
       return { nudges_en: parsed.en, nudges_es: parsed.es, source: 'gpt-4o' }
     }
