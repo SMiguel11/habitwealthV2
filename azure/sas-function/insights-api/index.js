@@ -6,6 +6,10 @@
 const { getDocuments } = require('../shared/cosmos-db')
 const https = require('node:https')
 
+// Debug: capture last OpenAI error for troubleshooting
+let _lastOpenAIError = null
+let _openAICallCount = 0
+
 function getMonthlySavings(byCategory = {}, transactions = [], fullDoc = {}) {
   // Direct calculation: Income - Expenses
   const totalIncome = Number(fullDoc?.agentResult?.agents?.documentIntelligence?.totalIncome) || 
@@ -201,11 +205,13 @@ function getDocumentCategoryTotals(doc = {}) {
  */
 function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
   return new Promise((resolve) => {
+    _openAICallCount++
+    const callId = _openAICallCount
     try {
-      console.log(`[OpenAI] Starting request to ${endpoint}`)
+      console.log(`[OpenAI #${callId}] Starting request to ${endpoint}`)
       const url = new URL(`/openai/deployments/${deployment}/chat/completions?api-version=2024-02-01`, endpoint)
       const payload = {
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: prompt.substring(0, 100) + '...' }],
         temperature: Number(options.temperature ?? 0.6),
         max_tokens: Number(options.maxTokens ?? 350),
       }
@@ -213,8 +219,8 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
         payload.response_format = { type: 'json_object' }
       }
       const body = JSON.stringify(payload)
-      console.log(`[OpenAI] Request URL: ${url.toString()}`)
-      console.log(`[OpenAI] Payload size: ${body.length} bytes`)
+      console.log(`[OpenAI #${callId}] Request URL: ${url.toString()}`)
+      console.log(`[OpenAI #${callId}] Payload size: ${body.length} bytes`)
       
       const req = https.request({
         hostname: url.hostname,
@@ -227,45 +233,56 @@ function _callOpenAI(endpoint, deployment, apiKey, prompt, options = {}) {
           'Content-Length': Buffer.byteLength(body),
         },
       }, (res) => {
-        console.log(`[OpenAI] Response status: ${res.statusCode}`)
+        console.log(`[OpenAI #${callId}] Response status: ${res.statusCode}`)
         let data = ''
         res.on('data', chunk => { data += chunk })
         res.on('end', () => {
           try {
             const parsed = JSON.parse(data)
             if (parsed.error) {
-              console.error(`[OpenAI] API Error: ${JSON.stringify(parsed.error)}`)
+              const errMsg = `OpenAI API Error: ${JSON.stringify(parsed.error)}`
+              console.error(`[OpenAI #${callId}] ${errMsg}`)
+              _lastOpenAIError = errMsg
               resolve(null)
               return
             }
             const response = parsed.choices?.[0]?.message?.content || null
             if (response) {
-              console.log(`[OpenAI] Success - got response (${response.length} chars)`)
+              console.log(`[OpenAI #${callId}] Success - got response (${response.length} chars)`)
             } else {
-              console.warn(`[OpenAI] No content in response`)
+              const warnMsg = `No content in response: ${JSON.stringify(parsed).substring(0, 200)}`
+              console.warn(`[OpenAI #${callId}] ${warnMsg}`)
+              _lastOpenAIError = warnMsg
             }
             resolve(response)
           }
           catch (parseErr) {
-            console.error(`[OpenAI] Parse error: ${parseErr.message}`)
-            console.error(`[OpenAI] Response body: ${data.substring(0, 500)}`)
+            const errMsg = `Parse error: ${parseErr.message}, body: ${data.substring(0, 300)}`
+            console.error(`[OpenAI #${callId}] ${errMsg}`)
+            _lastOpenAIError = errMsg
             resolve(null)
           }
         })
       })
       req.on('error', (err) => {
-        console.error(`[OpenAI] Request error: ${err.message}`)
+        const errMsg = `Request error: ${err.message}`
+        console.error(`[OpenAI #${callId}] ${errMsg}`)
+        _lastOpenAIError = errMsg
         resolve(null)
       })
       req.setTimeout(9000, () => {
-        console.error(`[OpenAI] Request timeout after 9s`)
+        const errMsg = `Request timeout after 9s`
+        console.error(`[OpenAI #${callId}] ${errMsg}`)
+        _lastOpenAIError = errMsg
         req.destroy()
         resolve(null)
       })
       req.write(body)
       req.end()
     } catch (err) {
-      console.error(`[OpenAI] Catch error: ${err.message}`)
+      const errMsg = `Catch error: ${err.message}`
+      console.error(`[OpenAI #${callId}] ${errMsg}`)
+      _lastOpenAIError = errMsg
       resolve(null)
     }
   })
@@ -870,7 +887,18 @@ module.exports = async function (context, req) {
   if (!docs || !docs.length) {
     context.res = {
       status: 200,
-      body: { documents: [], summary: null, documentCount: 0, message: 'No documents analyzed yet.' }
+      headers: {
+        'X-OpenAI-Last-Error': _lastOpenAIError || 'none'
+      },
+      body: { 
+        documents: [], 
+        summary: null, 
+        documentCount: 0, 
+        message: 'No documents analyzed yet.',
+        _debug: {
+          openaiLastError: _lastOpenAIError || null
+        }
+      }
     }
     return
   }
@@ -1030,10 +1058,18 @@ module.exports = async function (context, req) {
 
   context.res = {
     status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-OpenAI-Last-Error': _lastOpenAIError || 'none'
+    },
     body: {
       userId,
       documentCount: analysisDocs.length,
       totalDocumentCount: docs.length,
+      _debug: {
+        openaiLastError: _lastOpenAIError || null,
+        openaiCallCount: _openAICallCount
+      },
       summary: {
         habitWealthScore:   habitScore,
         financialPersona:   twin?.financialPersona || 'Conscious Spender',
