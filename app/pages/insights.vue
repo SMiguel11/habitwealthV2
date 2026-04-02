@@ -598,6 +598,298 @@
 
       </div>
     </main>
+
+    <!-- ══ Investor Agent FAB ══════════════════════════════════════════════ -->
+    <button
+      v-if="!loading"
+      @click="showInvestorModal = true"
+      class="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-sm shadow-2xl shadow-amber-500/40 hover:shadow-amber-500/60 hover:scale-105 active:scale-95 transition-all">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+      </svg>
+      {{ t('inv_btn_label') }}
+    </button>
+
+    <!-- ══ Investor Agent Modal ═════════════════════════════════════════════ -->
+    <div
+      v-if="showInvestorModal"
+      class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-y-auto"
+      @click.self="showInvestorModal = false">
+      <div class="flex min-h-full items-start justify-center p-4 pt-12">
+        <div class="relative w-full max-w-lg bg-slate-900 rounded-2xl border border-white/10 shadow-2xl mb-8">
+
+          <!-- Header -->
+          <div class="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-sm font-bold text-white">{{ t('inv_title') }}</h2>
+                <p class="text-[10px] text-slate-500 mt-px">{{ t('inv_subtitle') }}</p>
+              </div>
+            </div>
+            <button @click="showInvestorModal = false" class="text-slate-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Search bar -->
+          <div class="p-5 border-b border-white/[0.06]">
+            <div class="flex gap-2">
+              <input
+                v-model="investorTicker"
+                @keyup.enter="analyzeStock"
+                :placeholder="t('inv_ticker_placeholder')"
+                class="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-700 focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 uppercase tracking-wider"
+                maxlength="10"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button
+                @click="analyzeStock"
+                :disabled="investorLoading || !investorTicker.trim()"
+                class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-black text-sm font-bold transition-colors shrink-0">
+                {{ t('inv_analyze') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading state -->
+          <div v-if="investorLoading" class="flex flex-col items-center justify-center py-14 gap-4">
+            <div class="relative w-12 h-12">
+              <div class="absolute inset-0 rounded-full border-2 border-white/[0.06]"></div>
+              <div class="absolute inset-0 rounded-full border-2 border-t-amber-400 animate-spin"></div>
+            </div>
+            <p class="text-sm text-slate-400">{{ t('inv_loading') }}</p>
+            <p class="text-[11px] text-slate-700">{{ investorTicker }} · Yahoo Finance + GPT-4o-mini</p>
+          </div>
+
+          <!-- Error state -->
+          <div v-else-if="investorError" class="px-5 py-6">
+            <div class="rounded-xl bg-red-500/10 border border-red-500/20 p-4">
+              <p class="text-sm text-red-300 font-medium">⚠️ {{ investorError }}</p>
+              <p class="text-xs text-slate-600 mt-1">{{ t('inv_error_hint') }}</p>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <template v-else-if="investorResult">
+
+            <!-- ① Company + Recommendation banner -->
+            <div class="p-5 border-b border-white/[0.05]">
+              <!-- Company info row -->
+              <div class="flex items-start justify-between gap-2 mb-4">
+                <div>
+                  <h3 class="font-bold text-white">{{ investorResult.companyName }}</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    {{ investorResult.sector }}
+                    <span v-if="investorResult.industry"> · {{ investorResult.industry }}</span>
+                  </p>
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <span v-if="investorResult.metrics?.marketCapB" class="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/5 text-slate-400">
+                    ${{ investorResult.metrics.marketCapB }}B
+                  </span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                    :class="investorResult.dataSource === 'yahoo-finance' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-600'">
+                    {{ investorResult.dataSource === 'yahoo-finance' ? t('inv_data_source') : t('inv_ai_knowledge') }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Recommendation banner -->
+              <div class="rounded-xl border px-4 py-3 flex items-center justify-between"
+                :class="{
+                  'bg-emerald-500/10 border-emerald-500/30': investorResult.recommendation === 'BUY',
+                  'bg-amber-500/10 border-amber-500/25': investorResult.recommendation === 'HOLD',
+                  'bg-red-500/10 border-red-500/25': investorResult.recommendation === 'SELL',
+                }">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl">{{ investorResult.recommendation === 'BUY' ? '🟢' : investorResult.recommendation === 'HOLD' ? '🟡' : '🔴' }}</span>
+                  <div>
+                    <p class="text-[10px] uppercase tracking-widest font-semibold text-slate-500">{{ t('inv_recommendation') }}</p>
+                    <p class="font-black text-xl leading-tight"
+                      :class="{
+                        'text-emerald-400': investorResult.recommendation === 'BUY',
+                        'text-amber-400':   investorResult.recommendation === 'HOLD',
+                        'text-red-400':     investorResult.recommendation === 'SELL',
+                      }">
+                      {{ investorResult.recommendation === 'BUY' ? t('inv_score_buy') : investorResult.recommendation === 'HOLD' ? t('inv_score_hold') : t('inv_score_sell') }}
+                    </p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] text-slate-600 uppercase tracking-widest">{{ t('inv_final_score') }}</p>
+                  <p class="text-3xl font-black text-white leading-none mt-0.5">
+                    {{ investorResult.scores.finalScore }}<span class="text-sm text-slate-600 font-normal">/10</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ② Score breakdown grid -->
+            <div class="p-5 border-b border-white/[0.05]">
+              <p class="text-[10px] text-slate-700 uppercase tracking-widest font-semibold mb-3">{{ t('inv_scores_title') }}</p>
+              <div class="grid grid-cols-2 gap-2.5">
+                <!-- Health -->
+                <div class="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                  <p class="text-[10px] text-slate-500 font-semibold mb-2">{{ t('inv_health') }}</p>
+                  <div class="flex items-end justify-between mb-2">
+                    <span class="text-xl font-black text-emerald-400">{{ investorResult.scores.health }}</span>
+                    <span class="text-[10px] text-slate-700">/10</span>
+                  </div>
+                  <div class="h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div class="h-full bg-emerald-400 rounded-full" :style="`width:${investorResult.scores.health * 10}%`"></div>
+                  </div>
+                </div>
+                <!-- Growth -->
+                <div class="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                  <p class="text-[10px] text-slate-500 font-semibold mb-2">{{ t('inv_growth') }}</p>
+                  <div class="flex items-end justify-between mb-2">
+                    <span class="text-xl font-black text-blue-400">{{ investorResult.scores.growth }}</span>
+                    <span class="text-[10px] text-slate-700">/10</span>
+                  </div>
+                  <div class="h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-400 rounded-full" :style="`width:${investorResult.scores.growth * 10}%`"></div>
+                  </div>
+                </div>
+                <!-- Valuation -->
+                <div class="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                  <p class="text-[10px] text-slate-500 font-semibold mb-2">{{ t('inv_valuation') }}</p>
+                  <div class="flex items-end justify-between mb-2">
+                    <span class="text-xl font-black text-violet-400">{{ investorResult.scores.valuation }}</span>
+                    <span class="text-[10px] text-slate-700">/10</span>
+                  </div>
+                  <div class="h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div class="h-full bg-violet-400 rounded-full" :style="`width:${investorResult.scores.valuation * 10}%`"></div>
+                  </div>
+                </div>
+                <!-- Risk -->
+                <div class="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                  <p class="text-[10px] text-slate-500 font-semibold mb-2">{{ t('inv_risk') }}</p>
+                  <div class="flex items-end justify-between mb-2">
+                    <span class="text-xl font-black text-red-400">{{ investorResult.scores.risk }}</span>
+                    <span class="text-[10px] text-slate-700">/10</span>
+                  </div>
+                  <div class="h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div class="h-full bg-red-400 rounded-full" :style="`width:${investorResult.scores.risk * 10}%`"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ③ Live financial metrics (only if Yahoo Finance returned data) -->
+            <div v-if="investorResult.metrics" class="p-5 border-b border-white/[0.05]">
+              <p class="text-[10px] text-slate-700 uppercase tracking-widest font-semibold mb-3">{{ t('inv_metrics_title') }}</p>
+              <div class="grid grid-cols-2 gap-1.5 text-xs">
+                <div v-if="investorResult.metrics.revenueGrowth != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">{{ t('inv_metric_rev_growth') }}</span>
+                  <span class="font-semibold" :class="investorResult.metrics.revenueGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'">{{ investorResult.metrics.revenueGrowth }}%</span>
+                </div>
+                <div v-if="investorResult.metrics.grossMargins != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">{{ t('inv_metric_gross_margin') }}</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.grossMargins }}%</span>
+                </div>
+                <div v-if="investorResult.metrics.forwardPE != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">Forward P/E</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.forwardPE }}×</span>
+                </div>
+                <div v-if="investorResult.metrics.pegRatio != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">PEG Ratio</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.pegRatio }}</span>
+                </div>
+                <div v-if="investorResult.metrics.roe != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">ROE</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.roe }}%</span>
+                </div>
+                <div v-if="investorResult.metrics.beta != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">Beta</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.beta }}</span>
+                </div>
+                <div v-if="investorResult.metrics.debtToEquity != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">Debt/Equity</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.debtToEquity }}%</span>
+                </div>
+                <div v-if="investorResult.metrics.currentRatio != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">Current Ratio</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.currentRatio }}</span>
+                </div>
+                <div v-if="investorResult.metrics.freeCashflowB != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">Free Cash Flow</span>
+                  <span class="font-semibold" :class="investorResult.metrics.freeCashflowB >= 0 ? 'text-emerald-400' : 'text-red-400'">${{ investorResult.metrics.freeCashflowB }}B</span>
+                </div>
+                <div v-if="investorResult.metrics.netMargins != null" class="flex justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+                  <span class="text-slate-600">Net Margin</span>
+                  <span class="font-semibold text-white">{{ investorResult.metrics.netMargins }}%</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="px-5 py-3 border-b border-white/[0.05]">
+              <p class="text-[11px] text-amber-700 flex items-center gap-1.5">
+                <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                {{ t('inv_no_data') }}
+              </p>
+            </div>
+
+            <!-- ④ AI narrative -->
+            <div class="p-5 space-y-4">
+              <!-- Rationale -->
+              <p class="text-sm text-slate-300 leading-relaxed">{{ investorResult.narrative.rationale }}</p>
+
+              <!-- Strengths -->
+              <div v-if="investorResult.narrative.positives?.length">
+                <p class="text-[10px] text-slate-700 uppercase tracking-widest font-semibold mb-2">{{ t('inv_positives') }}</p>
+                <ul class="space-y-1.5">
+                  <li v-for="(p, i) in investorResult.narrative.positives" :key="i" class="flex items-start gap-2 text-xs text-slate-300">
+                    <span class="text-emerald-400 mt-px shrink-0 font-bold">✓</span>{{ p }}
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Risks -->
+              <div v-if="investorResult.narrative.risks?.length">
+                <p class="text-[10px] text-slate-700 uppercase tracking-widest font-semibold mb-2">{{ t('inv_risks') }}</p>
+                <ul class="space-y-1.5">
+                  <li v-for="(r, i) in investorResult.narrative.risks" :key="i" class="flex items-start gap-2 text-xs text-slate-300">
+                    <span class="text-red-400 mt-px shrink-0">⚠</span>{{ r }}
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Conclusion -->
+              <div v-if="investorResult.narrative.conclusion" class="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3.5">
+                <p class="text-[10px] uppercase tracking-widest font-semibold text-slate-600 mb-1.5">{{ t('inv_conclusion') }}</p>
+                <p class="text-xs text-slate-300 leading-relaxed">{{ investorResult.narrative.conclusion }}</p>
+              </div>
+
+              <!-- Disclaimer -->
+              <div class="rounded-xl bg-amber-500/5 border border-amber-500/15 p-3">
+                <p class="text-[10px] font-bold text-amber-600 mb-1">⚠️ {{ t('inv_disclaimer_title') }}</p>
+                <p class="text-[10px] text-slate-600 leading-relaxed">{{ investorResult.narrative.disclaimer }}</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Empty state (no search yet) -->
+          <div v-else class="px-5 py-10 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-amber-500/60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-400 mb-1">{{ t('inv_empty_title') }}</p>
+            <p class="text-xs text-slate-700 leading-relaxed">{{ t('inv_empty_hint') }}</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -1115,6 +1407,43 @@ const getTopTransactions = (categoryName, monthName) => {
   
   console.log(`[getTopTransactions] Found ${monthData.transactions.length} transactions for category "${categoryName}" in month ${monthNum}`)
   return monthData.transactions || []
+}
+
+// ─── Investor Agent ────────────────────────────────────────────────────────────
+const showInvestorModal = ref(false)
+const investorTicker    = ref('')
+const investorLoading   = ref(false)
+const investorResult    = ref(null)
+const investorError     = ref(null)
+
+async function analyzeStock() {
+  const sym = investorTicker.value.trim().toUpperCase()
+  if (!sym || investorLoading.value) return
+  investorLoading.value = true
+  investorResult.value  = null
+  investorError.value   = null
+  try {
+    const isProd = typeof globalThis.location !== 'undefined' && globalThis.location.hostname !== 'localhost'
+    const base   = isProd ? 'https://hwbase-fn-sas-00211.azurewebsites.net' : ''
+    const res    = await fetch(`${base}/api/investor-agent?ticker=${encodeURIComponent(sym)}&lang=${locale.value}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      investorError.value = err.error || (locale.value === 'es' ? 'Error del servidor.' : 'Server error.')
+      return
+    }
+    const data = await res.json()
+    if (data.error) {
+      investorError.value = data.error
+    } else {
+      investorResult.value = data
+    }
+  } catch {
+    investorError.value = locale.value === 'es'
+      ? 'No se pudo conectar con el servidor.'
+      : 'Could not connect to server.'
+  } finally {
+    investorLoading.value = false
+  }
 }
 </script>
 
