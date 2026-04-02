@@ -326,7 +326,7 @@
     </div>
 
     <!-- ======= GOALS MODAL ======= -->
-    <dialog v-if="showGoalsModal" @click.self="closeGoals" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" aria-labelledby="goals-title">
+    <div v-if="showGoalsModal" @click.self="closeGoals" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" role="dialog" aria-modal="true" aria-labelledby="goals-title">
       <div class="relative w-full max-w-[540px] max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-slate-900 shadow-2xl shadow-black/70">
         <div class="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-amber-400/50 to-transparent"></div>
         <div class="p-6">
@@ -397,7 +397,7 @@
           </div>
         </div>
       </div>
-    </dialog>
+    </div>
 
   </div>
 </template>
