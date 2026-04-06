@@ -200,7 +200,7 @@
 
               <!-- Score display -->
               <div class="relative flex items-end gap-2 mb-1">
-                <span class="text-[64px] font-black text-white leading-none tracking-tighter">84</span>
+                <span class="text-[64px] font-black text-white leading-none tracking-tighter tabular-nums">{{ animScore }}</span>
                 <span class="text-2xl text-slate-600 font-semibold mb-2">/100</span>
               </div>
               <div class="relative flex items-center gap-1.5 text-xs text-emerald-400 font-semibold mb-6">
@@ -215,9 +215,9 @@
                 <div v-for="cat in previewCategories" :key="cat.name" class="flex items-center gap-3">
                   <span class="text-xs text-slate-500 w-16 shrink-0">{{ cat.name }}</span>
                   <div class="flex-1 bg-white/[0.05] rounded-full h-1.5">
-                    <div class="h-1.5 rounded-full transition-all" :class="cat.color" :style="{ width: cat.pct }"></div>
+                    <div class="h-1.5 rounded-full" :class="cat.color" :style="{ width: cat.pct }"></div>
                   </div>
-                  <span class="text-xs text-slate-300 font-medium w-12 text-right">{{ cat.amount }}</span>
+                  <span class="text-xs text-slate-300 font-medium w-12 text-right tabular-nums">{{ cat.amount }}</span>
                 </div>
               </div>
 
@@ -391,7 +391,7 @@
 
 <script setup>
 import { useRouter } from '#app'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLogo from '~/components/AppLogo.vue'
 import AnimatedUnderlineTextOne from '~/components/ui/AnimatedUnderlineTextOne.vue'
@@ -405,11 +405,58 @@ const locales = [
   { code: 'es', name: 'Español' }
 ]
 
+// ── Card animation ─────────────────────────────────────────────────
+const animScore       = ref(62)
+const animShoppingPct = ref(54)
+const animSavingsPct  = ref(16)
+const animShoppingAmt = ref(332)
+const animSavingsAmt  = ref(100)
+
+let _animFrameId = null
+
+const BAD  = { score: 62, shopPct: 54, savePct: 16, shopAmt: 332, saveAmt: 100 }
+const GOOD = { score: 84, shopPct: 24, savePct: 56, shopAmt: 148, saveAmt: 348 }
+
+function _eio(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t }
+function _lerp(a, b, t) { return a + (b - a) * t }
+
+function _startCardAnimation() {
+  const FORWARD = 3000
+  const HOLD    = 1800
+  const REVERSE = 900
+  const CYCLE   = FORWARD + HOLD + REVERSE
+  let origin = null
+
+  function frame(now) {
+    if (!origin) origin = now
+    const elapsed = (now - origin) % CYCLE
+    let e
+    if (elapsed < FORWARD) {
+      e = _eio(elapsed / FORWARD)
+    } else if (elapsed < FORWARD + HOLD) {
+      e = 1
+    } else {
+      e = 1 - _eio((elapsed - FORWARD - HOLD) / REVERSE)
+    }
+    animScore.value       = Math.round(_lerp(BAD.score,   GOOD.score,   e))
+    animShoppingPct.value = Math.round(_lerp(BAD.shopPct, GOOD.shopPct, e))
+    animSavingsPct.value  = Math.round(_lerp(BAD.savePct, GOOD.savePct, e))
+    animShoppingAmt.value = Math.round(_lerp(BAD.shopAmt, GOOD.shopAmt, e))
+    animSavingsAmt.value  = Math.round(_lerp(BAD.saveAmt, GOOD.saveAmt, e))
+    _animFrameId = requestAnimationFrame(frame)
+  }
+  _animFrameId = requestAnimationFrame(frame)
+}
+
+onMounted(() => { _startCardAnimation() })
+onUnmounted(() => { if (_animFrameId) cancelAnimationFrame(_animFrameId) })
+// ───────────────────────────────────────────────────────────────────
+
 const previewCategories = computed(() => [
-  { name: t('cat_food'),      pct: '72%', amount: '€445', color: 'bg-emerald-500' },
-  { name: t('cat_transport'), pct: '35%', amount: '€216', color: 'bg-teal-400' },
-  { name: t('cat_shopping'),  pct: '54%', amount: '€332', color: 'bg-pink-400' },
-  { name: t('cat_savings'),   pct: '28%', amount: '€180', color: 'bg-cyan-400' },
+  { name: t('cat_food'),      pct: '72%',                          amount: '€445',                          color: 'bg-emerald-500' },
+  { name: t('cat_transport'), pct: '35%',                          amount: '€216',                          color: 'bg-teal-400' },
+  { name: t('cat_shopping'),  pct: `${animShoppingPct.value}%`,    amount: `€${animShoppingAmt.value}`,     color: 'bg-pink-400' },
+  { name: t('cat_savings'),   pct: `${animSavingsPct.value}%`,     amount: `€${animSavingsAmt.value}`,      color: 'bg-cyan-400' },
 ])
 
 function start() {
