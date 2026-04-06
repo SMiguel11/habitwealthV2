@@ -260,5 +260,20 @@
   "inv_buy_capacity_title": "Your finances support this opportunity",
   "inv_buy_capacity_body_pre": "Your net monthly cash flow is",
   "inv_buy_capacity_body_post": "— you have real capacity to consider this investment responsibly.",
-  "inv_buy_capacity_tip": "As a general rule, only invest money you won't need in the next 12 months."
+  "inv_buy_capacity_tip": "As a general rule, only invest money you won't need in the next 12 months.",
+
+  "inv_landing_badge": "Investor Agent",
+  "inv_landing_title": "Let AI guide your next investment",
+  "inv_landing_desc": "Our Investor Agent analyzes any public stock in seconds — financial health, growth, valuation, and risk — then tells you BUY, HOLD or SELL with personalized context based on your own cash flow.",
+  "inv_landing_card_label": "AI Stock Analysis",
+  "inv_landing_nudge": "Your net cash flow supports this opportunity — you have real capacity to start investing today.",
+  "inv_landing_axis_health": "Financial Health",
+  "inv_landing_axis_growth": "Growth",
+  "inv_landing_axis_valuation": "Valuation",
+  "inv_landing_axis_risk": "Risk",
+  "inv_landing_feat1": "Live Yahoo Finance data — price, P/E, ROE, margins and more",
+  "inv_landing_feat2": "GPT-4o-mini scoring on 4 axes with a composite Final Score /10",
+  "inv_landing_feat3": "BUY / HOLD / SELL with strengths, risks and a clear conclusion",
+  "inv_landing_feat4": "Personal capacity nudge when your own finances support the opportunity",
+  "inv_landing_cta": "Start investing smarter →"
 }

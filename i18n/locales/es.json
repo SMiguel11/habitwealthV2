@@ -260,5 +260,20 @@
   "inv_buy_capacity_title": "Tus finanzas respaldan esta oportunidad",
   "inv_buy_capacity_body_pre": "Tu flujo neto mensual es de",
   "inv_buy_capacity_body_post": "— tienes capacidad real para considerar esta inversión de manera responsable.",
-  "inv_buy_capacity_tip": "Como regla general, invierte solo el dinero que no necesitarás en los próximos 12 meses."
+  "inv_buy_capacity_tip": "Como regla general, invierte solo el dinero que no necesitarás en los próximos 12 meses.",
+
+  "inv_landing_badge": "Agente Inversor",
+  "inv_landing_title": "Deja que la IA guie tu próxima inversión",
+  "inv_landing_desc": "Nuestro Agente Inversor analiza cualquier acción pública en segundos — salud financiera, crecimiento, valoración y riesgo — y te dice COMPRAR, MANTENER o VENDER con contexto personalizado basado en tu propio flujo de caja.",
+  "inv_landing_card_label": "Análisis de Acciones IA",
+  "inv_landing_nudge": "Tu flujo de caja neto respalda esta oportunidad — tienes capacidad real para empezar a invertir hoy.",
+  "inv_landing_axis_health": "Salud Financiera",
+  "inv_landing_axis_growth": "Crecimiento",
+  "inv_landing_axis_valuation": "Valoración",
+  "inv_landing_axis_risk": "Riesgo",
+  "inv_landing_feat1": "Datos en tiempo real de Yahoo Finance — precio, P/E, ROE, márgenes y más",
+  "inv_landing_feat2": "Puntuación GPT-4o-mini en 4 ejes con Puntuación Final /10",
+  "inv_landing_feat3": "COMPRAR / MANTENER / VENDER con fortalezas, riesgos y conclusión clara",
+  "inv_landing_feat4": "Aviso de capacidad personal cuando tus finanzas respaldan la oportunidad",
+  "inv_landing_cta": "Empieza a invertir con inteligencia →"
 }

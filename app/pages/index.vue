@@ -157,38 +157,29 @@
         <!-- Glow behind card -->
         <div aria-hidden="true" class="absolute inset-0 m-auto w-72 h-72 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none"></div>
 
-        <!-- 3D perspective wrapper -->
-        <div class="[perspective:1500px] relative w-full max-w-sm">
-
-          <!-- Invisible 3×3 hover zones -->
-          <div aria-hidden="true" class="absolute inset-0 z-30 grid grid-cols-3 grid-rows-3 pointer-events-auto">
-            <div class="peer/tl"></div>
-            <div class="peer/tc"></div>
-            <div class="peer/tr"></div>
-            <div class="peer/ml"></div>
-            <div class="peer/cc"></div>
-            <div class="peer/mr"></div>
-            <div class="peer/bl"></div>
-            <div class="peer/bc"></div>
-            <div class="peer/br"></div>
-          </div>
+        <!-- 3D perspective wrapper (JS mouse-tracking tilt) -->
+        <div
+          ref="heroCardRef"
+          class="[perspective:1500px] relative w-full max-w-sm cursor-pointer"
+          @mousemove="onCardMouseMove"
+          @mouseleave="onCardMouseLeave"
+        >
 
           <!-- Card with 3D tilt -->
-          <div class="card-tilt transition-all duration-300 ease-out [transform-style:preserve-3d]
-            peer-hover/tl:[transform:rotateX(8deg)_rotateY(-8deg)_scale(1.03)]
-            peer-hover/tc:[transform:rotateX(10deg)_rotateY(0deg)_scale(1.03)]
-            peer-hover/tr:[transform:rotateX(8deg)_rotateY(8deg)_scale(1.03)]
-            peer-hover/ml:[transform:rotateX(0deg)_rotateY(-10deg)_scale(1.03)]
-            peer-hover/cc:[transform:rotateX(0deg)_rotateY(0deg)_scale(1.05)]
-            peer-hover/mr:[transform:rotateX(0deg)_rotateY(10deg)_scale(1.03)]
-            peer-hover/bl:[transform:rotateX(-8deg)_rotateY(-8deg)_scale(1.03)]
-            peer-hover/bc:[transform:rotateX(-10deg)_rotateY(0deg)_scale(1.03)]
-            peer-hover/br:[transform:rotateX(-8deg)_rotateY(8deg)_scale(1.03)]
-          ">
+          <div
+            class="card-tilt [transform-style:preserve-3d]"
+            :style="{ transform: cardTransform, transition: cardTransition }"
+          >
             <!-- Main card -->
             <div class="card-inner relative rounded-2xl bg-slate-900/95 backdrop-blur-md p-6 overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_80px_rgba(16,185,129,0.08)]">
               <!-- Inner shimmer -->
               <div aria-hidden="true" class="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-white/[0.02] pointer-events-none"></div>
+              <!-- Mouse-tracking shimmer -->
+              <div
+                aria-hidden="true"
+                class="absolute inset-0 pointer-events-none rounded-2xl"
+                :style="{ background: `radial-gradient(circle at ${shimmerX}% ${shimmerY}%, rgba(255,255,255,0.11) 0%, transparent 55%)`, mixBlendMode: 'overlay' }"
+              ></div>
 
               <!-- Card header -->
               <div class="relative flex items-center justify-between mb-5">
@@ -270,6 +261,83 @@
         </div>
       </div>
     </div>
+
+    <!-- ── Investor Agent Feature Section ── -->
+    <section class="relative max-w-7xl mx-auto px-6 pb-20 lg:pb-24">
+      <div class="rounded-3xl overflow-hidden border border-white/[0.06] bg-gradient-to-br from-slate-900/80 to-indigo-950/30 backdrop-blur-sm p-8 lg:p-14">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+          <!-- LEFT: copy -->
+          <div>
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-indigo-500/25 bg-indigo-500/10 text-indigo-400 text-xs font-semibold tracking-widest uppercase mb-6">
+              <span>📈</span> {{ t('inv_landing_badge') }}
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight mb-5">
+              {{ t('inv_landing_title') }}
+            </h2>
+            <p class="text-slate-400 leading-relaxed mb-8 max-w-lg">
+              {{ t('inv_landing_desc') }}
+            </p>
+            <ul class="space-y-3.5 mb-10">
+              <li v-for="feat in investorFeatures" :key="feat" class="flex items-start gap-3">
+                <span class="w-5 h-5 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-[10px] shrink-0 mt-0.5 font-bold">✓</span>
+                <span class="text-sm text-slate-300 leading-relaxed">{{ feat }}</span>
+              </li>
+            </ul>
+            <NuxtLink
+              to="/get-started"
+              class="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold text-sm shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-px transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            >
+              {{ t('inv_landing_cta') }}
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </NuxtLink>
+          </div>
+
+          <!-- RIGHT: mock stock card -->
+          <div class="relative flex justify-center lg:justify-end">
+            <div class="w-full max-w-xs rounded-2xl bg-slate-900 border border-white/10 p-5 shadow-2xl shadow-black/60">
+              <!-- header -->
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{{ t('inv_landing_card_label') }}</span>
+                <span class="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> LIVE
+                </span>
+              </div>
+              <!-- company row -->
+              <div class="flex items-center gap-3 mb-5">
+                <div class="w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-lg font-black text-blue-300 shrink-0">M</div>
+                <div class="min-w-0">
+                  <div class="text-base font-black text-white">MSFT</div>
+                  <div class="text-[11px] text-slate-500 truncate">Microsoft Corporation</div>
+                </div>
+                <div class="ml-auto text-right shrink-0">
+                  <div class="text-xl font-black text-emerald-400 leading-none">8.4<span class="text-xs text-slate-500 font-normal">/10</span></div>
+                  <div class="text-[10px] text-emerald-400 font-bold mt-0.5">BUY 🟢</div>
+                </div>
+              </div>
+              <!-- score axes -->
+              <div class="space-y-2 mb-4">
+                <div v-for="axis in investorAxes" :key="axis.label" class="flex items-center gap-2.5">
+                  <span class="text-[10px] text-slate-500 w-24 shrink-0">{{ axis.label }}</span>
+                  <div class="flex-1 bg-white/[0.05] rounded-full h-1">
+                    <div class="h-1 rounded-full" :class="axis.color" :style="{ width: axis.pct }"></div>
+                  </div>
+                  <span class="text-[10px] text-slate-300 font-semibold w-7 text-right">{{ axis.score }}</span>
+                </div>
+              </div>
+              <!-- nudge -->
+              <div class="rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 p-3 flex items-start gap-2">
+                <span class="text-sm shrink-0">💡</span>
+                <p class="text-[10px] text-emerald-300 leading-relaxed">{{ t('inv_landing_nudge') }}</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
 
     <!-- ── How it works ── -->
     <section class="relative max-w-7xl mx-auto px-6 pb-28">
@@ -421,23 +489,21 @@ function _eio(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t }
 function _lerp(a, b, t) { return a + (b - a) * t }
 
 function _startCardAnimation() {
-  const FORWARD = 3000
-  const HOLD    = 1800
-  const REVERSE = 900
-  const CYCLE   = FORWARD + HOLD + REVERSE
+  // Runs once: BAD → GOOD, no loop
+  const DURATION = 3200
   let origin = null
-
   function frame(now) {
     if (!origin) origin = now
-    const elapsed = (now - origin) % CYCLE
-    let e
-    if (elapsed < FORWARD) {
-      e = _eio(elapsed / FORWARD)
-    } else if (elapsed < FORWARD + HOLD) {
-      e = 1
-    } else {
-      e = 1 - _eio((elapsed - FORWARD - HOLD) / REVERSE)
+    const elapsed = now - origin
+    if (elapsed >= DURATION) {
+      animScore.value       = GOOD.score
+      animShoppingPct.value = GOOD.shopPct
+      animSavingsPct.value  = GOOD.savePct
+      animShoppingAmt.value = GOOD.shopAmt
+      animSavingsAmt.value  = GOOD.saveAmt
+      return
     }
+    const e = _eio(elapsed / DURATION)
     animScore.value       = Math.round(_lerp(BAD.score,   GOOD.score,   e))
     animShoppingPct.value = Math.round(_lerp(BAD.shopPct, GOOD.shopPct, e))
     animSavingsPct.value  = Math.round(_lerp(BAD.savePct, GOOD.savePct, e))
@@ -450,6 +516,32 @@ function _startCardAnimation() {
 
 onMounted(() => { _startCardAnimation() })
 onUnmounted(() => { if (_animFrameId) cancelAnimationFrame(_animFrameId) })
+
+// ── Hero card: JS mouse-tracking 3D tilt ──────────────────────────
+const heroCardRef    = ref(null)
+const cardTransform  = ref('rotateX(0deg) rotateY(0deg) scale(1)')
+const cardTransition = ref('transform 0.7s cubic-bezier(0.22,0.61,0.36,1)')
+const shimmerX = ref(50)
+const shimmerY = ref(50)
+
+function onCardMouseMove(e) {
+  const el = heroCardRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  const cx = (e.clientX - rect.left) / rect.width
+  const cy = (e.clientY - rect.top)  / rect.height
+  cardTransition.value = 'transform 0.08s ease-out'
+  cardTransform.value  = `rotateX(${(-(cy - 0.5) * 18).toFixed(1)}deg) rotateY(${((cx - 0.5) * 22).toFixed(1)}deg) scale(1.04)`
+  shimmerX.value = Math.round(cx * 100)
+  shimmerY.value = Math.round(cy * 100)
+}
+
+function onCardMouseLeave() {
+  cardTransition.value = 'transform 0.7s cubic-bezier(0.22,0.61,0.36,1)'
+  cardTransform.value  = 'rotateX(0deg) rotateY(0deg) scale(1)'
+  shimmerX.value = 50
+  shimmerY.value = 50
+}
 // ───────────────────────────────────────────────────────────────────
 
 const previewCategories = computed(() => [
@@ -458,6 +550,37 @@ const previewCategories = computed(() => [
   { name: t('cat_shopping'),  pct: `${animShoppingPct.value}%`,    amount: `€${animShoppingAmt.value}`,     color: 'bg-pink-400' },
   { name: t('cat_savings'),   pct: `${animSavingsPct.value}%`,     amount: `€${animSavingsAmt.value}`,      color: 'bg-cyan-400' },
 ])
+
+const investorAxes = computed(() => [
+  { label: t('inv_landing_axis_health'),    pct: '85%', score: '8.5', color: 'bg-emerald-400' },
+  { label: t('inv_landing_axis_growth'),    pct: '78%', score: '7.8', color: 'bg-teal-400' },
+  { label: t('inv_landing_axis_valuation'), pct: '70%', score: '7.0', color: 'bg-amber-400' },
+  { label: t('inv_landing_axis_risk'),      pct: '82%', score: '8.2', color: 'bg-blue-400' },
+])
+
+const investorFeatures = computed(() => [
+  t('inv_landing_feat1'),
+  t('inv_landing_feat2'),
+  t('inv_landing_feat3'),
+  t('inv_landing_feat4'),
+])
+
+// ── SEO ────────────────────────────────────────────────────────────
+useSeoMeta({
+  title: 'HabitWealth — AI Financial Wellness & Investor Agent',
+  ogTitle: 'HabitWealth — AI Financial Wellness & Investor Agent',
+  description: 'Upload your bank statements and let AI detect emotional spending patterns, compute your Financial Stress Index, and guide your investments with a real-time AI Investor Agent (BUY/HOLD/SELL).',
+  ogDescription: 'AI-powered financial wellness: emotional spending analysis, personalized CBT nudges, and a live AI Investor Agent that scores any stock from Yahoo Finance.',
+  twitterCard: 'summary_large_image',
+})
+useHead({
+  htmlAttrs: { lang: locale },
+  link: [{ rel: 'canonical', href: 'https://lemon-tree-0cc9df103.2.azurestaticapps.net' }],
+  meta: [
+    { name: 'keywords', content: 'financial wellness AI, investor agent, emotional spending, financial stress index, stock analysis AI, GPT-4o-mini, personal finance app, habit tracking, AI investment advisor' },
+    { property: 'og:type', content: 'website' },
+  ],
+})
 
 function start() {
   router.push({ path: '/get-started', query: { name: name.value } })
