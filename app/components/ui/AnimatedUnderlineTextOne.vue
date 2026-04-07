@@ -1,6 +1,8 @@
 <template>
   <span class="animated-text group relative inline-block align-middle" :style="durationStyle">
-    <span :class="textClassName">{{ text }}</span>
+    <slot>
+      <span :class="textClassName">{{ text }}</span>
+    </slot>
 
     <svg
       class="pointer-events-none absolute left-0 -bottom-2 h-4 w-full"
@@ -43,18 +45,27 @@ const props = defineProps({
     default: 'M 0,12 Q 75,20 150,12 Q 225,4 300,12'
   },
   underlineDuration: { type: Number, default: 1.2 },
+  underlineDelay:    { type: Number, default: 0 },
   underlineColor: { type: String, default: '#34d399' }
 })
 
 const durationStyle = computed(() => ({
-  '--underline-duration': `${props.underlineDuration}s`
+  '--underline-duration': `${props.underlineDuration}s`,
+  '--underline-delay':    `${props.underlineDelay}s`,
 }))
 </script>
 
 <style scoped>
 .path-default {
   opacity: 0.9;
+  stroke-dasharray: 320;
+  stroke-dashoffset: 320;
+  animation: underline-draw var(--underline-duration) cubic-bezier(0.16, 1, 0.3, 1) var(--underline-delay) forwards;
   transition: opacity var(--underline-duration) ease, transform var(--underline-duration) ease;
+}
+
+@keyframes underline-draw {
+  to { stroke-dashoffset: 0; }
 }
 
 .path-hover {
